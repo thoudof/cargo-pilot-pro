@@ -7,7 +7,7 @@ export const contactSchema = z.object({
   id: z.string(),
   name: z.string().min(1, 'Имя обязательно'),
   phone: z.string().min(1, 'Телефон обязателен'),
-  email: z.string().email('Некорректный email').optional().or(z.literal('')),
+  email: z.string().min(1, 'Email обязателен').email('Некорректный email'),
   position: z.string().optional()
 });
 

@@ -5,16 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Calendar, Clock, User } from 'lucide-react';
+import { Plus, Search, Calendar, User, Edit2, Trash2 } from 'lucide-react';
 import { Trip, TripStatus, Contractor } from '@/types';
 import { db } from '@/services/database';
+import { TripForm } from './TripForm';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-
-interface TripListProps {
-  onAddTrip: () => void;
-  onEditTrip: (trip: Trip) => void;
-}
+import { useToast } from '@/hooks/use-toast';
 
 const statusColors = {
   [TripStatus.PLANNED]: 'bg-blue-500',
@@ -30,15 +27,15 @@ const statusLabels = {
   [TripStatus.CANCELLED]: 'Отменён'
 };
 
-export const TripList: React.FC<TripListProps> = ({
-  onAddTrip,
-  onEditTrip
-}) => {
+export const TripList: React.FC = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [editingTrip, setEditingTrip] = useState<Trip | undefined>();
+  const { toast } = useToast();
 
   useEffect(() => {
     loadData();
@@ -57,6 +54,38 @@ export const TripList: React.FC<TripListProps> = ({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddTrip = () => {
+    setEditingTrip(undefined);
+    setFormOpen(true);
+  };
+
+  const handleEditTrip = (trip: Trip) => {
+    setEditingTrip(trip);
+    setFormOpen(true);
+  };
+
+  const handleDeleteTrip = async (trip: Trip) => {
+    try {
+      await db.deleteTrip(trip.id);
+      await loadData();
+      toast({
+        title: 'Рейс удален',
+        description: `Рейс ${trip.pointA} → ${trip.pointB} успешно удален`
+      });
+    } catch (error) {
+      console.error('Failed to delete trip:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить рейс',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleFormSuccess = () => {
+    loadData();
   };
 
   const getContractorName = (contractorId: string) => {
@@ -98,7 +127,7 @@ export const TripList: React.FC<TripListProps> = ({
               className="pl-9 h-12"
             />
           </div>
-          <Button onClick={onAddTrip} className="h-12 px-6">
+          <Button onClick={handleAddTrip} className="h-12 px-6">
             <Plus className="mr-2 h-4 w-4" />
             Добавить
           </Button>
@@ -130,7 +159,7 @@ export const TripList: React.FC<TripListProps> = ({
               }
             </p>
             {!searchTerm && statusFilter === 'all' && (
-              <Button onClick={onAddTrip}>
+              <Button onClick={handleAddTrip}>
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить рейс
               </Button>
@@ -140,11 +169,8 @@ export const TripList: React.FC<TripListProps> = ({
       ) : (
         <div className="grid gap-4">
           {filteredTrips.map((trip) => (
-            <Card key={trip.id} className="cursor-pointer hover:shadow-md transition-shadow">
-              <CardHeader 
-                className="pb-3"
-                onClick={() => onEditTrip(trip)}
-              >
+            <Card key={trip.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
@@ -162,6 +188,22 @@ export const TripList: React.FC<TripListProps> = ({
                         <span>{getContractorName(trip.contractorId)}</span>
                       </div>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditTrip(trip)}
+                    >
+                      <Edit2 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDeleteTrip(trip)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -190,6 +232,13 @@ export const TripList: React.FC<TripListProps> = ({
           ))}
         </div>
       )}
+
+      <TripForm
+        trip={editingTrip}
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        onSuccess={handleFormSuccess}
+      />
     </div>
   );
 };

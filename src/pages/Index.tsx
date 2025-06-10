@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { MobileLayout } from '@/components/Layout/MobileLayout';
 import { Dashboard } from '@/components/Dashboard/Dashboard';
@@ -51,46 +50,16 @@ const Index = () => {
     }
   };
 
-  const handleAddTrip = () => {
-    // TODO: Implement add trip modal/form
-    console.log('Add trip');
-  };
-
-  const handleEditTrip = (trip: Trip) => {
-    // TODO: Implement edit trip modal/form
-    console.log('Edit trip:', trip);
-  };
-
-  const handleAddContractor = () => {
-    // TODO: Implement add contractor modal/form
-    console.log('Add contractor');
-  };
-
-  const handleEditContractor = (contractor: Contractor) => {
-    // TODO: Implement edit contractor modal/form
-    console.log('Edit contractor:', contractor);
-  };
-
   const renderCurrentView = () => {
     switch (currentView) {
       case 'dashboard':
         return <Dashboard onNavigate={setCurrentView} />;
       
       case 'trips':
-        return (
-          <TripList 
-            onAddTrip={handleAddTrip}
-            onEditTrip={handleEditTrip}
-          />
-        );
+        return <TripList />;
       
       case 'contractors':
-        return (
-          <ContractorList
-            onAddContractor={handleAddContractor}
-            onEditContractor={handleEditContractor}
-          />
-        );
+        return <ContractorList />;
       
       case 'documents':
         return (

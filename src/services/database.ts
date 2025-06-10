@@ -16,18 +16,33 @@ class DatabaseService {
   }
 
   async saveData(key: string, data: any): Promise<void> {
-    const encrypted = this.encrypt(data);
-    await Preferences.set({ key, value: encrypted });
+    try {
+      const encrypted = this.encrypt(data);
+      await Preferences.set({ key, value: encrypted });
+    } catch (error) {
+      console.error('Failed to save data:', error);
+      throw error;
+    }
   }
 
   async getData(key: string): Promise<any> {
-    const { value } = await Preferences.get({ key });
-    if (!value) return null;
-    return this.decrypt(value);
+    try {
+      const { value } = await Preferences.get({ key });
+      if (!value) return null;
+      return this.decrypt(value);
+    } catch (error) {
+      console.error('Failed to get data:', error);
+      return null;
+    }
   }
 
   async removeData(key: string): Promise<void> {
-    await Preferences.remove({ key });
+    try {
+      await Preferences.remove({ key });
+    } catch (error) {
+      console.error('Failed to remove data:', error);
+      throw error;
+    }
   }
 
   // Contractors

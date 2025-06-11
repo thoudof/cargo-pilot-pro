@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Plus, Trash2, Phone, Mail } from 'lucide-react';
 import { contractorSchema, ContractorFormData } from '@/lib/validations';
 import { Contractor } from '@/types';
-import { db } from '@/services/database';
+import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 
 interface ContractorFormProps {
@@ -58,11 +58,14 @@ export const ContractorForm: React.FC<ContractorFormProps> = ({
         updatedAt: new Date(),
         contacts: data.contacts.map(contact => ({
           ...contact,
-          id: contact.id || crypto.randomUUID()
+          id: contact.id || crypto.randomUUID(),
+          name: contact.name || '',
+          phone: contact.phone || '',
+          email: contact.email || ''
         }))
       };
 
-      await db.saveContractor(contractorData);
+      await supabaseService.saveContractor(contractorData);
       
       toast({
         title: contractor ? 'Контрагент обновлен' : 'Контрагент создан',

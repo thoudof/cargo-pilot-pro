@@ -1,130 +1,67 @@
-import React, { useState, useEffect } from 'react';
-import { MobileLayout } from '@/components/Layout/MobileLayout';
+
+import { AuthProvider, useAuth } from '@/components/Auth/AuthProvider';
+import { AuthPage } from '@/components/Auth/AuthPage';
 import { Dashboard } from '@/components/Dashboard/Dashboard';
-import { TripList } from '@/components/Trips/TripList';
-import { ContractorList } from '@/components/Contractors/ContractorList';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Settings, User, BarChart3, File } from 'lucide-react';
-import { db } from '@/services/database';
-import { nextCloudService } from '@/services/nextcloud';
-import { Trip, Contractor } from '@/types';
+import { supabaseService } from '@/services/supabaseService';
+import { LogOut } from 'lucide-react';
 
-const Index = () => {
-  const [currentView, setCurrentView] = useState('dashboard');
-  const [isInitialized, setIsInitialized] = useState(false);
+const AuthenticatedApp = () => {
+  const { user, loading } = useAuth();
 
-  useEffect(() => {
-    initializeApp();
-  }, []);
-
-  const initializeApp = async () => {
-    try {
-      // Initialize NextCloud structure
-      const config = {
-        serverUrl: 'https://your-nextcloud.com',
-        username: 'transport',
-        password: 'password',
-        basePath: 'transport'
-      };
-      
-      await nextCloudService.configure(config);
-      await nextCloudService.initializeStructure();
-      
-      setIsInitialized(true);
-    } catch (error) {
-      console.error('Failed to initialize app:', error);
-      setIsInitialized(true); // Continue anyway
-    }
+  const handleSignOut = async () => {
+    await supabaseService.signOut();
   };
 
-  const getPageTitle = () => {
-    switch (currentView) {
-      case 'dashboard': return 'Главная';
-      case 'trips': return 'Рейсы';
-      case 'contractors': return 'Контрагенты';
-      case 'documents': return 'Документы';
-      case 'statistics': return 'Статистика';
-      case 'settings': return 'Настройки';
-      default: return 'Грузоперевозки';
-    }
-  };
-
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'dashboard':
-        return <Dashboard onNavigate={setCurrentView} />;
-      
-      case 'trips':
-        return <TripList />;
-      
-      case 'contractors':
-        return <ContractorList />;
-      
-      case 'documents':
-        return (
-          <Card className="text-center py-12">
-            <CardContent>
-              <File className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Документы</h3>
-              <p className="text-muted-foreground">
-                Интеграция с NextCloud для управления документами
-              </p>
-            </CardContent>
-          </Card>
-        );
-      
-      case 'statistics':
-        return (
-          <Card className="text-center py-12">
-            <CardContent>
-              <BarChart3 className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Статистика</h3>
-              <p className="text-muted-foreground">
-                Аналитика и отчеты по рейсам
-              </p>
-            </CardContent>
-          </Card>
-        );
-      
-      case 'settings':
-        return (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Settings className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">Настройки</h3>
-              <p className="text-muted-foreground">
-                Конфигурация приложения и NextCloud
-              </p>
-            </CardContent>
-          </Card>
-        );
-      
-      default:
-        return <Dashboard onNavigate={setCurrentView} />;
-    }
-  };
-
-  if (!isInitialized) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <h2 className="text-lg font-medium">Инициализация приложения...</h2>
-          <p className="text-muted-foreground">Настройка синхронизации с облаком</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
+  if (!user) {
+    return <AuthPage />;
+  }
+
   return (
-    <MobileLayout
-      title={getPageTitle()}
-      onMenuSelect={setCurrentView}
-      currentView={currentView}
-    >
-      {renderCurrentView()}
-    </MobileLayout>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <h1 className="text-xl font-semibold text-gray-900">
+              Транспортная система
+            </h1>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-600">
+                {user.email}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                className="flex items-center space-x-2"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Выйти</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
+      <main>
+        <Dashboard />
+      </main>
+    </div>
+  );
+};
+
+const Index = () => {
+  return (
+    <AuthProvider>
+      <AuthenticatedApp />
+    </AuthProvider>
   );
 };
 

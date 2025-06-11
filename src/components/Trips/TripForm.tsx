@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar, CalendarIcon, Truck, User, Package } from 'lucide-react';
 import { tripSchema, TripFormData } from '@/lib/validations';
 import { Trip, Contractor, TripStatus } from '@/types';
-import { db } from '@/services/database';
+import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 
 interface TripFormProps {
@@ -60,7 +61,7 @@ export const TripForm: React.FC<TripFormProps> = ({
 
   const loadContractors = async () => {
     try {
-      const contractorData = await db.getContractors();
+      const contractorData = await supabaseService.getContractors();
       setContractors(contractorData);
     } catch (error) {
       console.error('Failed to load contractors:', error);
@@ -78,7 +79,7 @@ export const TripForm: React.FC<TripFormProps> = ({
         changeLog: trip?.changeLog || []
       };
 
-      await db.saveTrip(tripData);
+      await supabaseService.saveTrip(tripData);
       
       toast({
         title: trip ? 'Рейс обновлен' : 'Рейс создан',

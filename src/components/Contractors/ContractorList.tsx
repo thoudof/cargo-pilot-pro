@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, User, Edit2, Trash2 } from 'lucide-react';
 import { Contractor } from '@/types';
-import { db } from '@/services/database';
+import { supabaseService } from '@/services/supabaseService';
 import { ContractorForm } from './ContractorForm';
 import { useToast } from '@/hooks/use-toast';
 
@@ -24,7 +24,7 @@ export const ContractorList: React.FC = () => {
 
   const loadContractors = async () => {
     try {
-      const data = await db.getContractors();
+      const data = await supabaseService.getContractors();
       setContractors(data);
     } catch (error) {
       console.error('Failed to load contractors:', error);
@@ -45,7 +45,7 @@ export const ContractorList: React.FC = () => {
 
   const handleDeleteContractor = async (contractor: Contractor) => {
     try {
-      await db.deleteContractor(contractor.id);
+      await supabaseService.deleteContractor(contractor.id);
       await loadContractors();
       toast({
         title: 'Контрагент удален',

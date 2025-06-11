@@ -28,7 +28,7 @@ class SupabaseService {
         inn: contractor.inn,
         address: contractor.address,
         notes: contractor.notes || '',
-        contacts: (contacts || []).map(contact => ({
+        contacts: (contacts || []).map((contact: any) => ({
           id: contact.id,
           name: contact.name,
           phone: contact.phone,
@@ -106,7 +106,7 @@ class SupabaseService {
 
     if (error) throw error;
 
-    return (data || []).map(trip => ({
+    return (data || []).map((trip: any) => ({
       id: trip.id,
       status: trip.status as TripStatus,
       departureDate: new Date(trip.departure_date),

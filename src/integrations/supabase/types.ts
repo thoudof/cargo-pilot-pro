@@ -9,7 +9,193 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      contacts: {
+        Row: {
+          contractor_id: string
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string
+          position: string | null
+          updated_at: string
+        }
+        Insert: {
+          contractor_id: string
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          phone: string
+          position?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contractor_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string
+          position?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contractors: {
+        Row: {
+          address: string
+          company_name: string
+          created_at: string
+          id: string
+          inn: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          company_name: string
+          created_at?: string
+          id?: string
+          inn: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          company_name?: string
+          created_at?: string
+          id?: string
+          inn?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          role: string | null
+          updated_at: string
+          username: string | null
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          role?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: string | null
+          updated_at?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
+      trips: {
+        Row: {
+          arrival_date: string | null
+          cargo_description: string
+          cargo_value: number | null
+          cargo_volume: number
+          cargo_weight: number
+          comments: string | null
+          contractor_id: string
+          created_at: string
+          departure_date: string
+          documents: Json | null
+          driver_license: string | null
+          driver_name: string
+          driver_phone: string
+          id: string
+          point_a: string
+          point_b: string
+          status: string
+          updated_at: string
+          user_id: string
+          vehicle_brand: string
+          vehicle_capacity: number | null
+          vehicle_license_plate: string
+          vehicle_model: string
+        }
+        Insert: {
+          arrival_date?: string | null
+          cargo_description: string
+          cargo_value?: number | null
+          cargo_volume: number
+          cargo_weight: number
+          comments?: string | null
+          contractor_id: string
+          created_at?: string
+          departure_date: string
+          documents?: Json | null
+          driver_license?: string | null
+          driver_name: string
+          driver_phone: string
+          id?: string
+          point_a: string
+          point_b: string
+          status: string
+          updated_at?: string
+          user_id: string
+          vehicle_brand: string
+          vehicle_capacity?: number | null
+          vehicle_license_plate: string
+          vehicle_model: string
+        }
+        Update: {
+          arrival_date?: string | null
+          cargo_description?: string
+          cargo_value?: number | null
+          cargo_volume?: number
+          cargo_weight?: number
+          comments?: string | null
+          contractor_id?: string
+          created_at?: string
+          departure_date?: string
+          documents?: Json | null
+          driver_license?: string | null
+          driver_name?: string
+          driver_phone?: string
+          id?: string
+          point_a?: string
+          point_b?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          vehicle_brand?: string
+          vehicle_capacity?: number | null
+          vehicle_license_plate?: string
+          vehicle_model?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

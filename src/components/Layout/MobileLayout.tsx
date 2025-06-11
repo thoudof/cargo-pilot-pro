@@ -5,8 +5,6 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, Menu } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { NotificationBell } from '@/components/Notifications/NotificationBell';
-import { PushNotificationManager } from '@/components/Notifications/PushNotificationManager';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { AppNavigation } from '@/components/Navigation/AppNavigation';
 import { activityLogger } from '@/services/activityLogger';
@@ -51,8 +49,6 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      <PushNotificationManager userId={user?.id} />
-      
       {/* Header - оптимизированный для мобильных устройств */}
       <header className="bg-white border-b border-gray-200 px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 sticky top-0 z-40">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -68,9 +64,6 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <h1 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 truncate">
               {getPageTitle(currentPage)}
             </h1>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            <NotificationBell />
           </div>
         </div>
       </header>

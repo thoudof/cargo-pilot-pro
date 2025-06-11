@@ -51,49 +51,49 @@ const DashboardHome = ({ onNavigateToTrips }: { onNavigateToTrips: () => void })
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Статистические карточки - адаптивная сетка */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Активные рейсы</CardTitle>
-            <Truck className="h-4 w-4 text-muted-foreground" />
+      {/* Статистические карточки - мобильная сетка 2x2, планшет/десктоп адаптивно */}
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
+        <Card className="hover:shadow-md transition-shadow aspect-square sm:aspect-auto">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Активные рейсы</CardTitle>
+            <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 sm:p-6 pt-0">
             <div className="text-lg sm:text-2xl font-bold">{stats.activeTrips}</div>
-            <p className="text-xs text-muted-foreground">из {stats.totalTrips} всего</p>
+            <p className="text-xs text-muted-foreground leading-tight">из {stats.totalTrips} всего</p>
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Контрагенты</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+        <Card className="hover:shadow-md transition-shadow aspect-square sm:aspect-auto">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Контрагенты</CardTitle>
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 sm:p-6 pt-0">
             <div className="text-lg sm:text-2xl font-bold">{stats.contractors}</div>
-            <p className="text-xs text-muted-foreground">всего</p>
+            <p className="text-xs text-muted-foreground leading-tight">всего</p>
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Водители</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+        <Card className="hover:shadow-md transition-shadow aspect-square sm:aspect-auto">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Водители</CardTitle>
+            <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 sm:p-6 pt-0">
             <div className="text-lg sm:text-2xl font-bold">{stats.drivers}</div>
-            <p className="text-xs text-muted-foreground">в базе</p>
+            <p className="text-xs text-muted-foreground leading-tight">в базе</p>
           </CardContent>
         </Card>
         
-        <Card className="hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs sm:text-sm font-medium">Транспорт</CardTitle>
-            <Truck className="h-4 w-4 text-muted-foreground" />
+        <Card className="hover:shadow-md transition-shadow aspect-square sm:aspect-auto">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
+            <CardTitle className="text-xs sm:text-sm font-medium leading-tight">Транспорт</CardTitle>
+            <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 sm:p-6 pt-0">
             <div className="text-lg sm:text-2xl font-bold">{stats.vehicles}</div>
-            <p className="text-xs text-muted-foreground">в парке</p>
+            <p className="text-xs text-muted-foreground leading-tight">в парке</p>
           </CardContent>
         </Card>
       </div>

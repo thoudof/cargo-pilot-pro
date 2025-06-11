@@ -1,13 +1,14 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, Menu, Home, Truck, Users, Settings } from 'lucide-react';
-import { useSession, signOut } from "next-auth/react";
-import { useRouter } from 'next/navigation';
-import { usePathname } from 'next/navigation';
+import { useRouter } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { NotificationBell } from '@/components/Notifications/NotificationBell';
 import { PushNotificationManager } from '@/components/Notifications/PushNotificationManager';
+import { useAuth } from '@/components/Auth/AuthProvider';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
@@ -22,22 +23,20 @@ const pageTitles: { [key: string]: string } = {
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { data: session } = useSession();
+  const { user } = useAuth();
   const router = useRouter();
-  const pathname = usePathname();
-
-  const user = session?.user;
+  const location = useLocation();
 
   const handleLogout = async () => {
-    await signOut();
-    router.push('/login');
+    // Логика выхода будет реализована через AuthProvider
+    router('/login');
   };
 
   const getPageTitle = (path: string | null) => {
     return pageTitles[path || '/'] || 'Страница';
   };
 
-  const currentPage = pathname === '/' ? '/' : pathname;
+  const currentPage = location.pathname === '/' ? '/' : location.pathname;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -78,28 +77,28 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           <div className="py-4">
             <div className="px-4 py-2">
               <Avatar className="h-10 w-10">
-                <AvatarImage src={session?.user?.image || ""} alt={session?.user?.name || "User Avatar"} />
-                <AvatarFallback>{session?.user?.name?.charAt(0) || "U"}</AvatarFallback>
+                <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt={user?.user_metadata?.full_name || "User Avatar"} />
+                <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || "U"}</AvatarFallback>
               </Avatar>
               <div className="mt-2">
-                <p className="font-semibold">{session?.user?.name}</p>
-                <p className="text-sm text-gray-500">{session?.user?.email}</p>
+                <p className="font-semibold">{user?.user_metadata?.full_name || 'Пользователь'}</p>
+                <p className="text-sm text-gray-500">{user?.email}</p>
               </div>
             </div>
             <div className="mt-4 space-y-2">
-              <Button variant="ghost" className="w-full justify-start" onClick={() => { router.push('/'); setIsSidebarOpen(false); }}>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { router('/'); setIsSidebarOpen(false); }}>
                 <Home className="h-4 w-4 mr-2" />
                 Главная
               </Button>
-              <Button variant="ghost" className="w-full justify-start" onClick={() => { router.push('/trips'); setIsSidebarOpen(false); }}>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { router('/trips'); setIsSidebarOpen(false); }}>
                 <Truck className="h-4 w-4 mr-2" />
                 Рейсы
               </Button>
-              <Button variant="ghost" className="w-full justify-start" onClick={() => { router.push('/contractors'); setIsSidebarOpen(false); }}>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { router('/contractors'); setIsSidebarOpen(false); }}>
                 <Users className="h-4 w-4 mr-2" />
                 Контрагенты
               </Button>
-              <Button variant="ghost" className="w-full justify-start" onClick={() => { router.push('/settings'); setIsSidebarOpen(false); }}>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { router('/settings'); setIsSidebarOpen(false); }}>
                 <Settings className="h-4 w-4 mr-2" />
                 Настройки
               </Button>
@@ -120,15 +119,15 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       {/* Bottom Navigation */}
       <footer className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 py-2 px-4">
         <div className="flex items-center justify-around">
-          <Button variant="ghost" size="sm" onClick={() => router.push('/')} className="flex flex-col items-center">
+          <Button variant="ghost" size="sm" onClick={() => router('/')} className="flex flex-col items-center">
             <Home className="h-5 w-5" />
             <span className="text-xs">Главная</span>
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => router.push('/trips')} className="flex flex-col items-center">
+          <Button variant="ghost" size="sm" onClick={() => router('/trips')} className="flex flex-col items-center">
             <Truck className="h-5 w-5" />
             <span className="text-xs">Рейсы</span>
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => router.push('/contractors')} className="flex flex-col items-center">
+          <Button variant="ghost" size="sm" onClick={() => router('/contractors')} className="flex flex-col items-center">
             <Users className="h-5 w-5" />
             <span className="text-xs">Контрагенты</span>
           </Button>

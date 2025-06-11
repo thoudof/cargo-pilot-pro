@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Bell, Circle, Check } from 'lucide-react';
+import { Bell, Check } from 'lucide-react';
 import { NotificationList } from './NotificationList';
-import { supabaseService } from '@/services/supabaseService';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface Notification {
@@ -30,7 +30,7 @@ export const NotificationBell: React.FC = () => {
     loadNotifications();
     
     // Подписка на изменения уведомлений в реальном времени
-    const channel = supabaseService.supabase
+    const channel = supabase
       .channel('notifications')
       .on('postgres_changes', {
         event: '*',
@@ -42,16 +42,23 @@ export const NotificationBell: React.FC = () => {
       .subscribe();
 
     return () => {
-      supabaseService.supabase.removeChannel(channel);
+      supabase.removeChannel(channel);
     };
   }, []);
 
   const loadNotifications = async () => {
     try {
       setLoading(true);
-      const data = await supabaseService.getNotifications();
-      setNotifications(data);
-      setUnreadCount(data.filter(n => !n.is_read).length);
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+      
+      setNotifications(data || []);
+      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
     } catch (error) {
       console.error('Failed to load notifications:', error);
     } finally {
@@ -61,7 +68,12 @@ export const NotificationBell: React.FC = () => {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      await supabaseService.markNotificationAsRead(notificationId);
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true, updated_at: new Date().toISOString() })
+        .eq('id', notificationId);
+
+      if (error) throw error;
       await loadNotifications();
     } catch (error) {
       console.error('Failed to mark notification as read:', error);
@@ -75,7 +87,12 @@ export const NotificationBell: React.FC = () => {
 
   const markAllAsRead = async () => {
     try {
-      await supabaseService.markAllNotificationsAsRead();
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true, updated_at: new Date().toISOString() })
+        .eq('is_read', false);
+
+      if (error) throw error;
       await loadNotifications();
       toast({
         title: 'Готово',

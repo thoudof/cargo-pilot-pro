@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { supabaseService } from '@/services/supabaseService';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 interface PushNotificationManagerProps {
@@ -66,11 +66,33 @@ export const PushNotificationManager: React.FC<PushNotificationManagerProps> = (
 
       // Сохраняем токен в базе данных
       const token = btoa(JSON.stringify(subscription));
-      await supabaseService.savePushToken(token, 'web');
+      await savePushToken(token, 'web');
       
       console.log('Push subscription saved:', subscription);
     } catch (error) {
       console.error('Failed to subscribe to push notifications:', error);
+    }
+  };
+
+  const savePushToken = async (token: string, platform: string) => {
+    try {
+      const { data: user } = await supabase.auth.getUser();
+      if (!user.user) throw new Error('User not authenticated');
+
+      const { error } = await supabase
+        .from('push_tokens')
+        .upsert({
+          user_id: user.user.id,
+          token,
+          platform,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'token'
+        });
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Failed to save push token:', error);
     }
   };
 

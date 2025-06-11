@@ -52,28 +52,25 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
 
   const onSubmit = async (values: z.infer<typeof vehicleSchema>) => {
     try {
-      // Создаем объект данных транспорта, соответствующий схеме Supabase
-      const vehicleData = {
+      // Создаем объект данных транспорта в формате, который ожидает saveVehicle
+      const vehicleData: Vehicle = {
+        id: vehicle?.id || crypto.randomUUID(),
         brand: values.brand,
         model: values.model,
-        license_plate: values.licensePlate, // Используем snake_case для соответствия БД
+        licensePlate: values.licensePlate,
         capacity: values.capacity || null,
         year: values.year || null,
         vin: values.vin || null,
-        registration_certificate: values.registrationCertificate || null,
-        insurance_policy: values.insurancePolicy || null,
-        insurance_expiry: values.insuranceExpiry ? values.insuranceExpiry : null,
-        technical_inspection_expiry: values.technicalInspectionExpiry ? values.technicalInspectionExpiry : null,
-        notes: values.notes || null
+        registrationCertificate: values.registrationCertificate || null,
+        insurancePolicy: values.insurancePolicy || null,
+        insuranceExpiry: values.insuranceExpiry ? new Date(values.insuranceExpiry) : undefined,
+        technicalInspectionExpiry: values.technicalInspectionExpiry ? new Date(values.technicalInspectionExpiry) : undefined,
+        notes: values.notes || null,
+        createdAt: vehicle?.createdAt || new Date(),
+        updatedAt: new Date()
       };
 
-      if (vehicle?.id) {
-        // Обновляем существующий транспорт
-        await supabaseService.updateVehicle(vehicle.id, vehicleData);
-      } else {
-        // Создаем новый транспорт
-        await supabaseService.createVehicle(vehicleData);
-      }
+      await supabaseService.saveVehicle(vehicleData);
 
       toast({
         title: vehicle ? 'Транспорт обновлен' : 'Транспорт создан',

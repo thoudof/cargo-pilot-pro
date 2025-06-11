@@ -10,7 +10,7 @@ import { VehiclesPage } from '@/pages/VehiclesPage';
 import { RoutesPage } from '@/pages/RoutesPage';
 import { CargoTypesPage } from '@/pages/CargoTypesPage';
 import { SettingsPage } from '@/pages/SettingsPage';
-import { NotFound } from '@/pages/NotFound';
+import NotFound from '@/pages/NotFound';
 import { MobileLayout } from '@/components/Layout/MobileLayout';
 import { activityLogger } from '@/services/activityLogger';
 import { useEffect } from 'react';

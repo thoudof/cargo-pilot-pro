@@ -11,9 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 
 interface User {
   id: string;
-  email: string;
-  full_name: string;
-  role: string;
+  email: string | null;
+  full_name: string | null;
+  role: string | null;
   created_at: string;
   roles: string[];
 }
@@ -46,6 +46,7 @@ export const UserManagement: React.FC = () => {
         const roles = userRoles?.filter(ur => ur.user_id === profile.id).map(ur => ur.role) || [];
         return {
           ...profile,
+          email: profile.username || 'Не указан',
           roles
         };
       });
@@ -63,7 +64,7 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const updateUserRole = async (userId: string, newRole: string) => {
+  const updateUserRole = async (userId: string, newRole: 'admin' | 'dispatcher' | 'driver') => {
     try {
       // Удаляем все роли пользователя
       await supabase
@@ -100,7 +101,7 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const getRoleBadgeVariant = (role: string) => {
+  const getRoleBadgeVariant = (role: string | null) => {
     switch (role) {
       case 'admin': return 'destructive';
       case 'dispatcher': return 'default';
@@ -109,12 +110,12 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const getRoleLabel = (role: string) => {
+  const getRoleLabel = (role: string | null) => {
     switch (role) {
       case 'admin': return 'Администратор';
       case 'dispatcher': return 'Диспетчер';
       case 'driver': return 'Водитель';
-      default: return role;
+      default: return role || 'Не указано';
     }
   };
 
@@ -149,7 +150,7 @@ export const UserManagement: React.FC = () => {
             <TableBody>
               {users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.email}</TableCell>
+                  <TableCell className="font-medium">{user.email || 'Не указан'}</TableCell>
                   <TableCell>{user.full_name || 'Не указано'}</TableCell>
                   <TableCell>
                     <Badge variant={getRoleBadgeVariant(user.role)}>
@@ -161,8 +162,8 @@ export const UserManagement: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Select
-                      value={user.role}
-                      onValueChange={(newRole) => updateUserRole(user.id, newRole)}
+                      value={user.role || 'dispatcher'}
+                      onValueChange={(newRole: 'admin' | 'dispatcher' | 'driver') => updateUserRole(user.id, newRole)}
                     >
                       <SelectTrigger className="w-32">
                         <SelectValue />

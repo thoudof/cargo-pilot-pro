@@ -5,13 +5,13 @@ import { AuthPage } from "@/components/Auth/AuthPage";
 import { MobileLayout } from "@/components/Layout/MobileLayout";
 import { Dashboard } from "@/components/Dashboard/Dashboard";
 import { PushNotificationManager } from "@/components/Notifications/PushNotificationManager";
-import TripsPage from "./TripsPage";
-import ContractorsPage from "./ContractorsPage";
-import DriversPage from "./DriversPage";
-import VehiclesPage from "./VehiclesPage";
-import RoutesPage from "./RoutesPage";
-import CargoTypesPage from "./CargoTypesPage";
-import SettingsPage from "./SettingsPage";
+import { TripsPage } from "./TripsPage";
+import { ContractorsPage } from "./ContractorsPage";
+import { DriversPage } from "./DriversPage";
+import { VehiclesPage } from "./VehiclesPage";
+import { RoutesPage } from "./RoutesPage";
+import { CargoTypesPage } from "./CargoTypesPage";
+import { SettingsPage } from "./SettingsPage";
 import AdminPage from "./AdminPage";
 
 const Index = () => {

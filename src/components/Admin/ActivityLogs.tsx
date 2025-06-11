@@ -10,13 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 interface ActivityLog {
   id: string;
   action: string;
-  entity_type: string;
-  entity_id: string;
+  entity_type: string | null;
+  entity_id: string | null;
   details: any;
   user_id: string;
   created_at: string;
-  user_agent: string;
-  ip_address: string;
+  user_agent: string | null;
+  ip_address: string | null;
 }
 
 export const ActivityLogs: React.FC = () => {
@@ -75,7 +75,8 @@ export const ActivityLogs: React.FC = () => {
     }
   };
 
-  const getEntityTypeLabel = (entityType: string) => {
+  const getEntityTypeLabel = (entityType: string | null) => {
+    if (!entityType) return 'Не указано';
     switch (entityType) {
       case 'trip': return 'Рейс';
       case 'contractor': return 'Контрагент';
@@ -83,7 +84,7 @@ export const ActivityLogs: React.FC = () => {
       case 'vehicle': return 'Транспорт';
       case 'route': return 'Маршрут';
       case 'cargo_type': return 'Тип груза';
-      default: return entityType || 'Не указано';
+      default: return entityType;
     }
   };
 

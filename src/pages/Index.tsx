@@ -38,24 +38,19 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Routes>
-      <Route 
-        path="/" 
-        element={
-          <MobileLayout>
-            <Dashboard onNavigate={() => {}} />
-          </MobileLayout>
-        } 
-      />
-      <Route path="/trips" element={<TripsPage />} />
-      <Route path="/contractors" element={<ContractorsPage />} />
-      <Route path="/drivers" element={<DriversPage />} />
-      <Route path="/vehicles" element={<VehiclesPage />} />
-      <Route path="/routes" element={<RoutesPage />} />
-      <Route path="/cargo-types" element={<CargoTypesPage />} />
-      <Route path="/settings" element={<SettingsPage />} />
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <MobileLayout>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/trips" element={<TripsPage />} />
+        <Route path="/contractors" element={<ContractorsPage />} />
+        <Route path="/drivers" element={<DriversPage />} />
+        <Route path="/vehicles" element={<VehiclesPage />} />
+        <Route path="/routes" element={<RoutesPage />} />
+        <Route path="/cargo-types" element={<CargoTypesPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </MobileLayout>
   );
 };
 

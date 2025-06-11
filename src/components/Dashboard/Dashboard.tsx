@@ -1,22 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
-import { MobileLayout } from '@/components/Layout/MobileLayout';
-import { ContractorList } from '@/components/Contractors/ContractorList';
-import { TripList } from '@/components/Trips/TripList';
-import { DriverList } from '@/components/Drivers/DriverList';
-import { VehicleList } from '@/components/Vehicles/VehicleList';
-import { RouteList } from '@/components/Routes/RouteList';
-import { CargoTypeList } from '@/components/CargoTypes/CargoTypeList';
-import { TripsOverview } from './TripsOverview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Truck, Users, FileText, BarChart3, Calendar, Route, Package } from 'lucide-react';
+import { Truck, Users } from 'lucide-react';
 import { supabaseService } from '@/services/supabaseService';
 
-interface DashboardProps {
-  onNavigate: (view: string) => void;
-}
-
-const DashboardHome = ({ onNavigateToTrips }: { onNavigateToTrips: () => void }) => {
+const Dashboard: React.FC = () => {
   const [stats, setStats] = useState({
     activeTrips: 0,
     totalTrips: 0,
@@ -51,7 +39,7 @@ const DashboardHome = ({ onNavigateToTrips }: { onNavigateToTrips: () => void })
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Статистические карточки - мобильная сетка 2x2, планшет/десктоп адаптивно */}
+      {/* Статистические карточки */}
       <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 lg:gap-6">
         <Card className="hover:shadow-md transition-shadow aspect-square sm:aspect-auto">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 sm:pb-2 p-3 sm:p-6">
@@ -98,25 +86,20 @@ const DashboardHome = ({ onNavigateToTrips }: { onNavigateToTrips: () => void })
         </Card>
       </div>
       
-      {/* Обзор рейсов */}
-      <TripsOverview onNavigateToTrips={onNavigateToTrips} />
-    </div>
-  );
-};
-
-const DocumentsPage = () => {
-  return (
-    <div className="space-y-4 sm:space-y-6">
+      {/* Секция рейсов */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-            <FileText className="h-5 w-5" />
-            <span>Документы</span>
+            <Truck className="h-5 w-5" />
+            <span>Рейсы</span>
           </CardTitle>
+          <button className="text-sm text-primary hover:underline">
+            Показать все
+          </button>
         </CardHeader>
         <CardContent>
-          <p className="text-sm sm:text-base text-gray-500">
-            Управление документами будет доступно в следующих версиях.
+          <p className="text-sm text-muted-foreground">
+            У вас пока нет активных рейсов
           </p>
         </CardContent>
       </Card>
@@ -124,86 +107,5 @@ const DocumentsPage = () => {
   );
 };
 
-const StatisticsPage = () => {
-  return (
-    <div className="space-y-4 sm:space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
-            <BarChart3 className="h-5 w-5" />
-            <span>Статистика</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm sm:text-base text-gray-500">
-            Аналитика и отчеты будут доступны в следующих версиях.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-const SettingsPage = () => {
-  return (
-    <div className="space-y-4 sm:space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base sm:text-lg">Настройки</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm sm:text-base text-gray-500">
-            Настройки приложения будут доступны в следующих версиях.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
-
-export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const [currentView, setCurrentView] = useState('dashboard');
-
-  const handleMenuSelect = (view: string) => {
-    setCurrentView(view);
-    onNavigate(view);
-  };
-
-  const handleNavigateToTrips = () => {
-    setCurrentView('trips');
-    onNavigate('trips');
-  };
-
-  const renderCurrentView = () => {
-    switch (currentView) {
-      case 'trips':
-        return <TripList />;
-      case 'contractors':
-        return <ContractorList />;
-      case 'drivers':
-        return <DriverList />;
-      case 'vehicles':
-        return <VehicleList />;
-      case 'routes':
-        return <RouteList />;
-      case 'cargo-types':
-        return <CargoTypeList />;
-      case 'documents':
-        return <DocumentsPage />;
-      case 'statistics':
-        return <StatisticsPage />;
-      case 'settings':
-        return <SettingsPage />;
-      default:
-        return <DashboardHome onNavigateToTrips={handleNavigateToTrips} />;
-    }
-  };
-
-  return (
-    <MobileLayout>
-      {renderCurrentView()}
-    </MobileLayout>
-  );
-};
-
+export { Dashboard };
 export default Dashboard;

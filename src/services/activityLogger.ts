@@ -12,14 +12,33 @@ class ActivityLogger {
   private async getUserInfo() {
     try {
       const user = await supabaseService.getCurrentUser();
+      
+      // Получаем информацию о пользователе из профиля
+      let userProfile = null;
+      if (user?.id) {
+        const { data: profile } = await supabaseService.supabase
+          .from('profiles')
+          .select('username, full_name')
+          .eq('id', user.id)
+          .single();
+        userProfile = profile;
+      }
+
       return {
         userId: user?.id,
+        userEmail: user?.email,
+        userName: userProfile?.full_name || userProfile?.username || user?.email || 'Неизвестный пользователь',
         userAgent: navigator.userAgent,
         // IP адрес будет определяться на стороне сервера
       };
     } catch (error) {
       console.error('ActivityLogger: Failed to get user info:', error);
-      return { userId: null, userAgent: navigator.userAgent };
+      return { 
+        userId: null, 
+        userEmail: null,
+        userName: 'Неизвестный пользователь',
+        userAgent: navigator.userAgent 
+      };
     }
   }
 
@@ -32,7 +51,7 @@ class ActivityLogger {
         return;
       }
 
-      console.log('ActivityLogger: Logging activity:', data.action, data.entityType || 'system');
+      console.log('ActivityLogger: Logging activity:', data.action, data.entityType || 'system', 'by:', userInfo.userName);
 
       await supabaseService.supabase
         .from('activity_logs')
@@ -41,11 +60,15 @@ class ActivityLogger {
           action: data.action,
           entity_type: data.entityType,
           entity_id: data.entityId,
-          details: data.details,
+          details: {
+            ...data.details,
+            user_email: userInfo.userEmail,
+            user_name: userInfo.userName
+          },
           user_agent: userInfo.userAgent
         });
 
-      console.log('ActivityLogger: Activity logged successfully:', data.action);
+      console.log('ActivityLogger: Activity logged successfully:', data.action, 'by:', userInfo.userName);
     } catch (error) {
       console.error('ActivityLogger: Failed to log activity:', error);
     }

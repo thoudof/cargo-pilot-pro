@@ -1,11 +1,11 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Activity, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Activity, Filter, ChevronLeft, ChevronRight, Search, User, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import type { Database } from '@/integrations/supabase/types';
@@ -18,16 +18,17 @@ export const ActivityLogs: React.FC = () => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
+  const [userSearch, setUserSearch] = useState<string>('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalLogs, setTotalLogs] = useState(0);
 
   useEffect(() => {
     fetchLogs();
-  }, [filter, currentPage]);
+  }, [filter, userSearch, currentPage]);
 
   const fetchLogs = async () => {
     setLoading(true);
-    console.log('ActivityLogs: Fetching logs with filter:', filter, 'page:', currentPage);
+    console.log('ActivityLogs: Fetching logs with filter:', filter, 'userSearch:', userSearch, 'page:', currentPage);
     
     try {
       const offset = (currentPage - 1) * LOGS_PER_PAGE;
@@ -39,6 +40,11 @@ export const ActivityLogs: React.FC = () => {
 
       if (filter !== 'all') {
         countQuery = countQuery.eq('action', filter);
+      }
+
+      if (userSearch.trim()) {
+        // Поиск по email пользователя или имени в details
+        countQuery = countQuery.or(`details->>user_email.ilike.%${userSearch}%,details->>user_name.ilike.%${userSearch}%`);
       }
 
       const { count } = await countQuery;
@@ -53,6 +59,11 @@ export const ActivityLogs: React.FC = () => {
 
       if (filter !== 'all') {
         query = query.eq('action', filter);
+      }
+
+      if (userSearch.trim()) {
+        // Поиск по email пользователя или имени в details
+        query = query.or(`details->>user_email.ilike.%${userSearch}%,details->>user_name.ilike.%${userSearch}%`);
       }
 
       const { data, error } = await query;
@@ -70,6 +81,38 @@ export const ActivityLogs: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getUserInfo = (log: ActivityLog) => {
+    if (!log.details) return 'Неизвестный пользователь';
+    
+    try {
+      const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+      return details.user_name || details.user_email || 'Неизвестный пользователь';
+    } catch (error) {
+      return 'Неизвестный пользователь';
+    }
+  };
+
+  const getUserEmail = (log: ActivityLog) => {
+    if (!log.details) return null;
+    
+    try {
+      const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
+      return details.user_email || null;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const handleUserSearchChange = (value: string) => {
+    setUserSearch(value);
+    setCurrentPage(1); // Сбрасываем на первую страницу при поиске
+  };
+
+  const clearUserSearch = () => {
+    setUserSearch('');
+    setCurrentPage(1);
   };
 
   const getActionBadgeVariant = (action: string) => {
@@ -153,10 +196,12 @@ export const ActivityLogs: React.FC = () => {
     
     try {
       const parsed = typeof details === 'string' ? JSON.parse(details) : details;
-      const formatted = Object.entries(parsed)
+      // Исключаем пользовательскую информацию из деталей, так как она отображается отдельно
+      const filteredDetails = Object.entries(parsed)
+        .filter(([key]) => !['user_name', 'user_email', 'timestamp'].includes(key))
         .map(([key, value]) => `${key}: ${value}`)
         .join(', ');
-      return formatted.length > 100 ? formatted.substring(0, 100) + '...' : formatted;
+      return filteredDetails.length > 100 ? filteredDetails.substring(0, 100) + '...' : filteredDetails || 'Нет дополнительной информации';
     } catch (error) {
       return 'Некорректные данные';
     }
@@ -198,6 +243,28 @@ export const ActivityLogs: React.FC = () => {
             Логи активности пользователей
           </CardTitle>
           <div className="flex items-center gap-2">
+            {/* Поиск по пользователю */}
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск по пользователю..."
+                value={userSearch}
+                onChange={(e) => handleUserSearchChange(e.target.value)}
+                className="pl-8 w-48"
+              />
+              {userSearch && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearUserSearch}
+                  className="absolute right-1 top-1 h-6 w-6 p-0"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            
+            {/* Фильтр по действию */}
             <Filter className="h-4 w-4" />
             <Select value={filter} onValueChange={(value) => {
               setFilter(value);
@@ -223,6 +290,7 @@ export const ActivityLogs: React.FC = () => {
         </div>
         <div className="text-sm text-muted-foreground">
           Показано {logs.length} из {totalLogs} записей (страница {currentPage} из {totalPages})
+          {userSearch && <span> • Поиск: "{userSearch}"</span>}
         </div>
       </CardHeader>
       <CardContent>
@@ -231,6 +299,7 @@ export const ActivityLogs: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Дата и время</TableHead>
+                <TableHead>Пользователь</TableHead>
                 <TableHead>Действие</TableHead>
                 <TableHead>Описание</TableHead>
                 <TableHead>Браузер</TableHead>
@@ -249,6 +318,21 @@ export const ActivityLogs: React.FC = () => {
                       minute: '2-digit',
                       second: '2-digit'
                     })}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div className="max-w-xs">
+                        <div className="font-medium text-sm truncate">
+                          {getUserInfo(log)}
+                        </div>
+                        {getUserEmail(log) && (
+                          <div className="text-xs text-muted-foreground truncate">
+                            {getUserEmail(log)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <Badge variant={getActionBadgeVariant(log.action)}>
@@ -276,9 +360,11 @@ export const ActivityLogs: React.FC = () => {
         
         {logs.length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
-            {filter === 'all' 
-              ? 'Логи активности не найдены' 
-              : `Логи с действием "${getActionLabel(filter)}" не найдены`
+            {userSearch 
+              ? `Логи для пользователя "${userSearch}" не найдены`
+              : filter === 'all' 
+                ? 'Логи активности не найдены' 
+                : `Логи с действием "${getActionLabel(filter)}" не найдены`
             }
           </div>
         )}

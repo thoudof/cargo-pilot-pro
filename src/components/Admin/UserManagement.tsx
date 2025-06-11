@@ -4,19 +4,21 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Users, Edit, Trash2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { UserDetailsDialog } from './UserDetailsDialog';
 import type { Database } from '@/integrations/supabase/types';
 
 type UserRole = Database['public']['Enums']['app_role'];
 
 interface User {
   id: string;
-  email: string | null;
+  username: string | null;
   full_name: string | null;
   role: string | null;
   created_at: string;
+  updated_at: string;
   roles: UserRole[];
 }
 
@@ -50,7 +52,7 @@ export const UserManagement: React.FC = () => {
         const roles = userRoles?.filter(ur => ur.user_id === profile.id).map(ur => ur.role) || [];
         return {
           ...profile,
-          email: profile.username || 'Не указан',
+          username: profile.username || profile.id,
           roles
         };
       });
@@ -68,40 +70,37 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const updateUserRole = async (userId: string, newRole: UserRole) => {
+  const deleteUser = async (userId: string) => {
+    if (!confirm('Вы уверены, что хотите удалить этого пользователя?')) {
+      return;
+    }
+
     try {
-      // Удаляем все роли пользователя
+      // Удаляем роли пользователя
       await supabase
         .from('user_roles')
         .delete()
         .eq('user_id', userId);
 
-      // Добавляем новую роль
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
-
-      if (roleError) throw roleError;
-
-      // Обновляем роль в профиле
-      const { error: profileError } = await supabase
+      // Удаляем профиль пользователя
+      const { error } = await supabase
         .from('profiles')
-        .update({ role: newRole })
+        .delete()
         .eq('id', userId);
 
-      if (profileError) throw profileError;
+      if (error) throw error;
 
       toast({
         title: "Успешно",
-        description: "Роль пользователя обновлена"
+        description: "Пользователь удален"
       });
 
       fetchUsers();
     } catch (error) {
-      console.error('Error updating user role:', error);
+      console.error('Error deleting user:', error);
       toast({
         title: "Ошибка",
-        description: "Не удалось обновить роль пользователя",
+        description: "Не удалось удалить пользователя",
         variant: "destructive"
       });
     }
@@ -136,27 +135,39 @@ export const UserManagement: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5" />
-          Управление пользователями
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            Управление пользователями
+          </CardTitle>
+          <Button size="sm" className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Добавить пользователя
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-md border">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
+                <TableHead>ID</TableHead>
+                <TableHead>Email/Логин</TableHead>
                 <TableHead>Имя</TableHead>
                 <TableHead>Роль</TableHead>
                 <TableHead>Дата регистрации</TableHead>
-                <TableHead>Действия</TableHead>
+                <TableHead className="text-right">Действия</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.email || 'Не указан'}</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {user.id.substring(0, 8)}...
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {user.username || 'Не указан'}
+                  </TableCell>
                   <TableCell>{user.full_name || 'Не указано'}</TableCell>
                   <TableCell>
                     <Badge variant={getRoleBadgeVariant(user.role)}>
@@ -166,20 +177,22 @@ export const UserManagement: React.FC = () => {
                   <TableCell>
                     {new Date(user.created_at).toLocaleDateString('ru-RU')}
                   </TableCell>
-                  <TableCell>
-                    <Select
-                      value={user.role || 'dispatcher'}
-                      onValueChange={(newRole: UserRole) => updateUserRole(user.id, newRole)}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="admin">Администратор</SelectItem>
-                        <SelectItem value="dispatcher">Диспетчер</SelectItem>
-                        <SelectItem value="driver">Водитель</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <TableCell className="text-right">
+                    <div className="flex items-center gap-2 justify-end">
+                      <UserDetailsDialog user={user} onUserUpdated={fetchUsers}>
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </UserDetailsDialog>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => deleteUser(user.id)}
+                        className="text-destructive hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

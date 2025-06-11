@@ -2,10 +2,11 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Users, Activity, BarChart3 } from 'lucide-react';
+import { Shield, Users, Activity, BarChart3, TrendingUp } from 'lucide-react';
 import { UserManagement } from './UserManagement';
 import { ActivityLogs } from './ActivityLogs';
 import { SystemStats } from './SystemStats';
+import { AdvancedStats } from './AdvancedStats';
 import { AdminRoute } from './AdminRoute';
 
 export const AdminPanel: React.FC = () => {
@@ -23,7 +24,7 @@ export const AdminPanel: React.FC = () => {
         <SystemStats />
 
         <Tabs defaultValue="users" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="users" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Пользователи
@@ -35,6 +36,10 @@ export const AdminPanel: React.FC = () => {
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
               Аналитика
+            </TabsTrigger>
+            <TabsTrigger value="advanced" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Расширенная статистика
             </TabsTrigger>
           </TabsList>
 
@@ -57,10 +62,14 @@ export const AdminPanel: React.FC = () => {
               <CardContent>
                 <div className="text-center py-8 text-muted-foreground">
                   <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Расширенная аналитика будет добавлена в следующих версиях</p>
+                  <p>Базовая аналитика будет добавлена в следующих версиях</p>
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="advanced">
+            <AdvancedStats />
           </TabsContent>
         </Tabs>
       </div>

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, Menu } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -22,6 +23,7 @@ const pageTitles: { [key: string]: string } = {
   '/vehicles': 'Транспорт',
   '/routes': 'Маршруты',
   '/cargo-types': 'Типы грузов',
+  '/admin': 'Админ панель',
   '/settings': 'Настройки'
 };
 
@@ -83,35 +85,37 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       {/* Desktop Sidebar для планшетов и больших экранов */}
       <div className="hidden lg:flex flex-1">
         <aside className="w-64 xl:w-72 bg-white border-r border-gray-200 flex flex-col">
-          <div className="p-4 xl:p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <Avatar className="h-10 w-10 xl:h-12 xl:w-12 flex-shrink-0">
-                <AvatarImage 
-                  src={user?.user_metadata?.avatar_url || ""} 
-                  alt={user?.user_metadata?.full_name || "User Avatar"} 
-                />
-                <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || "U"}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 min-w-0">
-                <p className="font-semibold text-sm xl:text-base truncate">
-                  {user?.user_metadata?.full_name || 'Пользователь'}
-                </p>
-                <p className="text-xs xl:text-sm text-gray-500 truncate break-all">{user?.email}</p>
+          <ScrollArea className="flex-1">
+            <div className="p-4 xl:p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <Avatar className="h-10 w-10 xl:h-12 xl:w-12 flex-shrink-0">
+                  <AvatarImage 
+                    src={user?.user_metadata?.avatar_url || ""} 
+                    alt={user?.user_metadata?.full_name || "User Avatar"} 
+                  />
+                  <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || "U"}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm xl:text-base truncate">
+                    {user?.user_metadata?.full_name || 'Пользователь'}
+                  </p>
+                  <p className="text-xs xl:text-sm text-gray-500 truncate break-all">{user?.email}</p>
+                </div>
               </div>
+              
+              <AppNavigation variant="desktop" />
             </div>
-            
-            <AppNavigation variant="desktop" />
-            
-            <div className="mt-6 pt-6 border-t">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-10 xl:h-12 text-sm xl:text-base" 
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4 xl:h-5 xl:w-5 mr-3" />
-                Выйти
-              </Button>
-            </div>
+          </ScrollArea>
+          
+          <div className="p-4 xl:p-6 border-t">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start h-10 xl:h-12 text-sm xl:text-base" 
+              onClick={handleLogout}
+            >
+              <LogOut className="h-4 w-4 xl:h-5 xl:w-5 mr-3" />
+              Выйти
+            </Button>
           </div>
         </aside>
         
@@ -127,12 +131,13 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
         <SheetTrigger asChild>
           <div className="hidden" />
         </SheetTrigger>
-        <SheetContent side="left" className="w-72 sm:w-80">
-          <SheetHeader className="text-left mb-6">
+        <SheetContent side="left" className="w-72 sm:w-80 flex flex-col p-0">
+          <SheetHeader className="text-left p-6 pb-0">
             <SheetTitle>Меню</SheetTitle>
           </SheetHeader>
-          <div className="flex flex-col h-full">
-            <div className="px-2 mb-6">
+          
+          <ScrollArea className="flex-1">
+            <div className="p-6 space-y-6">
               <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
                 <Avatar className="h-10 w-10 flex-shrink-0">
                   <AvatarImage 
@@ -148,23 +153,23 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                   <p className="text-xs text-gray-500 truncate break-all">{user?.email}</p>
                 </div>
               </div>
+              
+              <AppNavigation 
+                variant="mobile" 
+                onItemClick={() => setIsSidebarOpen(false)} 
+              />
             </div>
-            
-            <AppNavigation 
-              variant="mobile" 
-              onItemClick={() => setIsSidebarOpen(false)} 
-            />
+          </ScrollArea>
 
-            <div className="mt-auto pt-6 border-t">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-12" 
-                onClick={() => { handleLogout(); setIsSidebarOpen(false); }}
-              >
-                <LogOut className="h-5 w-5 mr-3" />
-                Выйти
-              </Button>
-            </div>
+          <div className="p-6 border-t">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start h-12" 
+              onClick={() => { handleLogout(); setIsSidebarOpen(false); }}
+            >
+              <LogOut className="h-5 w-5 mr-3" />
+              Выйти
+            </Button>
           </div>
         </SheetContent>
       </Sheet>

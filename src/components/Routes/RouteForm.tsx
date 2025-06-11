@@ -42,19 +42,48 @@ export const RouteForm: React.FC<RouteFormProps> = ({ route, onSave, onCancel })
 
   const onSubmit = async (values: z.infer<typeof routeSchema>) => {
     try {
-      const routeData: Route = {
-        id: route?.id || crypto.randomUUID(),
+      // Получаем текущего пользователя
+      const user = await supabaseService.getCurrentUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Подготавливаем данные в формате, который ожидает Supabase (snake_case)
+      const routeData = {
         name: values.name,
-        pointA: values.pointA,
-        pointB: values.pointB,
-        distanceKm: values.distanceKm,
-        estimatedDurationHours: values.estimatedDurationHours,
-        notes: values.notes,
-        createdAt: route?.createdAt || new Date(),
-        updatedAt: new Date()
+        point_a: values.pointA,
+        point_b: values.pointB,
+        distance_km: values.distanceKm || null,
+        estimated_duration_hours: values.estimatedDurationHours || null,
+        notes: values.notes || null,
+        user_id: user.id
       };
 
-      await supabaseService.saveRoute(routeData);
+      console.log('Saving route data:', routeData);
+
+      let result;
+      if (route?.id) {
+        // Обновляем существующий маршрут
+        result = await supabaseService.supabase
+          .from('routes')
+          .update(routeData)
+          .eq('id', route.id)
+          .select();
+      } else {
+        // Создаем новый маршрут
+        result = await supabaseService.supabase
+          .from('routes')
+          .insert(routeData)
+          .select();
+      }
+
+      if (result.error) {
+        console.error('Supabase error:', result.error);
+        throw result.error;
+      }
+
+      console.log('Route saved successfully:', result.data);
+
       toast({
         title: route ? 'Маршрут обновлен' : 'Маршрут создан',
         description: `${values.name} успешно ${route ? 'обновлен' : 'создан'}`
@@ -134,7 +163,8 @@ export const RouteForm: React.FC<RouteFormProps> = ({ route, onSave, onCancel })
                         type="number" 
                         placeholder="635" 
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        value={field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -154,7 +184,8 @@ export const RouteForm: React.FC<RouteFormProps> = ({ route, onSave, onCancel })
                         step="0.5"
                         placeholder="8" 
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        value={field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />

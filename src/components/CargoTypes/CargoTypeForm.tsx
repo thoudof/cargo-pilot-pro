@@ -45,20 +45,49 @@ export const CargoTypeForm: React.FC<CargoTypeFormProps> = ({ cargoType, onSave,
 
   const onSubmit = async (values: z.infer<typeof cargoTypeSchema>) => {
     try {
-      const cargoTypeData: CargoType = {
-        id: cargoType?.id || crypto.randomUUID(),
+      // Получаем текущего пользователя
+      const user = await supabaseService.getCurrentUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Подготавливаем данные в формате, который ожидает Supabase (snake_case)
+      const cargoTypeData = {
         name: values.name,
-        description: values.description,
-        defaultWeight: values.defaultWeight,
-        defaultVolume: values.defaultVolume,
+        description: values.description || null,
+        default_weight: values.defaultWeight || null,
+        default_volume: values.defaultVolume || null,
         hazardous: values.hazardous,
-        temperatureControlled: values.temperatureControlled,
+        temperature_controlled: values.temperatureControlled,
         fragile: values.fragile,
-        createdAt: cargoType?.createdAt || new Date(),
-        updatedAt: new Date()
+        user_id: user.id
       };
 
-      await supabaseService.saveCargoType(cargoTypeData);
+      console.log('Saving cargo type data:', cargoTypeData);
+
+      let result;
+      if (cargoType?.id) {
+        // Обновляем существующий тип груза
+        result = await supabaseService.supabase
+          .from('cargo_types')
+          .update(cargoTypeData)
+          .eq('id', cargoType.id)
+          .select();
+      } else {
+        // Создаем новый тип груза
+        result = await supabaseService.supabase
+          .from('cargo_types')
+          .insert(cargoTypeData)
+          .select();
+      }
+
+      if (result.error) {
+        console.error('Supabase error:', result.error);
+        throw result.error;
+      }
+
+      console.log('Cargo type saved successfully:', result.data);
+
       toast({
         title: cargoType ? 'Тип груза обновлен' : 'Тип груза создан',
         description: `${values.name} успешно ${cargoType ? 'обновлен' : 'создан'}`
@@ -123,7 +152,8 @@ export const CargoTypeForm: React.FC<CargoTypeFormProps> = ({ cargoType, onSave,
                         step="0.1"
                         placeholder="1.5" 
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        value={field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -143,7 +173,8 @@ export const CargoTypeForm: React.FC<CargoTypeFormProps> = ({ cargoType, onSave,
                         step="0.1"
                         placeholder="2.5" 
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        value={field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />

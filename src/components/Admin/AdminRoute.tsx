@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useAuth } from '@/components/Auth/AuthProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AlertTriangle } from 'lucide-react';
 
@@ -9,9 +10,11 @@ interface AdminRouteProps {
 }
 
 export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
-  const { isAdmin, loading } = useUserRole();
+  const { user, loading: authLoading } = useAuth();
+  const { isAdmin, loading: roleLoading } = useUserRole();
 
-  if (loading) {
+  // Показываем загрузку если аутентификация или роли еще загружаются
+  if (authLoading || roleLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -19,6 +22,12 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     );
   }
 
+  // Если пользователь не аутентифицирован, это будет обработано в Index.tsx
+  if (!user) {
+    return null;
+  }
+
+  // Если пользователь не администратор
   if (!isAdmin) {
     return (
       <div className="container mx-auto p-6">

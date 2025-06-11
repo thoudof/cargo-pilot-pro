@@ -3,11 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, UserPlus, Settings } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import type { Database } from '@/integrations/supabase/types';
+
+type UserRole = Database['public']['Enums']['app_role'];
 
 interface User {
   id: string;
@@ -15,7 +17,7 @@ interface User {
   full_name: string | null;
   role: string | null;
   created_at: string;
-  roles: string[];
+  roles: UserRole[];
 }
 
 export const UserManagement: React.FC = () => {
@@ -29,6 +31,8 @@ export const UserManagement: React.FC = () => {
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
+      
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
@@ -64,7 +68,7 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const updateUserRole = async (userId: string, newRole: 'admin' | 'dispatcher' | 'driver') => {
+  const updateUserRole = async (userId: string, newRole: UserRole) => {
     try {
       // Удаляем все роли пользователя
       await supabase
@@ -73,17 +77,19 @@ export const UserManagement: React.FC = () => {
         .eq('user_id', userId);
 
       // Добавляем новую роль
-      const { error } = await supabase
+      const { error: roleError } = await supabase
         .from('user_roles')
         .insert({ user_id: userId, role: newRole });
 
-      if (error) throw error;
+      if (roleError) throw roleError;
 
       // Обновляем роль в профиле
-      await supabase
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ role: newRole })
         .eq('id', userId);
+
+      if (profileError) throw profileError;
 
       toast({
         title: "Успешно",
@@ -163,7 +169,7 @@ export const UserManagement: React.FC = () => {
                   <TableCell>
                     <Select
                       value={user.role || 'dispatcher'}
-                      onValueChange={(newRole: 'admin' | 'dispatcher' | 'driver') => updateUserRole(user.id, newRole)}
+                      onValueChange={(newRole: UserRole) => updateUserRole(user.id, newRole)}
                     >
                       <SelectTrigger className="w-32">
                         <SelectValue />

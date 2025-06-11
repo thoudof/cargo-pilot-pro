@@ -4,12 +4,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 
 export const useUserRole = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserRoles = async () => {
+      // Если аутентификация еще загружается, подождем
+      if (authLoading) {
+        return;
+      }
+
+      // Если пользователя нет, очистим роли и установим loading в false
       if (!user?.id) {
         setUserRoles([]);
         setLoading(false);
@@ -17,6 +23,7 @@ export const useUserRole = () => {
       }
 
       try {
+        setLoading(true);
         const { data, error } = await supabase.rpc('get_user_roles', {
           _user_id: user.id
         });
@@ -36,7 +43,7 @@ export const useUserRole = () => {
     };
 
     fetchUserRoles();
-  }, [user?.id]);
+  }, [user?.id, authLoading]);
 
   const isAdmin = userRoles.includes('admin');
   const isDispatcher = userRoles.includes('dispatcher');
@@ -47,6 +54,6 @@ export const useUserRole = () => {
     isAdmin,
     isDispatcher,
     isDriver,
-    loading
+    loading: authLoading || loading
   };
 };

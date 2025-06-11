@@ -3,8 +3,12 @@ import React, { useState } from 'react';
 import { MobileLayout } from '@/components/Layout/MobileLayout';
 import { ContractorList } from '@/components/Contractors/ContractorList';
 import { TripList } from '@/components/Trips/TripList';
+import { DriverList } from '@/components/Drivers/DriverList';
+import { VehicleList } from '@/components/Vehicles/VehicleList';
+import { RouteList } from '@/components/Routes/RouteList';
+import { CargoTypeList } from '@/components/CargoTypes/CargoTypeList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Truck, Users, FileText, BarChart3 } from 'lucide-react';
+import { Truck, Users, FileText, BarChart3, Calendar, Route, Package } from 'lucide-react';
 
 interface DashboardProps {
   onNavigate: (view: string) => void;
@@ -32,6 +36,29 @@ const DashboardHome = () => {
           <CardContent>
             <div className="text-2xl font-bold">8</div>
             <p className="text-xs text-muted-foreground">активных</p>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Водители</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">15</div>
+            <p className="text-xs text-muted-foreground">доступно</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Транспорт</CardTitle>
+            <Truck className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">7</div>
+            <p className="text-xs text-muted-foreground">в парке</p>
           </CardContent>
         </Card>
       </div>
@@ -122,6 +149,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         return 'Рейсы';
       case 'contractors':
         return 'Контрагенты';
+      case 'drivers':
+        return 'Водители';
+      case 'vehicles':
+        return 'Транспорт';
+      case 'routes':
+        return 'Маршруты';
+      case 'cargo-types':
+        return 'Типы грузов';
       case 'documents':
         return 'Документы';
       case 'statistics':
@@ -139,6 +174,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         return <TripList />;
       case 'contractors':
         return <ContractorList />;
+      case 'drivers':
+        return <DriverList />;
+      case 'vehicles':
+        return <VehicleList />;
+      case 'routes':
+        return <RouteList />;
+      case 'cargo-types':
+        return <CargoTypeList />;
       case 'documents':
         return <DocumentsPage />;
       case 'statistics':

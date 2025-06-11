@@ -18,6 +18,60 @@ export interface Contact {
   position?: string;
 }
 
+export interface Driver {
+  id: string;
+  name: string;
+  phone: string;
+  license?: string;
+  passportData?: string;
+  experienceYears?: number;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Vehicle {
+  id: string;
+  brand: string;
+  model: string;
+  licensePlate: string;
+  capacity?: number;
+  year?: number;
+  vin?: string;
+  registrationCertificate?: string;
+  insurancePolicy?: string;
+  insuranceExpiry?: Date;
+  technicalInspectionExpiry?: Date;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface CargoType {
+  id: string;
+  name: string;
+  description?: string;
+  defaultWeight?: number;
+  defaultVolume?: number;
+  hazardous?: boolean;
+  temperatureControlled?: boolean;
+  fragile?: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Route {
+  id: string;
+  name: string;
+  pointA: string;
+  pointB: string;
+  distanceKm?: number;
+  estimatedDurationHours?: number;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface Trip {
   id: string;
   status: TripStatus;
@@ -26,34 +80,32 @@ export interface Trip {
   pointA: string;
   pointB: string;
   contractorId: string;
-  driver: Driver;
-  vehicle: Vehicle;
-  cargo: Cargo;
+  driverId?: string;
+  vehicleId?: string;
+  routeId?: string;
+  cargoTypeId?: string;
+  driver: {
+    name: string;
+    phone: string;
+    license?: string;
+  };
+  vehicle: {
+    brand: string;
+    model: string;
+    licensePlate: string;
+    capacity?: number;
+  };
+  cargo: {
+    description: string;
+    weight: number;
+    volume: number;
+    value?: number;
+  };
   comments?: string;
   documents: string[];
   createdAt: Date;
   updatedAt: Date;
   changeLog: ChangeLogEntry[];
-}
-
-export interface Driver {
-  name: string;
-  phone: string;
-  license?: string;
-}
-
-export interface Vehicle {
-  brand: string;
-  model: string;
-  licensePlate: string;
-  capacity?: number;
-}
-
-export interface Cargo {
-  description: string;
-  weight: number;
-  volume: number;
-  value?: number;
 }
 
 export interface ChangeLogEntry {

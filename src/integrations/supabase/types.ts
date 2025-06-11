@@ -9,6 +9,48 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cargo_types: {
+        Row: {
+          created_at: string
+          default_volume: number | null
+          default_weight: number | null
+          description: string | null
+          fragile: boolean | null
+          hazardous: boolean | null
+          id: string
+          name: string
+          temperature_controlled: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          default_volume?: number | null
+          default_weight?: number | null
+          description?: string | null
+          fragile?: boolean | null
+          hazardous?: boolean | null
+          id?: string
+          name: string
+          temperature_controlled?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          default_volume?: number | null
+          default_weight?: number | null
+          description?: string | null
+          fragile?: boolean | null
+          hazardous?: boolean | null
+          id?: string
+          name?: string
+          temperature_controlled?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           contractor_id: string
@@ -83,6 +125,45 @@ export type Database = {
         }
         Relationships: []
       }
+      drivers: {
+        Row: {
+          created_at: string
+          experience_years: number | null
+          id: string
+          license: string | null
+          name: string
+          notes: string | null
+          passport_data: string | null
+          phone: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          experience_years?: number | null
+          id?: string
+          license?: string | null
+          name: string
+          notes?: string | null
+          passport_data?: string | null
+          phone: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          experience_years?: number | null
+          id?: string
+          license?: string | null
+          name?: string
+          notes?: string | null
+          passport_data?: string | null
+          phone?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -110,10 +191,50 @@ export type Database = {
         }
         Relationships: []
       }
+      routes: {
+        Row: {
+          created_at: string
+          distance_km: number | null
+          estimated_duration_hours: number | null
+          id: string
+          name: string
+          notes: string | null
+          point_a: string
+          point_b: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          distance_km?: number | null
+          estimated_duration_hours?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          point_a: string
+          point_b: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          distance_km?: number | null
+          estimated_duration_hours?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          point_a?: string
+          point_b?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           arrival_date: string | null
           cargo_description: string
+          cargo_type_id: string | null
           cargo_value: number | null
           cargo_volume: number
           cargo_weight: number
@@ -122,23 +243,27 @@ export type Database = {
           created_at: string
           departure_date: string
           documents: Json | null
+          driver_id: string | null
           driver_license: string | null
           driver_name: string
           driver_phone: string
           id: string
           point_a: string
           point_b: string
+          route_id: string | null
           status: string
           updated_at: string
           user_id: string
           vehicle_brand: string
           vehicle_capacity: number | null
+          vehicle_id: string | null
           vehicle_license_plate: string
           vehicle_model: string
         }
         Insert: {
           arrival_date?: string | null
           cargo_description: string
+          cargo_type_id?: string | null
           cargo_value?: number | null
           cargo_volume: number
           cargo_weight: number
@@ -147,23 +272,27 @@ export type Database = {
           created_at?: string
           departure_date: string
           documents?: Json | null
+          driver_id?: string | null
           driver_license?: string | null
           driver_name: string
           driver_phone: string
           id?: string
           point_a: string
           point_b: string
+          route_id?: string | null
           status: string
           updated_at?: string
           user_id: string
           vehicle_brand: string
           vehicle_capacity?: number | null
+          vehicle_id?: string | null
           vehicle_license_plate: string
           vehicle_model: string
         }
         Update: {
           arrival_date?: string | null
           cargo_description?: string
+          cargo_type_id?: string | null
           cargo_value?: number | null
           cargo_volume?: number
           cargo_weight?: number
@@ -172,21 +301,31 @@ export type Database = {
           created_at?: string
           departure_date?: string
           documents?: Json | null
+          driver_id?: string | null
           driver_license?: string | null
           driver_name?: string
           driver_phone?: string
           id?: string
           point_a?: string
           point_b?: string
+          route_id?: string | null
           status?: string
           updated_at?: string
           user_id?: string
           vehicle_brand?: string
           vehicle_capacity?: number | null
+          vehicle_id?: string | null
           vehicle_license_plate?: string
           vehicle_model?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "trips_cargo_type_id_fkey"
+            columns: ["cargo_type_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trips_contractor_id_fkey"
             columns: ["contractor_id"]
@@ -194,7 +333,82 @@ export type Database = {
             referencedRelation: "contractors"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      vehicles: {
+        Row: {
+          brand: string
+          capacity: number | null
+          created_at: string
+          id: string
+          insurance_expiry: string | null
+          insurance_policy: string | null
+          license_plate: string
+          model: string
+          notes: string | null
+          registration_certificate: string | null
+          technical_inspection_expiry: string | null
+          updated_at: string
+          user_id: string
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          brand: string
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          insurance_expiry?: string | null
+          insurance_policy?: string | null
+          license_plate: string
+          model: string
+          notes?: string | null
+          registration_certificate?: string | null
+          technical_inspection_expiry?: string | null
+          updated_at?: string
+          user_id: string
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          brand?: string
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          insurance_expiry?: string | null
+          insurance_policy?: string | null
+          license_plate?: string
+          model?: string
+          notes?: string | null
+          registration_certificate?: string | null
+          technical_inspection_expiry?: string | null
+          updated_at?: string
+          user_id?: string
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
       }
     }
     Views: {

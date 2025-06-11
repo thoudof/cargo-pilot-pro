@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { useState } from 'react';
-import { Sidebar } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { 
@@ -9,9 +8,12 @@ import {
   Settings, 
   Bell,
   Search,
-  Plus,
   Calendar,
-  File
+  File,
+  Truck,
+  Users,
+  Route,
+  Package
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -26,9 +28,21 @@ const menuItems = [
   { id: 'dashboard', label: 'Главная', icon: Calendar },
   { id: 'trips', label: 'Рейсы', icon: Calendar },
   { id: 'contractors', label: 'Контрагенты', icon: User },
+  { id: 'drivers', label: 'Водители', icon: Users },
+  { id: 'vehicles', label: 'Транспорт', icon: Truck },
+  { id: 'routes', label: 'Маршруты', icon: Route },
+  { id: 'cargo-types', label: 'Типы грузов', icon: Package },
   { id: 'documents', label: 'Документы', icon: File },
   { id: 'statistics', label: 'Статистика', icon: Search },
   { id: 'settings', label: 'Настройки', icon: Settings },
+];
+
+const bottomNavItems = [
+  { id: 'dashboard', label: 'Главная', icon: Calendar },
+  { id: 'trips', label: 'Рейсы', icon: Calendar },
+  { id: 'contractors', label: 'Контрагенты', icon: User },
+  { id: 'drivers', label: 'Водители', icon: Users },
+  { id: 'vehicles', label: 'Транспорт', icon: Truck },
 ];
 
 export const MobileLayout: React.FC<MobileLayoutProps> = ({
@@ -40,7 +54,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-16 items-center px-4">
@@ -101,9 +115,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
       </main>
 
       {/* Bottom Navigation for Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t md:hidden">
-        <div className="grid grid-cols-4 h-16">
-          {menuItems.slice(0, 4).map((item) => {
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t">
+        <div className="grid grid-cols-5 h-16">
+          {bottomNavItems.map((item) => {
             const Icon = item.icon;
             return (
               <Button
@@ -111,7 +125,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({
                 variant="ghost"
                 className={cn(
                   "h-full rounded-none flex-col space-y-1 text-xs",
-                  currentView === item.id && "bg-secondary"
+                  currentView === item.id && "bg-secondary text-primary"
                 )}
                 onClick={() => onMenuSelect(item.id)}
               >

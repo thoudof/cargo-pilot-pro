@@ -49,24 +49,36 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header - оптимизированный для мобильных устройств */}
-      <header className="bg-white border-b border-gray-200 px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4 sticky top-0 z-40">
+      {/* Header с логотипом и кнопкой меню */}
+      <header className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center gap-1 sm:gap-3 min-w-0 flex-1">
+          <div className="flex items-center gap-3">
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={() => setIsSidebarOpen(true)}
-              className="lg:hidden p-1 sm:p-2 flex-shrink-0"
+              className="lg:hidden p-2"
             >
-              <Menu className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Menu className="h-5 w-5" />
             </Button>
-            <h1 className="text-sm sm:text-lg lg:text-xl font-semibold text-gray-900 truncate">
-              {getPageTitle(currentPage)}
-            </h1>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">TM</span>
+              </div>
+              <span className="font-semibold text-lg hidden sm:block">Transport Manager</span>
+            </div>
           </div>
         </div>
       </header>
+
+      {/* Заголовок страницы */}
+      <div className="bg-white border-b border-gray-100 px-4 py-2">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-lg font-medium text-gray-900">
+            {getPageTitle(currentPage)}
+          </h1>
+        </div>
+      </div>
 
       {/* Desktop Sidebar для планшетов и больших экранов */}
       <div className="hidden lg:flex flex-1">

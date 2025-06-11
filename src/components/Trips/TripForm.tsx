@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, CalendarIcon, Truck, User, Package } from 'lucide-react';
 import { tripSchema, TripFormData } from '@/lib/validations';
-import { Trip, Contractor, Driver, Vehicle, TripStatus } from '@/types';
+import { Trip, Contractor, Driver, Vehicle, TripStatus, Route, CargoType } from '@/types';
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -32,6 +32,8 @@ export const TripForm: React.FC<TripFormProps> = ({
   const [contractors, setContractors] = useState<Contractor[]>([]);
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [cargoTypes, setCargoTypes] = useState<CargoType[]>([]);
   const { toast } = useToast();
 
   const form = useForm<TripFormData>({
@@ -63,14 +65,18 @@ export const TripForm: React.FC<TripFormProps> = ({
 
   const loadData = async () => {
     try {
-      const [contractorData, driverData, vehicleData] = await Promise.all([
+      const [contractorData, driverData, vehicleData, routeData, cargoTypeData] = await Promise.all([
         supabaseService.getContractors(),
         supabaseService.getDrivers(),
-        supabaseService.getVehicles()
+        supabaseService.getVehicles(),
+        supabaseService.getRoutes(),
+        supabaseService.getCargoTypes()
       ]);
       setContractors(contractorData);
       setDrivers(driverData);
       setVehicles(vehicleData);
+      setRoutes(routeData);
+      setCargoTypes(cargoTypeData);
     } catch (error) {
       console.error('Failed to load data:', error);
     }
@@ -95,10 +101,30 @@ export const TripForm: React.FC<TripFormProps> = ({
     }
   };
 
+  const handleRouteChange = (routeId: string) => {
+    const selectedRoute = routes.find(r => r.id === routeId);
+    if (selectedRoute) {
+      form.setValue('pointA', selectedRoute.pointA);
+      form.setValue('pointB', selectedRoute.pointB);
+    }
+  };
+
+  const handleCargoTypeChange = (cargoTypeId: string) => {
+    const selectedCargoType = cargoTypes.find(c => c.id === cargoTypeId);
+    if (selectedCargoType) {
+      form.setValue('cargo.description', selectedCargoType.name);
+      if (selectedCargoType.defaultWeight) {
+        form.setValue('cargo.weight', selectedCargoType.defaultWeight);
+      }
+      if (selectedCargoType.defaultVolume) {
+        form.setValue('cargo.volume', selectedCargoType.defaultVolume);
+      }
+    }
+  };
+
   const onSubmit = async (data: TripFormData) => {
     setLoading(true);
     try {
-      // Находим выбранного водителя и транспорт
       const selectedDriver = drivers.find(d => 
         d.name === data.driver.name && d.phone === data.driver.phone
       );
@@ -234,6 +260,24 @@ export const TripForm: React.FC<TripFormProps> = ({
                     )}
                   />
                 </div>
+
+                <FormItem>
+                  <FormLabel>Выбрать маршрут (опционально)</FormLabel>
+                  <Select onValueChange={handleRouteChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите готовый маршрут" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {routes.map((route) => (
+                        <SelectItem key={route.id} value={route.id}>
+                          {route.name} ({route.pointA} → {route.pointB})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -462,6 +506,7 @@ export const TripForm: React.FC<TripFormProps> = ({
                           type="number" 
                           placeholder="20" 
                           {...field}
+                          value={field.value || ''}
                           onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                         />
                       </FormControl>
@@ -481,6 +526,24 @@ export const TripForm: React.FC<TripFormProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <FormItem>
+                  <FormLabel>Выбрать тип груза (опционально)</FormLabel>
+                  <Select onValueChange={handleCargoTypeChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите тип груза" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {cargoTypes.map((cargoType) => (
+                        <SelectItem key={cargoType.id} value={cargoType.id}>
+                          {cargoType.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+
                 <FormField
                   control={form.control}
                   name="cargo.description"
@@ -545,6 +608,7 @@ export const TripForm: React.FC<TripFormProps> = ({
                             type="number" 
                             placeholder="500000" 
                             {...field}
+                            value={field.value || ''}
                             onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                           />
                         </FormControl>

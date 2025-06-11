@@ -15,8 +15,8 @@ const vehicleSchema = z.object({
   brand: z.string().min(1, 'Марка обязательна'),
   model: z.string().min(1, 'Модель обязательна'),
   licensePlate: z.string().min(1, 'Гос. номер обязателен'),
-  capacity: z.number().optional(),
-  year: z.number().optional(),
+  capacity: z.number().min(0).optional(),
+  year: z.number().min(1900).max(new Date().getFullYear() + 1).optional(),
   vin: z.string().optional(),
   registrationCertificate: z.string().optional(),
   insurancePolicy: z.string().optional(),
@@ -39,13 +39,13 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
       brand: vehicle?.brand || '',
       model: vehicle?.model || '',
       licensePlate: vehicle?.licensePlate || '',
-      capacity: vehicle?.capacity || 0,
-      year: vehicle?.year || new Date().getFullYear(),
+      capacity: vehicle?.capacity || undefined,
+      year: vehicle?.year || undefined,
       vin: vehicle?.vin || '',
       registrationCertificate: vehicle?.registrationCertificate || '',
       insurancePolicy: vehicle?.insurancePolicy || '',
-      insuranceExpiry: vehicle?.insuranceExpiry?.toISOString().split('T')[0] || '',
-      technicalInspectionExpiry: vehicle?.technicalInspectionExpiry?.toISOString().split('T')[0] || '',
+      insuranceExpiry: vehicle?.insuranceExpiry ? new Date(vehicle.insuranceExpiry).toISOString().split('T')[0] : '',
+      technicalInspectionExpiry: vehicle?.technicalInspectionExpiry ? new Date(vehicle.technicalInspectionExpiry).toISOString().split('T')[0] : '',
       notes: vehicle?.notes || ''
     }
   });
@@ -150,7 +150,8 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
                         step="0.1"
                         placeholder="20" 
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        value={field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />
@@ -171,7 +172,8 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
                         type="number" 
                         placeholder="2020" 
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                        value={field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
                       />
                     </FormControl>
                     <FormMessage />

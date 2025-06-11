@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -125,6 +124,12 @@ export const TripForm: React.FC<TripFormProps> = ({
   const onSubmit = async (data: TripFormData) => {
     setLoading(true);
     try {
+      // Получаем текущего пользователя
+      const user = await supabaseService.getCurrentUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       const selectedDriver = drivers.find(d => 
         d.name === data.driver.name && d.phone === data.driver.phone
       );
@@ -134,45 +139,60 @@ export const TripForm: React.FC<TripFormProps> = ({
         v.licensePlate === data.vehicle.licensePlate
       );
 
-      const tripData: Trip = {
-        id: trip?.id || crypto.randomUUID(),
+      // Подготавливаем данные в формате snake_case для базы данных
+      const tripData = {
         status: data.status,
-        departureDate: data.departureDate,
-        arrivalDate: data.arrivalDate,
-        pointA: data.pointA,
-        pointB: data.pointB,
-        contractorId: data.contractorId,
-        driverId: selectedDriver?.id,
-        vehicleId: selectedVehicle?.id,
-        driver: {
-          name: data.driver.name,
-          phone: data.driver.phone,
-          license: data.driver.license || ''
-        },
-        vehicle: {
-          brand: data.vehicle.brand,
-          model: data.vehicle.model,
-          licensePlate: data.vehicle.licensePlate,
-          capacity: data.vehicle.capacity
-        },
-        cargo: {
-          description: data.cargo.description,
-          weight: data.cargo.weight,
-          volume: data.cargo.volume,
-          value: data.cargo.value
-        },
-        comments: data.comments || '',
+        departure_date: data.departureDate.toISOString(),
+        arrival_date: data.arrivalDate ? data.arrivalDate.toISOString() : null,
+        point_a: data.pointA,
+        point_b: data.pointB,
+        contractor_id: data.contractorId,
+        driver_id: selectedDriver?.id || null,
+        vehicle_id: selectedVehicle?.id || null,
+        driver_name: data.driver.name,
+        driver_phone: data.driver.phone,
+        driver_license: data.driver.license || null,
+        vehicle_brand: data.vehicle.brand,
+        vehicle_model: data.vehicle.model,
+        vehicle_license_plate: data.vehicle.licensePlate,
+        vehicle_capacity: data.vehicle.capacity || null,
+        cargo_description: data.cargo.description,
+        cargo_weight: data.cargo.weight,
+        cargo_volume: data.cargo.volume,
+        cargo_value: data.cargo.value || null,
+        comments: data.comments || null,
         documents: data.documents || [],
-        createdAt: trip?.createdAt || new Date(),
-        updatedAt: new Date(),
-        changeLog: trip?.changeLog || []
+        user_id: user.id
       };
 
-      await supabaseService.saveTrip(tripData);
+      console.log('Saving trip data:', tripData);
+
+      let result;
+      if (trip?.id) {
+        // Обновляем существующий рейс
+        result = await supabaseService.supabase
+          .from('trips')
+          .update(tripData)
+          .eq('id', trip.id)
+          .select();
+      } else {
+        // Создаем новый рейс
+        result = await supabaseService.supabase
+          .from('trips')
+          .insert(tripData)
+          .select();
+      }
+
+      if (result.error) {
+        console.error('Supabase error:', result.error);
+        throw result.error;
+      }
+
+      console.log('Trip saved successfully:', result.data);
       
       toast({
         title: trip ? 'Рейс обновлен' : 'Рейс создан',
-        description: `Рейс ${tripData.pointA} → ${tripData.pointB} успешно ${trip ? 'обновлен' : 'создан'}`
+        description: `Рейс ${data.pointA} → ${data.pointB} успешно ${trip ? 'обновлен' : 'создан'}`
       });
 
       onSuccess();

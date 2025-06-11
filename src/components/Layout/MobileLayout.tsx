@@ -60,14 +60,15 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           </div>
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <NotificationBell />
+            {/* Кнопка "Выйти" скрыта на мобильных устройствах, показывается только на sm+ */}
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleLogout}
-              className="p-1 sm:p-2 flex items-center gap-1"
+              className="hidden sm:flex p-1 sm:p-2 items-center gap-1"
             >
               <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline text-sm">Выйти</span>
+              <span className="text-sm">Выйти</span>
             </Button>
           </div>
         </div>
@@ -78,7 +79,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
         <aside className="w-64 xl:w-72 bg-white border-r border-gray-200 flex flex-col">
           <div className="p-4 xl:p-6">
             <div className="flex items-center gap-3 mb-6">
-              <Avatar className="h-10 w-10 xl:h-12 xl:w-12">
+              <Avatar className="h-10 w-10 xl:h-12 xl:w-12 flex-shrink-0">
                 <AvatarImage 
                   src={user?.user_metadata?.avatar_url || ""} 
                   alt={user?.user_metadata?.full_name || "User Avatar"} 
@@ -89,7 +90,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 <p className="font-semibold text-sm xl:text-base truncate">
                   {user?.user_metadata?.full_name || 'Пользователь'}
                 </p>
-                <p className="text-xs xl:text-sm text-gray-500 truncate">{user?.email}</p>
+                <p className="text-xs xl:text-sm text-gray-500 truncate break-all">{user?.email}</p>
               </div>
             </div>
             
@@ -157,7 +158,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           <div className="flex flex-col h-full">
             <div className="px-2 mb-6">
               <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                <Avatar className="h-10 w-10">
+                <Avatar className="h-10 w-10 flex-shrink-0">
                   <AvatarImage 
                     src={user?.user_metadata?.avatar_url || ""} 
                     alt={user?.user_metadata?.full_name || "User Avatar"} 
@@ -168,7 +169,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                   <p className="font-semibold text-sm truncate">
                     {user?.user_metadata?.full_name || 'Пользователь'}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  <p className="text-xs text-gray-500 truncate break-all">{user?.email}</p>
                 </div>
               </div>
             </div>
@@ -206,14 +207,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 <Settings className="h-5 w-5 mr-3" />
                 Настройки
               </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-12" 
-                onClick={handleLogout}
-              >
-                <LogOut className="h-5 w-5 mr-3" />
-                Выйти
-              </Button>
+              {/* Убрана кнопка "Выйти" из мобильного sidebar, так как она есть в bottom navigation */}
             </nav>
           </div>
         </SheetContent>
@@ -260,7 +254,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             variant="ghost" 
             size="sm" 
             onClick={handleLogout} 
-            className="flex flex-col items-center gap-1 h-auto py-2 px-2 min-w-0 sm:hidden"
+            className="flex flex-col items-center gap-1 h-auto py-2 px-2 min-w-0"
           >
             <LogOut className="h-4 w-4" />
             <span className="text-xs leading-none">Выйти</span>

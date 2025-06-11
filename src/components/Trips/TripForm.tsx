@@ -72,8 +72,32 @@ export const TripForm: React.FC<TripFormProps> = ({
     setLoading(true);
     try {
       const tripData: Trip = {
-        ...data,
         id: trip?.id || crypto.randomUUID(),
+        status: data.status,
+        departureDate: data.departureDate,
+        arrivalDate: data.arrivalDate,
+        pointA: data.pointA,
+        pointB: data.pointB,
+        contractorId: data.contractorId,
+        driver: {
+          name: data.driver.name,
+          phone: data.driver.phone,
+          license: data.driver.license || ''
+        },
+        vehicle: {
+          brand: data.vehicle.brand,
+          model: data.vehicle.model,
+          licensePlate: data.vehicle.licensePlate,
+          capacity: data.vehicle.capacity
+        },
+        cargo: {
+          description: data.cargo.description,
+          weight: data.cargo.weight,
+          volume: data.cargo.volume,
+          value: data.cargo.value
+        },
+        comments: data.comments || '',
+        documents: data.documents || [],
         createdAt: trip?.createdAt || new Date(),
         updatedAt: new Date(),
         changeLog: trip?.changeLog || []

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -52,17 +53,20 @@ export const ContractorForm: React.FC<ContractorFormProps> = ({
     setLoading(true);
     try {
       const contractorData: Contractor = {
-        ...data,
         id: contractor?.id || crypto.randomUUID(),
-        createdAt: contractor?.createdAt || new Date(),
-        updatedAt: new Date(),
+        companyName: data.companyName,
+        inn: data.inn,
+        address: data.address,
+        notes: data.notes || '',
         contacts: data.contacts.map(contact => ({
-          ...contact,
           id: contact.id || crypto.randomUUID(),
-          name: contact.name || '',
-          phone: contact.phone || '',
-          email: contact.email || ''
-        }))
+          name: contact.name,
+          phone: contact.phone,
+          email: contact.email,
+          position: contact.position || ''
+        })),
+        createdAt: contractor?.createdAt || new Date(),
+        updatedAt: new Date()
       };
 
       await supabaseService.saveContractor(contractorData);

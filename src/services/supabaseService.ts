@@ -2,53 +2,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Contractor, Trip, Contact, TripStatus } from '@/types';
 
-export interface DatabaseContractor {
-  id: string;
-  company_name: string;
-  inn: string;
-  address: string;
-  notes?: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface DatabaseContact {
-  id: string;
-  contractor_id: string;
-  name: string;
-  phone: string;
-  email: string;
-  position?: string;
-  created_at: string;
-}
-
-export interface DatabaseTrip {
-  id: string;
-  status: string;
-  departure_date: string;
-  arrival_date?: string;
-  point_a: string;
-  point_b: string;
-  contractor_id: string;
-  driver_name: string;
-  driver_phone: string;
-  driver_license?: string;
-  vehicle_brand: string;
-  vehicle_model: string;
-  vehicle_license_plate: string;
-  vehicle_capacity?: number;
-  cargo_description: string;
-  cargo_weight: number;
-  cargo_volume: number;
-  cargo_value?: number;
-  comments?: string;
-  documents: string[];
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
-
 class SupabaseService {
   // Contractors
   async getContractors(): Promise<Contractor[]> {
@@ -74,13 +27,13 @@ class SupabaseService {
         companyName: contractor.company_name,
         inn: contractor.inn,
         address: contractor.address,
-        notes: contractor.notes,
+        notes: contractor.notes || '',
         contacts: (contacts || []).map(contact => ({
           id: contact.id,
           name: contact.name,
           phone: contact.phone,
           email: contact.email,
-          position: contact.position
+          position: contact.position || ''
         })),
         createdAt: new Date(contractor.created_at),
         updatedAt: new Date(contractor.updated_at)
@@ -164,21 +117,21 @@ class SupabaseService {
       driver: {
         name: trip.driver_name,
         phone: trip.driver_phone,
-        license: trip.driver_license
+        license: trip.driver_license || ''
       },
       vehicle: {
         brand: trip.vehicle_brand,
         model: trip.vehicle_model,
         licensePlate: trip.vehicle_license_plate,
-        capacity: trip.vehicle_capacity
+        capacity: trip.vehicle_capacity || undefined
       },
       cargo: {
         description: trip.cargo_description,
         weight: trip.cargo_weight,
         volume: trip.cargo_volume,
-        value: trip.cargo_value
+        value: trip.cargo_value || undefined
       },
-      comments: trip.comments,
+      comments: trip.comments || '',
       documents: trip.documents || [],
       createdAt: new Date(trip.created_at),
       updatedAt: new Date(trip.updated_at),
@@ -194,22 +147,22 @@ class SupabaseService {
       id: trip.id,
       status: trip.status,
       departure_date: trip.departureDate.toISOString(),
-      arrival_date: trip.arrivalDate?.toISOString(),
+      arrival_date: trip.arrivalDate?.toISOString() || null,
       point_a: trip.pointA,
       point_b: trip.pointB,
       contractor_id: trip.contractorId,
       driver_name: trip.driver.name,
       driver_phone: trip.driver.phone,
-      driver_license: trip.driver.license,
+      driver_license: trip.driver.license || null,
       vehicle_brand: trip.vehicle.brand,
       vehicle_model: trip.vehicle.model,
       vehicle_license_plate: trip.vehicle.licensePlate,
-      vehicle_capacity: trip.vehicle.capacity,
+      vehicle_capacity: trip.vehicle.capacity || null,
       cargo_description: trip.cargo.description,
       cargo_weight: trip.cargo.weight,
       cargo_volume: trip.cargo.volume,
-      cargo_value: trip.cargo.value,
-      comments: trip.comments,
+      cargo_value: trip.cargo.value || null,
+      comments: trip.comments || null,
       documents: trip.documents,
       user_id: user.id,
       updated_at: new Date().toISOString()

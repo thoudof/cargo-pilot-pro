@@ -13,6 +13,11 @@ const AuthenticatedApp = () => {
     await supabaseService.signOut();
   };
 
+  const handleNavigate = (view: string) => {
+    console.log('Navigate to:', view);
+    // TODO: Implement navigation logic
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -51,7 +56,7 @@ const AuthenticatedApp = () => {
         </div>
       </header>
       <main>
-        <Dashboard />
+        <Dashboard onNavigate={handleNavigate} />
       </main>
     </div>
   );

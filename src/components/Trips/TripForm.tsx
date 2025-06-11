@@ -2,8 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,14 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Truck, User, Package } from 'lucide-react';
+import { Calendar, CalendarIcon, Truck, User, Package } from 'lucide-react';
 import { tripSchema, TripFormData } from '@/lib/validations';
-import { Trip, TripStatus, Contractor } from '@/types';
+import { Trip, Contractor, TripStatus } from '@/types';
 import { db } from '@/services/database';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 interface TripFormProps {
   trip?: Trip;
@@ -59,13 +54,15 @@ export const TripForm: React.FC<TripFormProps> = ({
   });
 
   useEffect(() => {
-    loadContractors();
-  }, []);
+    if (open) {
+      loadContractors();
+    }
+  }, [open]);
 
   const loadContractors = async () => {
     try {
-      const data = await db.getContractors();
-      setContractors(data);
+      const contractorData = await db.getContractors();
+      setContractors(contractorData);
     } catch (error) {
       console.error('Failed to load contractors:', error);
     }
@@ -109,7 +106,7 @@ export const TripForm: React.FC<TripFormProps> = ({
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {trip ? 'Редактировать рейс' : 'Добавить рейс'}
+            {trip ? 'Редактировать рейс' : 'Создать рейс'}
           </DialogTitle>
         </DialogHeader>
 
@@ -118,43 +115,13 @@ export const TripForm: React.FC<TripFormProps> = ({
             {/* Основная информация */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Calendar className="h-5 w-5" />
                   Основная информация
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="pointA"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Пункт отправления</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Москва" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="pointB"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Пункт назначения</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Санкт-Петербург" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="status"
@@ -168,10 +135,10 @@ export const TripForm: React.FC<TripFormProps> = ({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value={TripStatus.PLANNED}>Планируется</SelectItem>
+                            <SelectItem value={TripStatus.PLANNED}>Запланирован</SelectItem>
                             <SelectItem value={TripStatus.IN_PROGRESS}>В пути</SelectItem>
-                            <SelectItem value={TripStatus.COMPLETED}>Завершён</SelectItem>
-                            <SelectItem value={TripStatus.CANCELLED}>Отменён</SelectItem>
+                            <SelectItem value={TripStatus.COMPLETED}>Завершен</SelectItem>
+                            <SelectItem value={TripStatus.CANCELLED}>Отменен</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -203,42 +170,72 @@ export const TripForm: React.FC<TripFormProps> = ({
                       </FormItem>
                     )}
                   />
+                </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="pointA"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Пункт отправления</FormLabel>
+                        <FormControl>
+                          <Input placeholder="г. Москва" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="pointB"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Пункт назначения</FormLabel>
+                        <FormControl>
+                          <Input placeholder="г. Санкт-Петербург" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="departureDate"
                     render={({ field }) => (
-                      <FormItem className="flex flex-col">
+                      <FormItem>
                         <FormLabel>Дата отправления</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "dd MMMM yyyy", { locale: ru })
-                                ) : (
-                                  <span>Выберите дату</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              initialFocus
-                              className={cn("p-3 pointer-events-auto")}
-                            />
-                          </PopoverContent>
-                        </Popover>
+                        <FormControl>
+                          <Input 
+                            type="datetime-local" 
+                            {...field}
+                            value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                            onChange={(e) => field.onChange(new Date(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="arrivalDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Дата прибытия (опционально)</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="datetime-local" 
+                            {...field}
+                            value={field.value instanceof Date ? field.value.toISOString().slice(0, 16) : ''}
+                            onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : undefined)}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -250,13 +247,13 @@ export const TripForm: React.FC<TripFormProps> = ({
             {/* Водитель */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <User className="h-5 w-5" />
                   Водитель
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
                     name="driver.name"
@@ -264,7 +261,7 @@ export const TripForm: React.FC<TripFormProps> = ({
                       <FormItem>
                         <FormLabel>Имя водителя</FormLabel>
                         <FormControl>
-                          <Input placeholder="Иван Иванов" {...field} />
+                          <Input placeholder="Иван Петров" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -284,34 +281,34 @@ export const TripForm: React.FC<TripFormProps> = ({
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name="driver.license"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Водительские права</FormLabel>
-                        <FormControl>
-                          <Input placeholder="1234 567890" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="driver.license"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Номер водительского удостоверения</FormLabel>
+                      <FormControl>
+                        <Input placeholder="1234 567890" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 
             {/* Транспорт */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Truck className="h-5 w-5" />
                   Транспорт
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
                     name="vehicle.brand"
@@ -319,7 +316,7 @@ export const TripForm: React.FC<TripFormProps> = ({
                       <FormItem>
                         <FormLabel>Марка</FormLabel>
                         <FormControl>
-                          <Input placeholder="КАМАЗ" {...field} />
+                          <Input placeholder="MAN" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -333,7 +330,7 @@ export const TripForm: React.FC<TripFormProps> = ({
                       <FormItem>
                         <FormLabel>Модель</FormLabel>
                         <FormControl>
-                          <Input placeholder="65115" {...field} />
+                          <Input placeholder="TGX 18.440" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -353,33 +350,33 @@ export const TripForm: React.FC<TripFormProps> = ({
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name="vehicle.capacity"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Грузоподъемность (т)</FormLabel>
-                        <FormControl>
-                          <Input 
-                            type="number" 
-                            placeholder="20" 
-                            {...field}
-                            onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
+
+                <FormField
+                  control={form.control}
+                  name="vehicle.capacity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Грузоподъемность (тонн)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="20" 
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </CardContent>
             </Card>
 
             {/* Груз */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Package className="h-5 w-5" />
                   Груз
                 </CardTitle>
@@ -392,7 +389,7 @@ export const TripForm: React.FC<TripFormProps> = ({
                     <FormItem>
                       <FormLabel>Описание груза</FormLabel>
                       <FormControl>
-                        <Input placeholder="Строительные материалы" {...field} />
+                        <Textarea placeholder="Металлические изделия" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -405,13 +402,13 @@ export const TripForm: React.FC<TripFormProps> = ({
                     name="cargo.weight"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Вес (кг)</FormLabel>
+                        <FormLabel>Вес (тонн)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
-                            placeholder="1000" 
+                            placeholder="15.5" 
                             {...field}
-                            onChange={e => field.onChange(Number(e.target.value))}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -430,7 +427,7 @@ export const TripForm: React.FC<TripFormProps> = ({
                             type="number" 
                             placeholder="50" 
                             {...field}
-                            onChange={e => field.onChange(Number(e.target.value))}
+                            onChange={(e) => field.onChange(Number(e.target.value))}
                           />
                         </FormControl>
                         <FormMessage />
@@ -443,13 +440,13 @@ export const TripForm: React.FC<TripFormProps> = ({
                     name="cargo.value"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Стоимость (₽)</FormLabel>
+                        <FormLabel>Стоимость (руб.)</FormLabel>
                         <FormControl>
                           <Input 
                             type="number" 
-                            placeholder="100000" 
+                            placeholder="500000" 
                             {...field}
-                            onChange={e => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
                           />
                         </FormControl>
                         <FormMessage />
@@ -467,7 +464,7 @@ export const TripForm: React.FC<TripFormProps> = ({
                 <FormItem>
                   <FormLabel>Комментарии</FormLabel>
                   <FormControl>
-                    <Textarea placeholder="Дополнительная информация о рейсе..." {...field} />
+                    <Textarea placeholder="Дополнительные комментарии к рейсу..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

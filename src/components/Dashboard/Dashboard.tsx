@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { MobileLayout } from '@/components/Layout/MobileLayout';
 import { ContractorList } from '@/components/Contractors/ContractorList';
@@ -49,53 +50,55 @@ const DashboardHome = ({ onNavigateToTrips }: { onNavigateToTrips: () => void })
   }
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Статистические карточки - адаптивная сетка */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Активные рейсы</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Активные рейсы</CardTitle>
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.activeTrips}</div>
+            <div className="text-lg sm:text-2xl font-bold">{stats.activeTrips}</div>
             <p className="text-xs text-muted-foreground">из {stats.totalTrips} всего</p>
           </CardContent>
         </Card>
-        <Card>
+        
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Контрагенты</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Контрагенты</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.contractors}</div>
+            <div className="text-lg sm:text-2xl font-bold">{stats.contractors}</div>
             <p className="text-xs text-muted-foreground">всего</p>
           </CardContent>
         </Card>
-      </div>
-      
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
+        
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Водители</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Водители</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.drivers}</div>
+            <div className="text-lg sm:text-2xl font-bold">{stats.drivers}</div>
             <p className="text-xs text-muted-foreground">в базе</p>
           </CardContent>
         </Card>
-        <Card>
+        
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Транспорт</CardTitle>
+            <CardTitle className="text-xs sm:text-sm font-medium">Транспорт</CardTitle>
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{stats.vehicles}</div>
+            <div className="text-lg sm:text-2xl font-bold">{stats.vehicles}</div>
             <p className="text-xs text-muted-foreground">в парке</p>
           </CardContent>
         </Card>
       </div>
       
+      {/* Обзор рейсов */}
       <TripsOverview onNavigateToTrips={onNavigateToTrips} />
     </div>
   );
@@ -103,16 +106,18 @@ const DashboardHome = ({ onNavigateToTrips }: { onNavigateToTrips: () => void })
 
 const DocumentsPage = () => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
             <FileText className="h-5 w-5" />
             <span>Документы</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-500">Управление документами будет доступно в следующих версиях.</p>
+          <p className="text-sm sm:text-base text-gray-500">
+            Управление документами будет доступно в следующих версиях.
+          </p>
         </CardContent>
       </Card>
     </div>
@@ -121,16 +126,18 @@ const DocumentsPage = () => {
 
 const StatisticsPage = () => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
+          <CardTitle className="flex items-center space-x-2 text-base sm:text-lg">
             <BarChart3 className="h-5 w-5" />
             <span>Статистика</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-500">Аналитика и отчеты будут доступны в следующих версиях.</p>
+          <p className="text-sm sm:text-base text-gray-500">
+            Аналитика и отчеты будут доступны в следующих версиях.
+          </p>
         </CardContent>
       </Card>
     </div>
@@ -139,13 +146,15 @@ const StatisticsPage = () => {
 
 const SettingsPage = () => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Настройки</CardTitle>
+          <CardTitle className="text-base sm:text-lg">Настройки</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-gray-500">Настройки приложения будут доступны в следующих версиях.</p>
+          <p className="text-sm sm:text-base text-gray-500">
+            Настройки приложения будут доступны в следующих версиях.
+          </p>
         </CardContent>
       </Card>
     </div>

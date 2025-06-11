@@ -6,6 +6,7 @@ import { DriverList } from '@/components/Drivers/DriverList';
 import { VehicleList } from '@/components/Vehicles/VehicleList';
 import { RouteList } from '@/components/Routes/RouteList';
 import { CargoTypeList } from '@/components/CargoTypes/CargoTypeList';
+import { TripsOverview } from './TripsOverview';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Truck, Users, FileText, BarChart3, Calendar, Route, Package } from 'lucide-react';
 import { supabaseService } from '@/services/supabaseService';
@@ -14,7 +15,7 @@ interface DashboardProps {
   onNavigate: (view: string) => void;
 }
 
-const DashboardHome = () => {
+const DashboardHome = ({ onNavigateToTrips }: { onNavigateToTrips: () => void }) => {
   const [stats, setStats] = useState({
     activeTrips: 0,
     totalTrips: 0,
@@ -95,27 +96,7 @@ const DashboardHome = () => {
         </Card>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Быстрые действия</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm">Добавить новый рейс</span>
-              <span className="text-xs text-gray-500">Рейсы</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm">Управление водителями</span>
-              <span className="text-xs text-gray-500">Водители</span>
-            </div>
-            <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm">Добавить транспорт</span>
-              <span className="text-xs text-gray-500">Транспорт</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <TripsOverview onNavigateToTrips={onNavigateToTrips} />
     </div>
   );
 };
@@ -179,6 +160,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     onNavigate(view);
   };
 
+  const handleNavigateToTrips = () => {
+    setCurrentView('trips');
+    onNavigate('trips');
+  };
+
   const getPageTitle = () => {
     switch (currentView) {
       case 'trips':
@@ -225,7 +211,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       case 'settings':
         return <SettingsPage />;
       default:
-        return <DashboardHome />;
+        return <DashboardHome onNavigateToTrips={handleNavigateToTrips} />;
     }
   };
 
@@ -239,3 +225,5 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     </MobileLayout>
   );
 };
+
+export default Dashboard;

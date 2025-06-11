@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Contractor, Trip, Contact, TripStatus } from '@/types';
+import { Contractor, Trip, Contact, TripStatus, Driver, Vehicle, Route, CargoType } from '@/types';
 
 class SupabaseService {
   // Contractors
@@ -97,6 +97,234 @@ class SupabaseService {
     if (error) throw error;
   }
 
+  // Drivers
+  async getDrivers(): Promise<Driver[]> {
+    const { data, error } = await supabase
+      .from('drivers')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map((driver: any) => ({
+      id: driver.id,
+      name: driver.name,
+      phone: driver.phone,
+      license: driver.license,
+      passportData: driver.passport_data,
+      experienceYears: driver.experience_years,
+      notes: driver.notes,
+      createdAt: new Date(driver.created_at),
+      updatedAt: new Date(driver.updated_at)
+    }));
+  }
+
+  async saveDriver(driver: Driver): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const driverData = {
+      id: driver.id,
+      name: driver.name,
+      phone: driver.phone,
+      license: driver.license,
+      passport_data: driver.passportData,
+      experience_years: driver.experienceYears,
+      notes: driver.notes,
+      user_id: user.id,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('drivers')
+      .upsert(driverData);
+
+    if (error) throw error;
+  }
+
+  async deleteDriver(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('drivers')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  // Vehicles
+  async getVehicles(): Promise<Vehicle[]> {
+    const { data, error } = await supabase
+      .from('vehicles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map((vehicle: any) => ({
+      id: vehicle.id,
+      brand: vehicle.brand,
+      model: vehicle.model,
+      licensePlate: vehicle.license_plate,
+      capacity: vehicle.capacity,
+      year: vehicle.year,
+      vin: vehicle.vin,
+      registrationCertificate: vehicle.registration_certificate,
+      insurancePolicy: vehicle.insurance_policy,
+      insuranceExpiry: vehicle.insurance_expiry ? new Date(vehicle.insurance_expiry) : undefined,
+      technicalInspectionExpiry: vehicle.technical_inspection_expiry ? new Date(vehicle.technical_inspection_expiry) : undefined,
+      notes: vehicle.notes,
+      createdAt: new Date(vehicle.created_at),
+      updatedAt: new Date(vehicle.updated_at)
+    }));
+  }
+
+  async saveVehicle(vehicle: Vehicle): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const vehicleData = {
+      id: vehicle.id,
+      brand: vehicle.brand,
+      model: vehicle.model,
+      license_plate: vehicle.licensePlate,
+      capacity: vehicle.capacity,
+      year: vehicle.year,
+      vin: vehicle.vin,
+      registration_certificate: vehicle.registrationCertificate,
+      insurance_policy: vehicle.insurancePolicy,
+      insurance_expiry: vehicle.insuranceExpiry?.toISOString().split('T')[0],
+      technical_inspection_expiry: vehicle.technicalInspectionExpiry?.toISOString().split('T')[0],
+      notes: vehicle.notes,
+      user_id: user.id,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('vehicles')
+      .upsert(vehicleData);
+
+    if (error) throw error;
+  }
+
+  async deleteVehicle(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('vehicles')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  // Routes
+  async getRoutes(): Promise<Route[]> {
+    const { data, error } = await supabase
+      .from('routes')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map((route: any) => ({
+      id: route.id,
+      name: route.name,
+      pointA: route.point_a,
+      pointB: route.point_b,
+      distanceKm: route.distance_km,
+      estimatedDurationHours: route.estimated_duration_hours,
+      notes: route.notes,
+      createdAt: new Date(route.created_at),
+      updatedAt: new Date(route.updated_at)
+    }));
+  }
+
+  async saveRoute(route: Route): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const routeData = {
+      id: route.id,
+      name: route.name,
+      point_a: route.pointA,
+      point_b: route.pointB,
+      distance_km: route.distanceKm,
+      estimated_duration_hours: route.estimatedDurationHours,
+      notes: route.notes,
+      user_id: user.id,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('routes')
+      .upsert(routeData);
+
+    if (error) throw error;
+  }
+
+  async deleteRoute(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('routes')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  // CargoTypes
+  async getCargoTypes(): Promise<CargoType[]> {
+    const { data, error } = await supabase
+      .from('cargo_types')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return (data || []).map((cargoType: any) => ({
+      id: cargoType.id,
+      name: cargoType.name,
+      description: cargoType.description,
+      defaultWeight: cargoType.default_weight,
+      defaultVolume: cargoType.default_volume,
+      hazardous: cargoType.hazardous,
+      temperatureControlled: cargoType.temperature_controlled,
+      fragile: cargoType.fragile,
+      createdAt: new Date(cargoType.created_at),
+      updatedAt: new Date(cargoType.updated_at)
+    }));
+  }
+
+  async saveCargoType(cargoType: CargoType): Promise<void> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const cargoTypeData = {
+      id: cargoType.id,
+      name: cargoType.name,
+      description: cargoType.description,
+      default_weight: cargoType.defaultWeight,
+      default_volume: cargoType.defaultVolume,
+      hazardous: cargoType.hazardous,
+      temperature_controlled: cargoType.temperatureControlled,
+      fragile: cargoType.fragile,
+      user_id: user.id,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await supabase
+      .from('cargo_types')
+      .upsert(cargoTypeData);
+
+    if (error) throw error;
+  }
+
+  async deleteCargoType(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('cargo_types')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
   // Trips
   async getTrips(): Promise<Trip[]> {
     const { data, error } = await supabase
@@ -114,6 +342,10 @@ class SupabaseService {
       pointA: trip.point_a,
       pointB: trip.point_b,
       contractorId: trip.contractor_id,
+      driverId: trip.driver_id,
+      vehicleId: trip.vehicle_id,
+      routeId: trip.route_id,
+      cargoTypeId: trip.cargo_type_id,
       driver: {
         name: trip.driver_name,
         phone: trip.driver_phone,
@@ -151,6 +383,10 @@ class SupabaseService {
       point_a: trip.pointA,
       point_b: trip.pointB,
       contractor_id: trip.contractorId,
+      driver_id: trip.driverId || null,
+      vehicle_id: trip.vehicleId || null,
+      route_id: trip.routeId || null,
+      cargo_type_id: trip.cargoTypeId || null,
       driver_name: trip.driver.name,
       driver_phone: trip.driver.phone,
       driver_license: trip.driver.license || null,
@@ -182,6 +418,31 @@ class SupabaseService {
       .eq('id', id);
 
     if (error) throw error;
+  }
+
+  // Dashboard statistics
+  async getDashboardStats() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const [tripsResult, contractorsResult, driversResult, vehiclesResult] = await Promise.all([
+      supabase.from('trips').select('id, status').eq('user_id', user.id),
+      supabase.from('contractors').select('id').eq('user_id', user.id),
+      supabase.from('drivers').select('id').eq('user_id', user.id),
+      supabase.from('vehicles').select('id').eq('user_id', user.id)
+    ]);
+
+    const activeTrips = tripsResult.data?.filter(trip => 
+      trip.status === 'in_progress' || trip.status === 'planned'
+    ).length || 0;
+
+    return {
+      activeTrips,
+      totalTrips: tripsResult.data?.length || 0,
+      contractors: contractorsResult.data?.length || 0,
+      drivers: driversResult.data?.length || 0,
+      vehicles: vehiclesResult.data?.length || 0
+    };
   }
 
   // Auth

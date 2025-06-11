@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, Search, Calendar, User, Edit2, Trash2 } from 'lucide-react';
 import { Trip, TripStatus, Contractor } from '@/types';
-import { db } from '@/services/database';
+import { supabaseService } from '@/services/supabaseService';
 import { TripForm } from './TripForm';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -44,13 +44,18 @@ export const TripList: React.FC = () => {
   const loadData = async () => {
     try {
       const [tripsData, contractorsData] = await Promise.all([
-        db.getTrips(),
-        db.getContractors()
+        supabaseService.getTrips(),
+        supabaseService.getContractors()
       ]);
       setTrips(tripsData);
       setContractors(contractorsData);
     } catch (error) {
       console.error('Failed to load data:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить данные',
+        variant: 'destructive'
+      });
     } finally {
       setLoading(false);
     }
@@ -68,7 +73,7 @@ export const TripList: React.FC = () => {
 
   const handleDeleteTrip = async (trip: Trip) => {
     try {
-      await db.deleteTrip(trip.id);
+      await supabaseService.deleteTrip(trip.id);
       await loadData();
       toast({
         title: 'Рейс удален',

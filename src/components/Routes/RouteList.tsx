@@ -1,40 +1,70 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Search, Route, Edit2, Trash2, MapPin } from 'lucide-react';
+import { Route as RouteType } from '@/types';
+import { supabaseService } from '@/services/supabaseService';
+import { useToast } from '@/hooks/use-toast';
 
 export const RouteList: React.FC = () => {
+  const [routes, setRoutes] = useState<RouteType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Пример данных - позже заменить на реальные данные из базы
-  const routes = [
-    {
-      id: '1',
-      name: 'Москва - СПб (федеральная)',
-      pointA: 'Москва',
-      pointB: 'Санкт-Петербург',
-      distanceKm: 635,
-      estimatedDurationHours: 8.5,
-      notes: 'Основной маршрут через М11'
-    },
-    {
-      id: '2',
-      name: 'Казань - Екатеринбург',
-      pointA: 'Казань',
-      pointB: 'Екатеринбург',
-      distanceKm: 750,
-      estimatedDurationHours: 12,
-      notes: 'Через Пермь'
+  useEffect(() => {
+    loadRoutes();
+  }, []);
+
+  const loadRoutes = async () => {
+    try {
+      const data = await supabaseService.getRoutes();
+      setRoutes(data);
+    } catch (error) {
+      console.error('Failed to load routes:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить маршруты',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleDeleteRoute = async (route: RouteType) => {
+    try {
+      await supabaseService.deleteRoute(route.id);
+      await loadRoutes();
+      toast({
+        title: 'Маршрут удален',
+        description: `${route.name} успешно удален`
+      });
+    } catch (error) {
+      console.error('Failed to delete route:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить маршрут',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const filteredRoutes = routes.filter(route =>
     route.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     route.pointA.toLowerCase().includes(searchTerm.toLowerCase()) ||
     route.pointB.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -83,8 +113,8 @@ export const RouteList: React.FC = () => {
                         <MapPin className="h-4 w-4" />
                         <span>{route.pointA} → {route.pointB}</span>
                       </div>
-                      <p>Расстояние: {route.distanceKm} км</p>
-                      <p>Время в пути: {route.estimatedDurationHours} ч</p>
+                      {route.distanceKm && <p>Расстояние: {route.distanceKm} км</p>}
+                      {route.estimatedDurationHours && <p>Время в пути: {route.estimatedDurationHours} ч</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -97,6 +127,7 @@ export const RouteList: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleDeleteRoute(route)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

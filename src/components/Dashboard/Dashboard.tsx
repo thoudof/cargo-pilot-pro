@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MobileLayout } from '@/components/Layout/MobileLayout';
 import { ContractorList } from '@/components/Contractors/ContractorList';
 import { TripList } from '@/components/Trips/TripList';
@@ -9,12 +8,45 @@ import { RouteList } from '@/components/Routes/RouteList';
 import { CargoTypeList } from '@/components/CargoTypes/CargoTypeList';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Truck, Users, FileText, BarChart3, Calendar, Route, Package } from 'lucide-react';
+import { supabaseService } from '@/services/supabaseService';
 
 interface DashboardProps {
   onNavigate: (view: string) => void;
 }
 
 const DashboardHome = () => {
+  const [stats, setStats] = useState({
+    activeTrips: 0,
+    totalTrips: 0,
+    contractors: 0,
+    drivers: 0,
+    vehicles: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const data = await supabaseService.getDashboardStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Failed to load dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
@@ -24,8 +56,8 @@ const DashboardHome = () => {
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
-            <p className="text-xs text-muted-foreground">+2 за сегодня</p>
+            <div className="text-2xl font-bold">{stats.activeTrips}</div>
+            <p className="text-xs text-muted-foreground">из {stats.totalTrips} всего</p>
           </CardContent>
         </Card>
         <Card>
@@ -34,8 +66,8 @@ const DashboardHome = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">8</div>
-            <p className="text-xs text-muted-foreground">активных</p>
+            <div className="text-2xl font-bold">{stats.contractors}</div>
+            <p className="text-xs text-muted-foreground">всего</p>
           </CardContent>
         </Card>
       </div>
@@ -47,8 +79,8 @@ const DashboardHome = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">15</div>
-            <p className="text-xs text-muted-foreground">доступно</p>
+            <div className="text-2xl font-bold">{stats.drivers}</div>
+            <p className="text-xs text-muted-foreground">в базе</p>
           </CardContent>
         </Card>
         <Card>
@@ -57,7 +89,7 @@ const DashboardHome = () => {
             <Truck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">7</div>
+            <div className="text-2xl font-bold">{stats.vehicles}</div>
             <p className="text-xs text-muted-foreground">в парке</p>
           </CardContent>
         </Card>
@@ -65,17 +97,21 @@ const DashboardHome = () => {
       
       <Card>
         <CardHeader>
-          <CardTitle>Последние рейсы</CardTitle>
+          <CardTitle>Быстрые действия</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
             <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm">Москва → СПб</span>
-              <span className="text-xs text-gray-500">В пути</span>
+              <span className="text-sm">Добавить новый рейс</span>
+              <span className="text-xs text-gray-500">Рейсы</span>
             </div>
             <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
-              <span className="text-sm">Казань → Екатеринбург</span>
-              <span className="text-xs text-gray-500">Планируется</span>
+              <span className="text-sm">Управление водителями</span>
+              <span className="text-xs text-gray-500">Водители</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+              <span className="text-sm">Добавить транспорт</span>
+              <span className="text-xs text-gray-500">Транспорт</span>
             </div>
           </div>
         </CardContent>

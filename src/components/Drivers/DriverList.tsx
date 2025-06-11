@@ -1,39 +1,71 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, User, Edit2, Trash2, Phone } from 'lucide-react';
+import { Driver } from '@/types';
+import { supabaseService } from '@/services/supabaseService';
+import { useToast } from '@/hooks/use-toast';
 
 export const DriverList: React.FC = () => {
+  const [drivers, setDrivers] = useState<Driver[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Пример данных - позже заменить на реальные данные из базы
-  const drivers = [
-    {
-      id: '1',
-      name: 'Иванов Иван Иванович',
-      phone: '+7 (999) 123-45-67',
-      license: 'CE',
-      experienceYears: 5,
-      notes: 'Опытный водитель'
-    },
-    {
-      id: '2',
-      name: 'Петров Петр Петрович',
-      phone: '+7 (999) 234-56-78',
-      license: 'D',
-      experienceYears: 8,
-      notes: 'Специализируется на дальних рейсах'
+  useEffect(() => {
+    loadDrivers();
+  }, []);
+
+  const loadDrivers = async () => {
+    try {
+      const data = await supabaseService.getDrivers();
+      setDrivers(data);
+    } catch (error) {
+      console.error('Failed to load drivers:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить водителей',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleDeleteDriver = async (driver: Driver) => {
+    try {
+      await supabaseService.deleteDriver(driver.id);
+      await loadDrivers();
+      toast({
+        title: 'Водитель удален',
+        description: `${driver.name} успешно удален`
+      });
+    } catch (error) {
+      console.error('Failed to delete driver:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить водителя',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const filteredDrivers = drivers.filter(driver =>
     driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     driver.phone.includes(searchTerm) ||
-    driver.license.toLowerCase().includes(searchTerm.toLowerCase())
+    (driver.license && driver.license.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -82,8 +114,8 @@ export const DriverList: React.FC = () => {
                         <Phone className="h-4 w-4" />
                         <span>{driver.phone}</span>
                       </div>
-                      <p>Категория: {driver.license}</p>
-                      <p>Опыт: {driver.experienceYears} лет</p>
+                      {driver.license && <p>Категория: {driver.license}</p>}
+                      {driver.experienceYears && <p>Опыт: {driver.experienceYears} лет</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -97,6 +129,7 @@ export const DriverList: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleDeleteDriver(driver)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

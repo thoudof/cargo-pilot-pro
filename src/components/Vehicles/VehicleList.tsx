@@ -1,41 +1,71 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Truck, Edit2, Trash2 } from 'lucide-react';
+import { Vehicle } from '@/types';
+import { supabaseService } from '@/services/supabaseService';
+import { useToast } from '@/hooks/use-toast';
 
 export const VehicleList: React.FC = () => {
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Пример данных - позже заменить на реальные данные из базы
-  const vehicles = [
-    {
-      id: '1',
-      brand: 'МАЗ',
-      model: '6312',
-      licensePlate: 'А123БВ777',
-      capacity: 20,
-      year: 2020,
-      notes: 'Рефрижератор'
-    },
-    {
-      id: '2',
-      brand: 'КАМАЗ',
-      model: '65116',
-      licensePlate: 'В456ГД777',
-      capacity: 15,
-      year: 2019,
-      notes: 'Бортовой'
+  useEffect(() => {
+    loadVehicles();
+  }, []);
+
+  const loadVehicles = async () => {
+    try {
+      const data = await supabaseService.getVehicles();
+      setVehicles(data);
+    } catch (error) {
+      console.error('Failed to load vehicles:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить транспорт',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleDeleteVehicle = async (vehicle: Vehicle) => {
+    try {
+      await supabaseService.deleteVehicle(vehicle.id);
+      await loadVehicles();
+      toast({
+        title: 'Транспорт удален',
+        description: `${vehicle.brand} ${vehicle.model} успешно удален`
+      });
+    } catch (error) {
+      console.error('Failed to delete vehicle:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить транспорт',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const filteredVehicles = vehicles.filter(vehicle =>
     vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -81,8 +111,8 @@ export const VehicleList: React.FC = () => {
                     <CardTitle className="text-lg mb-1">{vehicle.brand} {vehicle.model}</CardTitle>
                     <div className="space-y-1 text-sm text-muted-foreground">
                       <p>Гос. номер: {vehicle.licensePlate}</p>
-                      <p>Грузоподъемность: {vehicle.capacity} т</p>
-                      <p>Год выпуска: {vehicle.year}</p>
+                      {vehicle.capacity && <p>Грузоподъемность: {vehicle.capacity} т</p>}
+                      {vehicle.year && <p>Год выпуска: {vehicle.year}</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -96,6 +126,7 @@ export const VehicleList: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleDeleteVehicle(vehicle)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

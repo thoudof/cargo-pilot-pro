@@ -1,52 +1,70 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Search, Package, Edit2, Trash2, AlertTriangle, Thermometer, Shield } from 'lucide-react';
+import { CargoType } from '@/types';
+import { supabaseService } from '@/services/supabaseService';
+import { useToast } from '@/hooks/use-toast';
 
 export const CargoTypeList: React.FC = () => {
+  const [cargoTypes, setCargoTypes] = useState<CargoType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
-  // Пример данных - позже заменить на реальные данные из базы
-  const cargoTypes = [
-    {
-      id: '1',
-      name: 'Продукты питания',
-      description: 'Скоропортящиеся продукты',
-      defaultWeight: 1000,
-      defaultVolume: 15,
-      hazardous: false,
-      temperatureControlled: true,
-      fragile: false
-    },
-    {
-      id: '2',
-      name: 'Строительные материалы',
-      description: 'Кирпич, цемент, арматура',
-      defaultWeight: 5000,
-      defaultVolume: 20,
-      hazardous: false,
-      temperatureControlled: false,
-      fragile: false
-    },
-    {
-      id: '3',
-      name: 'Хрупкие товары',
-      description: 'Стекло, керамика, электроника',
-      defaultWeight: 500,
-      defaultVolume: 10,
-      hazardous: false,
-      temperatureControlled: false,
-      fragile: true
+  useEffect(() => {
+    loadCargoTypes();
+  }, []);
+
+  const loadCargoTypes = async () => {
+    try {
+      const data = await supabaseService.getCargoTypes();
+      setCargoTypes(data);
+    } catch (error) {
+      console.error('Failed to load cargo types:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось загрузить типы грузов',
+        variant: 'destructive'
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const handleDeleteCargoType = async (cargoType: CargoType) => {
+    try {
+      await supabaseService.deleteCargoType(cargoType.id);
+      await loadCargoTypes();
+      toast({
+        title: 'Тип груза удален',
+        description: `${cargoType.name} успешно удален`
+      });
+    } catch (error) {
+      console.error('Failed to delete cargo type:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить тип груза',
+        variant: 'destructive'
+      });
+    }
+  };
 
   const filteredCargoTypes = cargoTypes.filter(cargoType =>
     cargoType.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    cargoType.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (cargoType.description && cargoType.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -91,9 +109,9 @@ export const CargoTypeList: React.FC = () => {
                   <div className="flex-1">
                     <CardTitle className="text-lg mb-1">{cargoType.name}</CardTitle>
                     <div className="space-y-1 text-sm text-muted-foreground">
-                      <p>{cargoType.description}</p>
-                      <p>Вес по умолчанию: {cargoType.defaultWeight} кг</p>
-                      <p>Объем по умолчанию: {cargoType.defaultVolume} м³</p>
+                      {cargoType.description && <p>{cargoType.description}</p>}
+                      {cargoType.defaultWeight && <p>Вес по умолчанию: {cargoType.defaultWeight} кг</p>}
+                      {cargoType.defaultVolume && <p>Объем по умолчанию: {cargoType.defaultVolume} м³</p>}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -126,6 +144,7 @@ export const CargoTypeList: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleDeleteCargoType(cargoType)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

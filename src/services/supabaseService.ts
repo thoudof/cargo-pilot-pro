@@ -570,13 +570,54 @@ export class SupabaseService {
     ]);
 
     const activeTrips = trips.filter(trip => trip.status === 'in_progress').length;
+    const completedTrips = trips.filter(trip => trip.status === 'completed').length;
+    const plannedTrips = trips.filter(trip => trip.status === 'planned').length;
+    const cancelledTrips = trips.filter(trip => trip.status === 'cancelled').length;
+
+    // Финансовые расчеты
+    const totalCargoValue = trips.reduce((sum, trip) => sum + (trip.cargo.value || 0), 0);
+    const completedCargoValue = trips
+      .filter(trip => trip.status === 'completed')
+      .reduce((sum, trip) => sum + (trip.cargo.value || 0), 0);
+    
+    const totalWeight = trips.reduce((sum, trip) => sum + (trip.cargo.weight || 0), 0);
+    const totalVolume = trips.reduce((sum, trip) => sum + (trip.cargo.volume || 0), 0);
+
+    // Статистика по месяцам (последние 6 месяцев)
+    const monthlyStats = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthTrips = trips.filter(trip => {
+        const tripDate = new Date(trip.departureDate);
+        return tripDate.getMonth() === date.getMonth() && 
+               tripDate.getFullYear() === date.getFullYear();
+      });
+      
+      monthlyStats.push({
+        month: date.toLocaleDateString('ru-RU', { month: 'short' }),
+        trips: monthTrips.length,
+        revenue: monthTrips.reduce((sum, trip) => sum + (trip.cargo.value || 0), 0),
+        weight: monthTrips.reduce((sum, trip) => sum + (trip.cargo.weight || 0), 0)
+      });
+    }
 
     return {
       activeTrips,
       totalTrips: trips.length,
+      completedTrips,
+      plannedTrips,
+      cancelledTrips,
       contractors: contractors.length,
       drivers: drivers.length,
-      vehicles: vehicles.length
+      vehicles: vehicles.length,
+      totalCargoValue,
+      completedCargoValue,
+      totalWeight,
+      totalVolume,
+      monthlyStats,
+      averageCargoValue: trips.length > 0 ? totalCargoValue / trips.length : 0,
+      completionRate: trips.length > 0 ? (completedTrips / trips.length) * 100 : 0
     };
   }
 }

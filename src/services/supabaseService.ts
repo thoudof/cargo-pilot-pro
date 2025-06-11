@@ -1,12 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { Contractor, Driver, Vehicle, CargoType, Route, Trip } from '@/types';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
 export class SupabaseService {
-  public supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+  public supabase = supabase;
 
   // Data transformation helpers
   private transformContractor(data: any): Contractor {
@@ -550,3 +547,5 @@ export class SupabaseService {
 }
 
 export const supabaseService = new SupabaseService();
+
+}

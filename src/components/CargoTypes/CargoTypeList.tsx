@@ -4,15 +4,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, Package, Edit2, Trash2, AlertTriangle, Thermometer, Shield } from 'lucide-react';
+import { Plus, Search, Package, Edit2, Trash2, AlertTriangle, Thermometer, ShieldAlert } from 'lucide-react';
 import { CargoType } from '@/types';
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
+import { CargoTypeForm } from './CargoTypeForm';
 
 export const CargoTypeList: React.FC = () => {
   const [cargoTypes, setCargoTypes] = useState<CargoType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingCargoType, setEditingCargoType] = useState<CargoType | undefined>();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -53,10 +56,41 @@ export const CargoTypeList: React.FC = () => {
     }
   };
 
+  const handleSave = () => {
+    setShowForm(false);
+    setEditingCargoType(undefined);
+    loadCargoTypes();
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingCargoType(undefined);
+  };
+
+  const handleEdit = (cargoType: CargoType) => {
+    setEditingCargoType(cargoType);
+    setShowForm(true);
+  };
+
+  const handleAdd = () => {
+    setEditingCargoType(undefined);
+    setShowForm(true);
+  };
+
   const filteredCargoTypes = cargoTypes.filter(cargoType =>
     cargoType.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (cargoType.description && cargoType.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  if (showForm) {
+    return (
+      <CargoTypeForm 
+        cargoType={editingCargoType}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -78,7 +112,7 @@ export const CargoTypeList: React.FC = () => {
             className="pl-9 h-12"
           />
         </div>
-        <Button className="h-12 px-6">
+        <Button className="h-12 px-6" onClick={handleAdd}>
           <Plus className="mr-2 h-4 w-4" />
           Добавить
         </Button>
@@ -93,7 +127,7 @@ export const CargoTypeList: React.FC = () => {
               {searchTerm ? 'Не найдено типов грузов по заданным критериям' : 'Добавьте первый тип груза для начала работы'}
             </p>
             {!searchTerm && (
-              <Button>
+              <Button onClick={handleAdd}>
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить тип груза
               </Button>
@@ -108,14 +142,14 @@ export const CargoTypeList: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <CardTitle className="text-lg mb-1">{cargoType.name}</CardTitle>
+                    {cargoType.description && (
+                      <p className="text-sm text-muted-foreground mb-2">{cargoType.description}</p>
+                    )}
                     <div className="space-y-1 text-sm text-muted-foreground">
-                      {cargoType.description && <p>{cargoType.description}</p>}
-                      {cargoType.defaultWeight && <p>Вес по умолчанию: {cargoType.defaultWeight} кг</p>}
+                      {cargoType.defaultWeight && <p>Вес по умолчанию: {cargoType.defaultWeight} т</p>}
                       {cargoType.defaultVolume && <p>Объем по умолчанию: {cargoType.defaultVolume} м³</p>}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex flex-col gap-1">
+                    <div className="flex gap-2 mt-2">
                       {cargoType.hazardous && (
                         <Badge variant="destructive" className="text-xs">
                           <AlertTriangle className="h-3 w-3 mr-1" />
@@ -130,14 +164,17 @@ export const CargoTypeList: React.FC = () => {
                       )}
                       {cargoType.fragile && (
                         <Badge variant="outline" className="text-xs">
-                          <Shield className="h-3 w-3 mr-1" />
+                          <ShieldAlert className="h-3 w-3 mr-1" />
                           Хрупкий
                         </Badge>
                       )}
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleEdit(cargoType)}
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>

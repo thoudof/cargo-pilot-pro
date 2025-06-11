@@ -8,11 +8,14 @@ import { Plus, Search, User, Edit2, Trash2, Phone } from 'lucide-react';
 import { Driver } from '@/types';
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
+import { DriverForm } from './DriverForm';
 
 export const DriverList: React.FC = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingDriver, setEditingDriver] = useState<Driver | undefined>();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -53,11 +56,42 @@ export const DriverList: React.FC = () => {
     }
   };
 
+  const handleSave = () => {
+    setShowForm(false);
+    setEditingDriver(undefined);
+    loadDrivers();
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingDriver(undefined);
+  };
+
+  const handleEdit = (driver: Driver) => {
+    setEditingDriver(driver);
+    setShowForm(true);
+  };
+
+  const handleAdd = () => {
+    setEditingDriver(undefined);
+    setShowForm(true);
+  };
+
   const filteredDrivers = drivers.filter(driver =>
     driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     driver.phone.includes(searchTerm) ||
     (driver.license && driver.license.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  if (showForm) {
+    return (
+      <DriverForm 
+        driver={editingDriver}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -79,7 +113,7 @@ export const DriverList: React.FC = () => {
             className="pl-9 h-12"
           />
         </div>
-        <Button className="h-12 px-6">
+        <Button className="h-12 px-6" onClick={handleAdd}>
           <Plus className="mr-2 h-4 w-4" />
           Добавить
         </Button>
@@ -94,7 +128,7 @@ export const DriverList: React.FC = () => {
               {searchTerm ? 'Не найдено водителей по заданным критериям' : 'Добавьте первого водителя для начала работы'}
             </p>
             {!searchTerm && (
-              <Button>
+              <Button onClick={handleAdd}>
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить водителя
               </Button>
@@ -123,6 +157,7 @@ export const DriverList: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleEdit(driver)}
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>

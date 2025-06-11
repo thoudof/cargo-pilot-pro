@@ -8,11 +8,14 @@ import { Plus, Search, Truck, Edit2, Trash2 } from 'lucide-react';
 import { Vehicle } from '@/types';
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
+import { VehicleForm } from './VehicleForm';
 
 export const VehicleList: React.FC = () => {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | undefined>();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -53,11 +56,42 @@ export const VehicleList: React.FC = () => {
     }
   };
 
+  const handleSave = () => {
+    setShowForm(false);
+    setEditingVehicle(undefined);
+    loadVehicles();
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingVehicle(undefined);
+  };
+
+  const handleEdit = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle);
+    setShowForm(true);
+  };
+
+  const handleAdd = () => {
+    setEditingVehicle(undefined);
+    setShowForm(true);
+  };
+
   const filteredVehicles = vehicles.filter(vehicle =>
     vehicle.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vehicle.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
     vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (showForm) {
+    return (
+      <VehicleForm 
+        vehicle={editingVehicle}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -79,7 +113,7 @@ export const VehicleList: React.FC = () => {
             className="pl-9 h-12"
           />
         </div>
-        <Button className="h-12 px-6">
+        <Button className="h-12 px-6" onClick={handleAdd}>
           <Plus className="mr-2 h-4 w-4" />
           Добавить
         </Button>
@@ -94,7 +128,7 @@ export const VehicleList: React.FC = () => {
               {searchTerm ? 'Не найдено транспорта по заданным критериям' : 'Добавьте первое транспортное средство для начала работы'}
             </p>
             {!searchTerm && (
-              <Button>
+              <Button onClick={handleAdd}>
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить транспорт
               </Button>
@@ -120,6 +154,7 @@ export const VehicleList: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleEdit(vehicle)}
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>

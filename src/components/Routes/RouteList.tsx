@@ -7,11 +7,14 @@ import { Plus, Search, Route, Edit2, Trash2, MapPin } from 'lucide-react';
 import { Route as RouteType } from '@/types';
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
+import { RouteForm } from './RouteForm';
 
 export const RouteList: React.FC = () => {
   const [routes, setRoutes] = useState<RouteType[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editingRoute, setEditingRoute] = useState<RouteType | undefined>();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -52,11 +55,42 @@ export const RouteList: React.FC = () => {
     }
   };
 
+  const handleSave = () => {
+    setShowForm(false);
+    setEditingRoute(undefined);
+    loadRoutes();
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingRoute(undefined);
+  };
+
+  const handleEdit = (route: RouteType) => {
+    setEditingRoute(route);
+    setShowForm(true);
+  };
+
+  const handleAdd = () => {
+    setEditingRoute(undefined);
+    setShowForm(true);
+  };
+
   const filteredRoutes = routes.filter(route =>
     route.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     route.pointA.toLowerCase().includes(searchTerm.toLowerCase()) ||
     route.pointB.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (showForm) {
+    return (
+      <RouteForm 
+        route={editingRoute}
+        onSave={handleSave}
+        onCancel={handleCancel}
+      />
+    );
+  }
 
   if (loading) {
     return (
@@ -78,7 +112,7 @@ export const RouteList: React.FC = () => {
             className="pl-9 h-12"
           />
         </div>
-        <Button className="h-12 px-6">
+        <Button className="h-12 px-6" onClick={handleAdd}>
           <Plus className="mr-2 h-4 w-4" />
           Добавить
         </Button>
@@ -93,7 +127,7 @@ export const RouteList: React.FC = () => {
               {searchTerm ? 'Не найдено маршрутов по заданным критериям' : 'Добавьте первый маршрут для начала работы'}
             </p>
             {!searchTerm && (
-              <Button>
+              <Button onClick={handleAdd}>
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить маршрут
               </Button>
@@ -121,6 +155,7 @@ export const RouteList: React.FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
+                      onClick={() => handleEdit(route)}
                     >
                       <Edit2 className="h-4 w-4" />
                     </Button>

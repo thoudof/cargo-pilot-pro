@@ -44,8 +44,6 @@ export const TripForm: React.FC<TripFormProps> = ({
       pointA: '',
       pointB: '',
       contractorId: '',
-      driverId: '',
-      vehicleId: '',
       driver: { name: '', phone: '', license: '' },
       vehicle: { brand: '', model: '', licensePlate: '', capacity: undefined },
       cargo: { description: '', weight: 0, volume: 0, value: undefined },
@@ -81,7 +79,6 @@ export const TripForm: React.FC<TripFormProps> = ({
   const handleDriverChange = (driverId: string) => {
     const selectedDriver = drivers.find(d => d.id === driverId);
     if (selectedDriver) {
-      form.setValue('driverId', driverId);
       form.setValue('driver.name', selectedDriver.name);
       form.setValue('driver.phone', selectedDriver.phone);
       form.setValue('driver.license', selectedDriver.license || '');
@@ -91,7 +88,6 @@ export const TripForm: React.FC<TripFormProps> = ({
   const handleVehicleChange = (vehicleId: string) => {
     const selectedVehicle = vehicles.find(v => v.id === vehicleId);
     if (selectedVehicle) {
-      form.setValue('vehicleId', vehicleId);
       form.setValue('vehicle.brand', selectedVehicle.brand);
       form.setValue('vehicle.model', selectedVehicle.model);
       form.setValue('vehicle.licensePlate', selectedVehicle.licensePlate);
@@ -102,6 +98,16 @@ export const TripForm: React.FC<TripFormProps> = ({
   const onSubmit = async (data: TripFormData) => {
     setLoading(true);
     try {
+      // Находим выбранного водителя и транспорт
+      const selectedDriver = drivers.find(d => 
+        d.name === data.driver.name && d.phone === data.driver.phone
+      );
+      const selectedVehicle = vehicles.find(v => 
+        v.brand === data.vehicle.brand && 
+        v.model === data.vehicle.model && 
+        v.licensePlate === data.vehicle.licensePlate
+      );
+
       const tripData: Trip = {
         id: trip?.id || crypto.randomUUID(),
         status: data.status,
@@ -110,8 +116,8 @@ export const TripForm: React.FC<TripFormProps> = ({
         pointA: data.pointA,
         pointB: data.pointB,
         contractorId: data.contractorId,
-        driverId: data.driverId,
-        vehicleId: data.vehicleId,
+        driverId: selectedDriver?.id,
+        vehicleId: selectedVehicle?.id,
         driver: {
           name: data.driver.name,
           phone: data.driver.phone,
@@ -310,30 +316,23 @@ export const TripForm: React.FC<TripFormProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="driverId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Выбрать водителя</FormLabel>
-                      <Select onValueChange={handleDriverChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Выберите водителя из списка" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {drivers.map((driver) => (
-                            <SelectItem key={driver.id} value={driver.id}>
-                              {driver.name} ({driver.phone})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormItem>
+                  <FormLabel>Выбрать водителя</FormLabel>
+                  <Select onValueChange={handleDriverChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите водителя из списка" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {drivers.map((driver) => (
+                        <SelectItem key={driver.id} value={driver.id}>
+                          {driver.name} ({driver.phone})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
@@ -390,30 +389,23 @@ export const TripForm: React.FC<TripFormProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="vehicleId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Выбрать транспорт</FormLabel>
-                      <Select onValueChange={handleVehicleChange} defaultValue={field.value}>
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Выберите транспорт из списка" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {vehicles.map((vehicle) => (
-                            <SelectItem key={vehicle.id} value={vehicle.id}>
-                              {vehicle.brand} {vehicle.model} ({vehicle.licensePlate})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <FormItem>
+                  <FormLabel>Выбрать транспорт</FormLabel>
+                  <Select onValueChange={handleVehicleChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите транспорт из списка" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {vehicles.map((vehicle) => (
+                        <SelectItem key={vehicle.id} value={vehicle.id}>
+                          {vehicle.brand} {vehicle.model} ({vehicle.licensePlate})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField

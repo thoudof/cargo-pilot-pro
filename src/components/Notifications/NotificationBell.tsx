@@ -74,7 +74,7 @@ export const NotificationBell: React.FC = () => {
         isSubscribedRef.current = false;
       }
     };
-  }, []); // Keep empty dependency array but use refs to track state
+  }, [loadNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     try {

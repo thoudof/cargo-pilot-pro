@@ -16,10 +16,7 @@ import { activityLogger } from '@/services/activityLogger';
 import { useEffect } from 'react';
 
 const AuthenticatedApp = () => {
-  const {
-    user,
-    loading
-  } = useAuth();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     if (user) {
@@ -29,9 +26,11 @@ const AuthenticatedApp = () => {
   }, [user]);
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">
+    return (
+      <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>;
+      </div>
+    );
   }
 
   if (!user) {
@@ -40,11 +39,14 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
-      <Route path="/" element={
-        <MobileLayout>
-          <Dashboard onNavigate={() => {}} />
-        </MobileLayout>
-      } />
+      <Route 
+        path="/" 
+        element={
+          <MobileLayout>
+            <Dashboard onNavigate={() => {}} />
+          </MobileLayout>
+        } 
+      />
       <Route path="/trips" element={<TripsPage />} />
       <Route path="/contractors" element={<ContractorsPage />} />
       <Route path="/drivers" element={<DriversPage />} />
@@ -58,9 +60,11 @@ const AuthenticatedApp = () => {
 };
 
 const Index = () => {
-  return <AuthProvider>
+  return (
+    <AuthProvider>
       <AuthenticatedApp />
-    </AuthProvider>;
+    </AuthProvider>
+  );
 };
 
 export default Index;

@@ -52,24 +52,29 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
 
   const onSubmit = async (values: z.infer<typeof vehicleSchema>) => {
     try {
-      const vehicleData: Vehicle = {
-        id: vehicle?.id || crypto.randomUUID(),
+      // Создаем объект данных транспорта, соответствующий схеме Supabase
+      const vehicleData = {
         brand: values.brand,
         model: values.model,
-        licensePlate: values.licensePlate,
-        capacity: values.capacity,
-        year: values.year,
-        vin: values.vin,
-        registrationCertificate: values.registrationCertificate,
-        insurancePolicy: values.insurancePolicy,
-        insuranceExpiry: values.insuranceExpiry ? new Date(values.insuranceExpiry) : undefined,
-        technicalInspectionExpiry: values.technicalInspectionExpiry ? new Date(values.technicalInspectionExpiry) : undefined,
-        notes: values.notes,
-        createdAt: vehicle?.createdAt || new Date(),
-        updatedAt: new Date()
+        license_plate: values.licensePlate, // Используем snake_case для соответствия БД
+        capacity: values.capacity || null,
+        year: values.year || null,
+        vin: values.vin || null,
+        registration_certificate: values.registrationCertificate || null,
+        insurance_policy: values.insurancePolicy || null,
+        insurance_expiry: values.insuranceExpiry ? values.insuranceExpiry : null,
+        technical_inspection_expiry: values.technicalInspectionExpiry ? values.technicalInspectionExpiry : null,
+        notes: values.notes || null
       };
 
-      await supabaseService.saveVehicle(vehicleData);
+      if (vehicle?.id) {
+        // Обновляем существующий транспорт
+        await supabaseService.updateVehicle(vehicle.id, vehicleData);
+      } else {
+        // Создаем новый транспорт
+        await supabaseService.createVehicle(vehicleData);
+      }
+
       toast({
         title: vehicle ? 'Транспорт обновлен' : 'Транспорт создан',
         description: `${values.brand} ${values.model} успешно ${vehicle ? 'обновлен' : 'создан'}`

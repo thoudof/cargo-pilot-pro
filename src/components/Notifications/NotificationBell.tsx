@@ -26,9 +26,11 @@ export const NotificationBell: React.FC = () => {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
+  const mountedRef = useRef(true);
 
   const loadNotifications = useCallback(async () => {
+    if (!mountedRef.current) return;
+    
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -39,42 +41,69 @@ export const NotificationBell: React.FC = () => {
 
       if (error) throw error;
       
-      setNotifications(data || []);
-      setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      if (mountedRef.current) {
+        setNotifications(data || []);
+        setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+      }
     } catch (error) {
       console.error('Failed to load notifications:', error);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
+    // Загружаем уведомления при монтировании
     loadNotifications();
+
+    // Создаем функцию для очистки канала
+    const cleanupChannel = () => {
+      if (channelRef.current) {
+        try {
+          supabase.removeChannel(channelRef.current);
+        } catch (error) {
+          console.error('Error removing channel:', error);
+        }
+        channelRef.current = null;
+      }
+    };
+
+    // Очищаем существующий канал перед созданием нового
+    cleanupChannel();
+
+    // Создаем новый канал с уникальным именем
+    const channelName = `notifications-${Date.now()}-${Math.random()}`;
     
-    // Подписка на изменения уведомлений в реальном времени
-    if (!isSubscribedRef.current) {
-      isSubscribedRef.current = true;
-      
-      channelRef.current = supabase
-        .channel('notifications-updates')
+    try {
+      const channel = supabase
+        .channel(channelName)
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
           table: 'notifications'
-        }, () => {
-          loadNotifications();
+        }, (payload) => {
+          console.log('Notification change:', payload);
+          if (mountedRef.current) {
+            loadNotifications();
+          }
         })
-        .subscribe();
+        .subscribe((status) => {
+          console.log('Channel subscription status:', status);
+        });
+
+      channelRef.current = channel;
+    } catch (error) {
+      console.error('Error creating channel:', error);
     }
 
+    // Функция очистки при размонтировании
     return () => {
-      if (channelRef.current && isSubscribedRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-        isSubscribedRef.current = false;
-      }
+      mountedRef.current = false;
+      cleanupChannel();
     };
-  }, []); // Пустой массив зависимостей чтобы избежать повторных подписок
+  }, []); // Пустые зависимости, выполняется только при монтировании/размонтировании
 
   const markAsRead = async (notificationId: string) => {
     try {

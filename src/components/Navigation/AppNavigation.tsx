@@ -2,13 +2,15 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Home, Truck, Users, Settings, MapPin, Package } from 'lucide-react';
+import { Home, Truck, Users, Settings, MapPin, Package, Shield } from 'lucide-react';
 import { activityLogger } from '@/services/activityLogger';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface NavigationItem {
   path: string;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
+  adminOnly?: boolean;
 }
 
 const navigationItems: NavigationItem[] = [
@@ -19,6 +21,7 @@ const navigationItems: NavigationItem[] = [
   { path: '/vehicles', label: 'Транспорт', icon: Truck },
   { path: '/routes', label: 'Маршруты', icon: MapPin },
   { path: '/cargo-types', label: 'Типы грузов', icon: Package },
+  { path: '/admin', label: 'Админ панель', icon: Shield, adminOnly: true },
   { path: '/settings', label: 'Настройки', icon: Settings },
 ];
 
@@ -35,6 +38,7 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAdmin } = useUserRole();
 
   const handleNavigate = async (path: string, label: string) => {
     navigate(path);
@@ -65,9 +69,17 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({
     return variant === 'bottom' ? "h-4 w-4" : "h-4 w-4 xl:h-5 xl:w-5";
   };
 
+  // Фильтруем элементы навигации в зависимости от прав пользователя
+  const filteredItems = navigationItems.filter(item => {
+    if (item.adminOnly && !isAdmin) {
+      return false;
+    }
+    return true;
+  });
+
   if (variant === 'bottom') {
     // Показываем только основные страницы в нижней навигации
-    const bottomItems = navigationItems.filter(item => 
+    const bottomItems = filteredItems.filter(item => 
       ['/', '/trips', '/contractors', '/settings'].includes(item.path)
     );
 
@@ -94,7 +106,7 @@ export const AppNavigation: React.FC<AppNavigationProps> = ({
 
   return (
     <nav className={`space-y-1 ${className}`}>
-      {navigationItems.map((item) => {
+      {filteredItems.map((item) => {
         const Icon = item.icon;
         return (
           <Button

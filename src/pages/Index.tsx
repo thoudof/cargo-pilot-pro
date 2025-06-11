@@ -1,34 +1,26 @@
 
-import { AuthProvider, useAuth } from '@/components/Auth/AuthProvider';
-import { AuthPage } from '@/components/Auth/AuthPage';
-import { Dashboard } from '@/components/Dashboard/Dashboard';
-import { Routes, Route } from 'react-router-dom';
-import { TripsPage } from '@/pages/TripsPage';
-import { ContractorsPage } from '@/pages/ContractorsPage';
-import { DriversPage } from '@/pages/DriversPage';
-import { VehiclesPage } from '@/pages/VehiclesPage';
-import { RoutesPage } from '@/pages/RoutesPage';
-import { CargoTypesPage } from '@/pages/CargoTypesPage';
-import { SettingsPage } from '@/pages/SettingsPage';
-import NotFound from '@/pages/NotFound';
-import { MobileLayout } from '@/components/Layout/MobileLayout';
-import { activityLogger } from '@/services/activityLogger';
-import { useEffect } from 'react';
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "@/components/Auth/AuthProvider";
+import { AuthPage } from "@/components/Auth/AuthPage";
+import { MobileLayout } from "@/components/Layout/MobileLayout";
+import { Dashboard } from "@/components/Dashboard/Dashboard";
+import { PushNotificationManager } from "@/components/Notifications/PushNotificationManager";
+import TripsPage from "./TripsPage";
+import ContractorsPage from "./ContractorsPage";
+import DriversPage from "./DriversPage";
+import VehiclesPage from "./VehiclesPage";
+import RoutesPage from "./RoutesPage";
+import CargoTypesPage from "./CargoTypesPage";
+import SettingsPage from "./SettingsPage";
+import AdminPage from "./AdminPage";
 
-const AuthenticatedApp = () => {
+const Index = () => {
   const { user, loading } = useAuth();
-
-  useEffect(() => {
-    if (user) {
-      // Логируем вход пользователя при загрузке приложения
-      activityLogger.logLogin();
-    }
-  }, [user]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -39,6 +31,7 @@ const AuthenticatedApp = () => {
 
   return (
     <MobileLayout>
+      <PushNotificationManager />
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/trips" element={<TripsPage />} />
@@ -47,18 +40,11 @@ const AuthenticatedApp = () => {
         <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="/routes" element={<RoutesPage />} />
         <Route path="/cargo-types" element={<CargoTypesPage />} />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="*" element={<NotFound />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </MobileLayout>
-  );
-};
-
-const Index = () => {
-  return (
-    <AuthProvider>
-      <AuthenticatedApp />
-    </AuthProvider>
   );
 };
 

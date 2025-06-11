@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, CalendarIcon, Truck, User, Package } from 'lucide-react';
 import { tripSchema, TripFormData } from '@/lib/validations';
-import { Trip, Contractor, TripStatus } from '@/types';
+import { Trip, Contractor, Driver, Vehicle, TripStatus } from '@/types';
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,6 +30,8 @@ export const TripForm: React.FC<TripFormProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const { toast } = useToast();
 
   const form = useForm<TripFormData>({
@@ -42,6 +44,8 @@ export const TripForm: React.FC<TripFormProps> = ({
       pointA: '',
       pointB: '',
       contractorId: '',
+      driverId: '',
+      vehicleId: '',
       driver: { name: '', phone: '', license: '' },
       vehicle: { brand: '', model: '', licensePlate: '', capacity: undefined },
       cargo: { description: '', weight: 0, volume: 0, value: undefined },
@@ -55,16 +59,43 @@ export const TripForm: React.FC<TripFormProps> = ({
 
   useEffect(() => {
     if (open) {
-      loadContractors();
+      loadData();
     }
   }, [open]);
 
-  const loadContractors = async () => {
+  const loadData = async () => {
     try {
-      const contractorData = await supabaseService.getContractors();
+      const [contractorData, driverData, vehicleData] = await Promise.all([
+        supabaseService.getContractors(),
+        supabaseService.getDrivers(),
+        supabaseService.getVehicles()
+      ]);
       setContractors(contractorData);
+      setDrivers(driverData);
+      setVehicles(vehicleData);
     } catch (error) {
-      console.error('Failed to load contractors:', error);
+      console.error('Failed to load data:', error);
+    }
+  };
+
+  const handleDriverChange = (driverId: string) => {
+    const selectedDriver = drivers.find(d => d.id === driverId);
+    if (selectedDriver) {
+      form.setValue('driverId', driverId);
+      form.setValue('driver.name', selectedDriver.name);
+      form.setValue('driver.phone', selectedDriver.phone);
+      form.setValue('driver.license', selectedDriver.license || '');
+    }
+  };
+
+  const handleVehicleChange = (vehicleId: string) => {
+    const selectedVehicle = vehicles.find(v => v.id === vehicleId);
+    if (selectedVehicle) {
+      form.setValue('vehicleId', vehicleId);
+      form.setValue('vehicle.brand', selectedVehicle.brand);
+      form.setValue('vehicle.model', selectedVehicle.model);
+      form.setValue('vehicle.licensePlate', selectedVehicle.licensePlate);
+      form.setValue('vehicle.capacity', selectedVehicle.capacity);
     }
   };
 
@@ -79,6 +110,8 @@ export const TripForm: React.FC<TripFormProps> = ({
         pointA: data.pointA,
         pointB: data.pointB,
         contractorId: data.contractorId,
+        driverId: data.driverId,
+        vehicleId: data.vehicleId,
         driver: {
           name: data.driver.name,
           phone: data.driver.phone,
@@ -277,6 +310,31 @@ export const TripForm: React.FC<TripFormProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="driverId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Выбрать водителя</FormLabel>
+                      <Select onValueChange={handleDriverChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите водителя из списка" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {drivers.map((driver) => (
+                            <SelectItem key={driver.id} value={driver.id}>
+                              {driver.name} ({driver.phone})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
@@ -332,6 +390,31 @@ export const TripForm: React.FC<TripFormProps> = ({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="vehicleId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Выбрать транспорт</FormLabel>
+                      <Select onValueChange={handleVehicleChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Выберите транспорт из списка" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {vehicles.map((vehicle) => (
+                            <SelectItem key={vehicle.id} value={vehicle.id}>
+                              {vehicle.brand} {vehicle.model} ({vehicle.licensePlate})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}

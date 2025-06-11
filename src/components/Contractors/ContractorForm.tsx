@@ -69,6 +69,7 @@ export const ContractorForm: React.FC<ContractorFormProps> = ({
         updatedAt: new Date()
       };
 
+      console.log('Saving contractor:', contractorData);
       await supabaseService.saveContractor(contractorData);
       
       toast({
@@ -83,7 +84,7 @@ export const ContractorForm: React.FC<ContractorFormProps> = ({
       console.error('Failed to save contractor:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось сохранить контрагента',
+        description: `Не удалось сохранить контрагента: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
         variant: 'destructive'
       });
     } finally {

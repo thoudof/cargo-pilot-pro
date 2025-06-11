@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -34,18 +33,13 @@ export const AuthPage: React.FC = () => {
     setError(null);
 
     try {
-      const { error } = await supabaseService.signIn(signInData.email, signInData.password);
-      
-      if (error) {
-        setError(error.message);
-      } else {
-        toast({
-          title: 'Успешный вход',
-          description: 'Добро пожаловать в систему!'
-        });
-      }
-    } catch (err) {
-      setError('Произошла ошибка при входе');
+      await supabaseService.signIn(signInData.email, signInData.password);
+      toast({
+        title: 'Успешный вход',
+        description: 'Добро пожаловать в систему!'
+      });
+    } catch (err: any) {
+      setError(err.message || 'Произошла ошибка при входе');
     } finally {
       setLoading(false);
     }
@@ -63,7 +57,7 @@ export const AuthPage: React.FC = () => {
     }
 
     try {
-      const { error } = await supabaseService.signUp(
+      await supabaseService.signUp(
         signUpData.email,
         signUpData.password,
         {
@@ -71,17 +65,12 @@ export const AuthPage: React.FC = () => {
           fullName: signUpData.fullName
         }
       );
-      
-      if (error) {
-        setError(error.message);
-      } else {
-        toast({
-          title: 'Регистрация успешна',
-          description: 'Проверьте email для подтверждения аккаунта'
-        });
-      }
-    } catch (err) {
-      setError('Произошла ошибка при регистрации');
+      toast({
+        title: 'Регистрация успешна',
+        description: 'Проверьте email для подтверждения аккаунта'
+      });
+    } catch (err: any) {
+      setError(err.message || 'Произошла ошибка при регистрации');
     } finally {
       setLoading(false);
     }

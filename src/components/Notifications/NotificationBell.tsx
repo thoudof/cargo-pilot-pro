@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -25,24 +25,30 @@ export const NotificationBell: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
+  const channelRef = useRef<any>(null);
 
   useEffect(() => {
     loadNotifications();
     
     // Подписка на изменения уведомлений в реальном времени
-    const channel = supabase
-      .channel('notifications')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'notifications'
-      }, () => {
-        loadNotifications();
-      })
-      .subscribe();
+    if (!channelRef.current) {
+      channelRef.current = supabase
+        .channel('notifications-updates')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'notifications'
+        }, () => {
+          loadNotifications();
+        })
+        .subscribe();
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     };
   }, []);
 

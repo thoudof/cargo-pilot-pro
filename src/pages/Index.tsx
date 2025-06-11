@@ -19,6 +19,7 @@ const Index = () => {
 
   console.log('Index: Current state', { user: !!user, loading });
 
+  // Показываем загрузку только пока аутентификация инициализируется
   if (loading) {
     console.log('Index: Auth loading, showing spinner');
     return (
@@ -28,11 +29,13 @@ const Index = () => {
     );
   }
 
+  // Если пользователя нет, показываем страницу аутентификации
   if (!user) {
     console.log('Index: No user, showing auth page');
     return <AuthPage />;
   }
 
+  // Если пользователь аутентифицирован, показываем основное приложение
   console.log('Index: User authenticated, showing main app');
   return (
     <MobileLayout>

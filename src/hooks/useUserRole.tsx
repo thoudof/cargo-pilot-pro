@@ -6,12 +6,10 @@ import { useAuth } from '@/components/Auth/AuthProvider';
 export const useUserRole = () => {
   const { user } = useAuth();
   const [userRoles, setUserRoles] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchUserRoles = async () => {
-      console.log('useUserRole: fetchUserRoles called', { userId: user?.id });
-      
       if (!user?.id) {
         console.log('useUserRole: No user, clearing roles');
         setUserRoles([]);
@@ -19,10 +17,10 @@ export const useUserRole = () => {
         return;
       }
 
+      console.log('useUserRole: Fetching roles for user:', user.id);
+      setLoading(true);
+
       try {
-        setLoading(true);
-        console.log('useUserRole: Fetching roles for user:', user.id);
-        
         const { data, error } = await supabase.rpc('get_user_roles', {
           _user_id: user.id
         });
@@ -43,7 +41,7 @@ export const useUserRole = () => {
     };
 
     fetchUserRoles();
-  }, [user?.id]); // Убираем authLoading из зависимостей
+  }, [user?.id]);
 
   const isAdmin = userRoles.includes('admin');
   const isDispatcher = userRoles.includes('dispatcher');

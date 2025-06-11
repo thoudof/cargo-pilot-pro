@@ -17,7 +17,10 @@ import AdminPage from "./AdminPage";
 const Index = () => {
   const { user, loading } = useAuth();
 
+  console.log('Index: Current state', { user: !!user, loading });
+
   if (loading) {
+    console.log('Index: Auth loading, showing spinner');
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -26,9 +29,11 @@ const Index = () => {
   }
 
   if (!user) {
+    console.log('Index: No user, showing auth page');
     return <AuthPage />;
   }
 
+  console.log('Index: User authenticated, showing main app');
   return (
     <MobileLayout>
       <PushNotificationManager />

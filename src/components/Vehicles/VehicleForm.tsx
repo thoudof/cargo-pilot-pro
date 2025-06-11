@@ -52,25 +52,45 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
 
   const onSubmit = async (values: z.infer<typeof vehicleSchema>) => {
     try {
-      // Создаем объект данных транспорта в формате, который ожидает saveVehicle
-      const vehicleData: Vehicle = {
-        id: vehicle?.id || crypto.randomUUID(),
+      // Подготавливаем данные в формате, который ожидает Supabase (snake_case)
+      const vehicleData = {
         brand: values.brand,
         model: values.model,
-        licensePlate: values.licensePlate,
+        license_plate: values.licensePlate,
         capacity: values.capacity || null,
         year: values.year || null,
         vin: values.vin || null,
-        registrationCertificate: values.registrationCertificate || null,
-        insurancePolicy: values.insurancePolicy || null,
-        insuranceExpiry: values.insuranceExpiry ? new Date(values.insuranceExpiry) : undefined,
-        technicalInspectionExpiry: values.technicalInspectionExpiry ? new Date(values.technicalInspectionExpiry) : undefined,
-        notes: values.notes || null,
-        createdAt: vehicle?.createdAt || new Date(),
-        updatedAt: new Date()
+        registration_certificate: values.registrationCertificate || null,
+        insurance_policy: values.insurancePolicy || null,
+        insurance_expiry: values.insuranceExpiry || null,
+        technical_inspection_expiry: values.technicalInspectionExpiry || null,
+        notes: values.notes || null
       };
 
-      await supabaseService.saveVehicle(vehicleData);
+      console.log('Saving vehicle data:', vehicleData);
+
+      let result;
+      if (vehicle?.id) {
+        // Обновляем существующий транспорт
+        result = await supabaseService.supabase
+          .from('vehicles')
+          .update(vehicleData)
+          .eq('id', vehicle.id)
+          .select();
+      } else {
+        // Создаем новый транспорт
+        result = await supabaseService.supabase
+          .from('vehicles')
+          .insert([vehicleData])
+          .select();
+      }
+
+      if (result.error) {
+        console.error('Supabase error:', result.error);
+        throw result.error;
+      }
+
+      console.log('Vehicle saved successfully:', result.data);
 
       toast({
         title: vehicle ? 'Транспорт обновлен' : 'Транспорт создан',

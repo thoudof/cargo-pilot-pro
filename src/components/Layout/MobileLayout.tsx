@@ -3,11 +3,14 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Menu, Home, Truck, Users, Settings } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { NotificationBell } from '@/components/Notifications/NotificationBell';
 import { PushNotificationManager } from '@/components/Notifications/PushNotificationManager';
 import { useAuth } from '@/components/Auth/AuthProvider';
+import { AppNavigation } from '@/components/Navigation/AppNavigation';
+import { activityLogger } from '@/services/activityLogger';
+import { supabaseService } from '@/services/supabaseService';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
@@ -17,6 +20,10 @@ const pageTitles: { [key: string]: string } = {
   '/': 'Главная',
   '/trips': 'Рейсы',
   '/contractors': 'Контрагенты',
+  '/drivers': 'Водители',
+  '/vehicles': 'Транспорт',
+  '/routes': 'Маршруты',
+  '/cargo-types': 'Типы грузов',
   '/settings': 'Настройки'
 };
 
@@ -27,8 +34,13 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const location = useLocation();
 
   const handleLogout = async () => {
-    // Логика выхода будет реализована через AuthProvider
-    navigate('/login');
+    try {
+      await activityLogger.logLogout();
+      await supabaseService.signOut();
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const getPageTitle = (path: string | null) => {
@@ -39,7 +51,6 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Компонент для управления PUSH-уведомлениями */}
       <PushNotificationManager userId={user?.id} />
       
       {/* Header - оптимизированный для мобильных устройств */}
@@ -60,7 +71,6 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           </div>
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <NotificationBell />
-            {/* Кнопка "Выйти" убрана из header - она есть только в sidebar */}
           </div>
         </div>
       </header>
@@ -85,39 +95,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
               </div>
             </div>
             
-            <nav className="space-y-1">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-10 xl:h-12 text-sm xl:text-base" 
-                onClick={() => navigate('/')}
-              >
-                <Home className="h-4 w-4 xl:h-5 xl:w-5 mr-3" />
-                Главная
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-10 xl:h-12 text-sm xl:text-base" 
-                onClick={() => navigate('/trips')}
-              >
-                <Truck className="h-4 w-4 xl:h-5 xl:w-5 mr-3" />
-                Рейсы
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-10 xl:h-12 text-sm xl:text-base" 
-                onClick={() => navigate('/contractors')}
-              >
-                <Users className="h-4 w-4 xl:h-5 xl:w-5 mr-3" />
-                Контрагенты
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-10 xl:h-12 text-sm xl:text-base" 
-                onClick={() => navigate('/settings')}
-              >
-                <Settings className="h-4 w-4 xl:h-5 xl:w-5 mr-3" />
-                Настройки
-              </Button>
+            <AppNavigation variant="desktop" />
+            
+            <div className="mt-6 pt-6 border-t">
               <Button 
                 variant="ghost" 
                 className="w-full justify-start h-10 xl:h-12 text-sm xl:text-base" 
@@ -126,7 +106,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 <LogOut className="h-4 w-4 xl:h-5 xl:w-5 mr-3" />
                 Выйти
               </Button>
-            </nav>
+            </div>
           </div>
         </aside>
         
@@ -165,39 +145,12 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
               </div>
             </div>
             
-            <nav className="flex-1 space-y-1">
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-12" 
-                onClick={() => { navigate('/'); setIsSidebarOpen(false); }}
-              >
-                <Home className="h-5 w-5 mr-3" />
-                Главная
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-12" 
-                onClick={() => { navigate('/trips'); setIsSidebarOpen(false); }}
-              >
-                <Truck className="h-5 w-5 mr-3" />
-                Рейсы
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-12" 
-                onClick={() => { navigate('/contractors'); setIsSidebarOpen(false); }}
-              >
-                <Users className="h-5 w-5 mr-3" />
-                Контрагенты
-              </Button>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start h-12" 
-                onClick={() => { navigate('/settings'); setIsSidebarOpen(false); }}
-              >
-                <Settings className="h-5 w-5 mr-3" />
-                Настройки
-              </Button>
+            <AppNavigation 
+              variant="mobile" 
+              onItemClick={() => setIsSidebarOpen(false)} 
+            />
+
+            <div className="mt-auto pt-6 border-t">
               <Button 
                 variant="ghost" 
                 className="w-full justify-start h-12" 
@@ -206,7 +159,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 <LogOut className="h-5 w-5 mr-3" />
                 Выйти
               </Button>
-            </nav>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
@@ -218,46 +171,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
         </div>
       </main>
 
-      {/* Bottom Navigation - только для мобильных, без кнопки "Выйти" */}
+      {/* Bottom Navigation - только для мобильных */}
       <footer className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 py-1 px-2 safe-area-inset">
-        <div className="flex items-center justify-around max-w-md mx-auto">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/')} 
-            className="flex flex-col items-center gap-1 h-auto py-2 px-2 min-w-0"
-          >
-            <Home className="h-4 w-4" />
-            <span className="text-xs leading-none">Главная</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/trips')} 
-            className="flex flex-col items-center gap-1 h-auto py-2 px-2 min-w-0"
-          >
-            <Truck className="h-4 w-4" />
-            <span className="text-xs leading-none">Рейсы</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/contractors')} 
-            className="flex flex-col items-center gap-1 h-auto py-2 px-2 min-w-0"
-          >
-            <Users className="h-4 w-4" />
-            <span className="text-xs leading-none">Контрагенты</span>
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={() => navigate('/settings')} 
-            className="flex flex-col items-center gap-1 h-auto py-2 px-2 min-w-0"
-          >
-            <Settings className="h-4 w-4" />
-            <span className="text-xs leading-none">Настройки</span>
-          </Button>
-        </div>
+        <AppNavigation variant="bottom" />
       </footer>
     </div>
   );

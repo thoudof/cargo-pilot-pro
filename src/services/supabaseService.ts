@@ -158,6 +158,41 @@ export class SupabaseService {
     if (error) throw error;
   }
 
+  // Методы для работы с логами активности
+  async getActivityLogs() {
+    const { data, error } = await this.supabase
+      .from('activity_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createActivityLog(log: {
+    action: string;
+    entity_type?: string;
+    entity_id?: string;
+    details?: Record<string, any>;
+    user_agent?: string;
+  }) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await this.supabase
+      .from('activity_logs')
+      .insert({
+        user_id: user.id,
+        ...log
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   // Методы для работы с уведомлениями
   async getNotifications() {
     const { data, error } = await this.supabase
@@ -547,3 +582,5 @@ export class SupabaseService {
 }
 
 export const supabaseService = new SupabaseService();
+
+}

@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Contractor, Trip, Contact, TripStatus, Driver, Vehicle, Route, CargoType } from '@/types';
 
@@ -443,6 +442,90 @@ class SupabaseService {
       drivers: driversResult.data?.length || 0,
       vehicles: vehiclesResult.data?.length || 0
     };
+  }
+
+  // Методы для работы с уведомлениями
+  async getNotifications() {
+    const { data, error } = await this.supabase
+      .from('notifications')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async markNotificationAsRead(notificationId: string) {
+    const { error } = await this.supabase
+      .from('notifications')
+      .update({ is_read: true, updated_at: new Date().toISOString() })
+      .eq('id', notificationId);
+
+    if (error) throw error;
+  }
+
+  async markAllNotificationsAsRead() {
+    const { error } = await this.supabase
+      .from('notifications')
+      .update({ is_read: true, updated_at: new Date().toISOString() })
+      .eq('is_read', false);
+
+    if (error) throw error;
+  }
+
+  async createNotification(notification: {
+    title: string;
+    message: string;
+    type: string;
+    related_entity_id?: string;
+    related_entity_type?: string;
+  }) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await this.supabase
+      .from('notifications')
+      .insert({
+        user_id: user.id,
+        ...notification
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async savePushToken(token: string, platform: string) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { error } = await this.supabase
+      .from('push_tokens')
+      .upsert({
+        user_id: user.id,
+        token,
+        platform,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'token'
+      });
+
+    if (error) throw error;
+  }
+
+  async getPushTokens(userId?: string) {
+    const targetUserId = userId || (await this.getCurrentUser())?.id;
+    if (!targetUserId) throw new Error('User not authenticated');
+
+    const { data, error } = await this.supabase
+      .from('push_tokens')
+      .select('*')
+      .eq('user_id', targetUserId);
+
+    if (error) throw error;
+    return data || [];
   }
 
   // Auth

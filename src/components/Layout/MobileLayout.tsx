@@ -1,141 +1,139 @@
-
-import React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { 
-  User, 
-  Settings, 
-  Bell,
-  Search,
-  Calendar,
-  File,
-  Truck,
-  Users,
-  Route,
-  Package
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { LogOut, Menu, Home, Truck, Users, Settings } from 'lucide-react';
+import { useSession, signOut } from "next-auth/react";
+import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { NotificationBell } from '@/components/Notifications/NotificationBell';
+import { PushNotificationManager } from '@/components/Notifications/PushNotificationManager';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
-  title: string;
-  onMenuSelect: (item: string) => void;
-  currentView: string;
 }
 
-const menuItems = [
-  { id: 'dashboard', label: 'Главная', icon: Calendar },
-  { id: 'trips', label: 'Рейсы', icon: Calendar },
-  { id: 'contractors', label: 'Контрагенты', icon: User },
-  { id: 'drivers', label: 'Водители', icon: Users },
-  { id: 'vehicles', label: 'Транспорт', icon: Truck },
-  { id: 'routes', label: 'Маршруты', icon: Route },
-  { id: 'cargo-types', label: 'Типы грузов', icon: Package },
-  { id: 'documents', label: 'Документы', icon: File },
-  { id: 'statistics', label: 'Статистика', icon: Search },
-  { id: 'settings', label: 'Настройки', icon: Settings },
-];
+const pageTitles: { [key: string]: string } = {
+  '/': 'Главная',
+  '/trips': 'Рейсы',
+  '/contractors': 'Контрагенты',
+  '/settings': 'Настройки'
+};
 
-const bottomNavItems = [
-  { id: 'dashboard', label: 'Главная', icon: Calendar },
-  { id: 'trips', label: 'Рейсы', icon: Calendar },
-  { id: 'contractors', label: 'Контрагенты', icon: User },
-  { id: 'drivers', label: 'Водители', icon: Users },
-  { id: 'vehicles', label: 'Транспорт', icon: Truck },
-];
+export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
 
-export const MobileLayout: React.FC<MobileLayoutProps> = ({
-  children,
-  title,
-  onMenuSelect,
-  currentView
-}) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const user = session?.user;
+
+  const handleLogout = async () => {
+    await signOut();
+    router.push('/login');
+  };
+
+  const getPageTitle = (path: string | null) => {
+    return pageTitles[path || '/'] || 'Страница';
+  };
+
+  const currentPage = pathname === '/' ? '/' : pathname;
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-gray-50">
+      {/* Компонент для управления PUSH-уведомлениями */}
+      <PushNotificationManager userId={user?.id} />
+      
       {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-16 items-center px-4">
-          <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="md:hidden">
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="w-64 p-0">
-              <div className="flex flex-col h-full">
-                <div className="p-6 border-b">
-                  <h2 className="text-lg font-semibold">Грузоперевозки</h2>
-                </div>
-                <nav className="flex-1 p-4">
-                  <div className="space-y-2">
-                    {menuItems.map((item) => {
-                      const Icon = item.icon;
-                      return (
-                        <Button
-                          key={item.id}
-                          variant={currentView === item.id ? "secondary" : "ghost"}
-                          className="w-full justify-start text-left"
-                          onClick={() => {
-                            onMenuSelect(item.id);
-                            setIsMenuOpen(false);
-                          }}
-                        >
-                          <Icon className="mr-3 h-4 w-4" />
-                          {item.label}
-                        </Button>
-                      );
-                    })}
-                  </div>
-                </nav>
-              </div>
-            </SheetContent>
-          </Sheet>
-          
-          <h1 className="ml-4 text-lg font-semibold">{title}</h1>
-          
-          <div className="ml-auto flex items-center space-x-2">
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5" />
+      <header className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => setIsSidebarOpen(true)}>
+              <Menu className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon">
-              <Search className="h-5 w-5" />
+            <h1 className="text-lg font-semibold text-gray-900">
+              {getPageTitle(currentPage)}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-5 w-5" />
             </Button>
           </div>
         </div>
       </header>
 
+      {/* Sidebar */}
+      <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
+        <SheetTrigger asChild>
+          <Button variant="ghost" size="sm">
+            <Menu className="h-5 w-5" />
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="w-64">
+          <SheetHeader className="text-left">
+            <SheetTitle>Меню</SheetTitle>
+          </SheetHeader>
+          <div className="py-4">
+            <div className="px-4 py-2">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={session?.user?.image || ""} alt={session?.user?.name || "User Avatar"} />
+                <AvatarFallback>{session?.user?.name?.charAt(0) || "U"}</AvatarFallback>
+              </Avatar>
+              <div className="mt-2">
+                <p className="font-semibold">{session?.user?.name}</p>
+                <p className="text-sm text-gray-500">{session?.user?.email}</p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { router.push('/'); setIsSidebarOpen(false); }}>
+                <Home className="h-4 w-4 mr-2" />
+                Главная
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { router.push('/trips'); setIsSidebarOpen(false); }}>
+                <Truck className="h-4 w-4 mr-2" />
+                Рейсы
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { router.push('/contractors'); setIsSidebarOpen(false); }}>
+                <Users className="h-4 w-4 mr-2" />
+                Контрагенты
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { router.push('/settings'); setIsSidebarOpen(false); }}>
+                <Settings className="h-4 w-4 mr-2" />
+                Настройки
+              </Button>
+              <Button variant="ghost" className="w-full justify-start" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Выйти
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Main Content */}
-      <main className="container px-4 py-6">
+      <main className="p-4">
         {children}
       </main>
 
-      {/* Bottom Navigation for Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t">
-        <div className="grid grid-cols-5 h-16">
-          {bottomNavItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Button
-                key={item.id}
-                variant="ghost"
-                className={cn(
-                  "h-full rounded-none flex-col space-y-1 text-xs",
-                  currentView === item.id && "bg-secondary text-primary"
-                )}
-                onClick={() => onMenuSelect(item.id)}
-              >
-                <Icon className="h-5 w-5" />
-                <span className="text-xs">{item.label}</span>
-              </Button>
-            );
-          })}
+      {/* Bottom Navigation */}
+      <footer className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 py-2 px-4">
+        <div className="flex items-center justify-around">
+          <Button variant="ghost" size="sm" onClick={() => router.push('/')} className="flex flex-col items-center">
+            <Home className="h-5 w-5" />
+            <span className="text-xs">Главная</span>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => router.push('/trips')} className="flex flex-col items-center">
+            <Truck className="h-5 w-5" />
+            <span className="text-xs">Рейсы</span>
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => router.push('/contractors')} className="flex flex-col items-center">
+            <Users className="h-5 w-5" />
+            <span className="text-xs">Контрагенты</span>
+          </Button>
         </div>
-      </div>
+      </footer>
     </div>
   );
 };

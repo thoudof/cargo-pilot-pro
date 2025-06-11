@@ -165,31 +165,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     onNavigate('trips');
   };
 
-  const getPageTitle = () => {
-    switch (currentView) {
-      case 'trips':
-        return 'Рейсы';
-      case 'contractors':
-        return 'Контрагенты';
-      case 'drivers':
-        return 'Водители';
-      case 'vehicles':
-        return 'Транспорт';
-      case 'routes':
-        return 'Маршруты';
-      case 'cargo-types':
-        return 'Типы грузов';
-      case 'documents':
-        return 'Документы';
-      case 'statistics':
-        return 'Статистика';
-      case 'settings':
-        return 'Настройки';
-      default:
-        return 'Главная';
-    }
-  };
-
   const renderCurrentView = () => {
     switch (currentView) {
       case 'trips':
@@ -216,11 +191,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   };
 
   return (
-    <MobileLayout
-      title={getPageTitle()}
-      onMenuSelect={handleMenuSelect}
-      currentView={currentView}
-    >
+    <MobileLayout>
       {renderCurrentView()}
     </MobileLayout>
   );

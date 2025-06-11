@@ -124,6 +124,232 @@ export class SupabaseService {
     if (error) throw error;
     return data || [];
   }
+
+  // Методы для работы с контрагентами
+  async getContractors() {
+    const { data, error } = await this.supabase
+      .from('contractors')
+      .select(`
+        *,
+        contacts (*)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async saveContractor(contractor: any) {
+    const { contacts, ...contractorData } = contractor;
+    
+    const { data, error } = await this.supabase
+      .from('contractors')
+      .upsert(contractorData)
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Сохранение контактов
+    if (contacts && contacts.length > 0) {
+      const contactsData = contacts.map((contact: any) => ({
+        ...contact,
+        contractor_id: data.id
+      }));
+
+      const { error: contactsError } = await this.supabase
+        .from('contacts')
+        .upsert(contactsData);
+
+      if (contactsError) throw contactsError;
+    }
+
+    return data;
+  }
+
+  async deleteContractor(id: string) {
+    const { error } = await this.supabase
+      .from('contractors')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  // Методы для работы с рейсами
+  async getTrips() {
+    const { data, error } = await this.supabase
+      .from('trips')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async saveTrip(trip: any) {
+    const { data, error } = await this.supabase
+      .from('trips')
+      .upsert(trip)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteTrip(id: string) {
+    const { error } = await this.supabase
+      .from('trips')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  // Методы для работы с водителями
+  async getDrivers() {
+    const { data, error } = await this.supabase
+      .from('drivers')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async saveDriver(driver: any) {
+    const { data, error } = await this.supabase
+      .from('drivers')
+      .upsert(driver)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteDriver(id: string) {
+    const { error } = await this.supabase
+      .from('drivers')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  // Методы для работы с транспортом
+  async getVehicles() {
+    const { data, error } = await this.supabase
+      .from('vehicles')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async saveVehicle(vehicle: any) {
+    const { data, error } = await this.supabase
+      .from('vehicles')
+      .upsert(vehicle)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteVehicle(id: string) {
+    const { error } = await this.supabase
+      .from('vehicles')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  // Методы для работы с маршрутами
+  async getRoutes() {
+    const { data, error } = await this.supabase
+      .from('routes')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async saveRoute(route: any) {
+    const { data, error } = await this.supabase
+      .from('routes')
+      .upsert(route)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteRoute(id: string) {
+    const { error } = await this.supabase
+      .from('routes')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  // Методы для работы с типами грузов
+  async getCargoTypes() {
+    const { data, error } = await this.supabase
+      .from('cargo_types')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async saveCargoType(cargoType: any) {
+    const { data, error } = await this.supabase
+      .from('cargo_types')
+      .upsert(cargoType)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteCargoType(id: string) {
+    const { error } = await this.supabase
+      .from('cargo_types')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  // Метод для получения статистики дашборда
+  async getDashboardStats() {
+    const [trips, contractors, drivers, vehicles] = await Promise.all([
+      this.getTrips(),
+      this.getContractors(),
+      this.getDrivers(),
+      this.getVehicles()
+    ]);
+
+    const activeTrips = trips.filter(trip => trip.status === 'in_progress').length;
+
+    return {
+      activeTrips,
+      totalTrips: trips.length,
+      contractors: contractors.length,
+      drivers: drivers.length,
+      vehicles: vehicles.length
+    };
+  }
 }
 
 export const supabaseService = new SupabaseService();

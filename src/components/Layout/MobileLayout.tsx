@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { LogOut, Menu, Home, Truck, Users, Settings } from 'lucide-react';
-import { useRouter } from 'react-router-dom';
-import { useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { NotificationBell } from '@/components/Notifications/NotificationBell';
 import { PushNotificationManager } from '@/components/Notifications/PushNotificationManager';
 import { useAuth } from '@/components/Auth/AuthProvider';
@@ -24,12 +23,12 @@ const pageTitles: { [key: string]: string } = {
 export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuth();
-  const router = useRouter();
+  const navigate = useNavigate();
   const location = useLocation();
 
   const handleLogout = async () => {
     // Логика выхода будет реализована через AuthProvider
-    router('/login');
+    navigate('/login');
   };
 
   const getPageTitle = (path: string | null) => {
@@ -86,19 +85,19 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
               </div>
             </div>
             <div className="mt-4 space-y-2">
-              <Button variant="ghost" className="w-full justify-start" onClick={() => { router('/'); setIsSidebarOpen(false); }}>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate('/'); setIsSidebarOpen(false); }}>
                 <Home className="h-4 w-4 mr-2" />
                 Главная
               </Button>
-              <Button variant="ghost" className="w-full justify-start" onClick={() => { router('/trips'); setIsSidebarOpen(false); }}>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate('/trips'); setIsSidebarOpen(false); }}>
                 <Truck className="h-4 w-4 mr-2" />
                 Рейсы
               </Button>
-              <Button variant="ghost" className="w-full justify-start" onClick={() => { router('/contractors'); setIsSidebarOpen(false); }}>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate('/contractors'); setIsSidebarOpen(false); }}>
                 <Users className="h-4 w-4 mr-2" />
                 Контрагенты
               </Button>
-              <Button variant="ghost" className="w-full justify-start" onClick={() => { router('/settings'); setIsSidebarOpen(false); }}>
+              <Button variant="ghost" className="w-full justify-start" onClick={() => { navigate('/settings'); setIsSidebarOpen(false); }}>
                 <Settings className="h-4 w-4 mr-2" />
                 Настройки
               </Button>
@@ -119,15 +118,15 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       {/* Bottom Navigation */}
       <footer className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 py-2 px-4">
         <div className="flex items-center justify-around">
-          <Button variant="ghost" size="sm" onClick={() => router('/')} className="flex flex-col items-center">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/')} className="flex flex-col items-center">
             <Home className="h-5 w-5" />
             <span className="text-xs">Главная</span>
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => router('/trips')} className="flex flex-col items-center">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/trips')} className="flex flex-col items-center">
             <Truck className="h-5 w-5" />
             <span className="text-xs">Рейсы</span>
           </Button>
-          <Button variant="ghost" size="sm" onClick={() => router('/contractors')} className="flex flex-col items-center">
+          <Button variant="ghost" size="sm" onClick={() => navigate('/contractors')} className="flex flex-col items-center">
             <Users className="h-5 w-5" />
             <span className="text-xs">Контрагенты</span>
           </Button>

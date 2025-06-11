@@ -5,6 +5,7 @@ import { AuthPage } from "@/components/Auth/AuthPage";
 import { MobileLayout } from "@/components/Layout/MobileLayout";
 import { Dashboard } from "@/components/Dashboard/Dashboard";
 import { PushNotificationManager } from "@/components/Notifications/PushNotificationManager";
+import { useActivityLogger } from "@/hooks/useActivityLogger";
 import { TripsPage } from "./TripsPage";
 import { ContractorsPage } from "./ContractorsPage";
 import { DriversPage } from "./DriversPage";
@@ -16,6 +17,9 @@ import AdminPage from "./AdminPage";
 
 const Index = () => {
   const { user, loading } = useAuth();
+  
+  // Используем хук для автоматического логирования навигации
+  useActivityLogger();
 
   console.log('Index: Current state', { user: !!user, loading });
 

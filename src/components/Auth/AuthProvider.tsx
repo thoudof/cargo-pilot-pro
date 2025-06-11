@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { activityLogger } from '@/services/activityLogger';
 
 interface AuthContextType {
   user: User | null;
@@ -41,6 +42,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.log('AuthProvider: Initial session:', !!session);
           setSession(session);
           setUser(session?.user ?? null);
+          
+          // Логируем успешную аутентификацию при инициализации
+          if (session?.user) {
+            await activityLogger.logLogin('session_restore');
+          }
         }
       } catch (error) {
         console.error('AuthProvider: Exception getting session:', error);
@@ -53,11 +59,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Слушаем изменения аутентификации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         console.log('AuthProvider: Auth state changed:', event, !!session);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+
+        // Логируем события аутентификации
+        if (event === 'SIGNED_IN' && session?.user) {
+          await activityLogger.logLogin('password');
+        } else if (event === 'SIGNED_OUT') {
+          await activityLogger.logLogout();
+        }
       }
     );
 

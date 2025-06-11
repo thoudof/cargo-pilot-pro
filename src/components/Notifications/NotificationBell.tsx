@@ -74,7 +74,7 @@ export const NotificationBell: React.FC = () => {
         isSubscribedRef.current = false;
       }
     };
-  }, [loadNotifications]);
+  }, []); // Пустой массив зависимостей чтобы избежать повторных подписок
 
   const markAsRead = async (notificationId: string) => {
     try {

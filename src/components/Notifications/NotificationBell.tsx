@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,7 +25,6 @@ export const NotificationBell: React.FC = () => {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const channelRef = useRef<any>(null);
-  const isSubscribedRef = useRef(false);
 
   const loadNotifications = useCallback(async () => {
     try {
@@ -52,8 +50,7 @@ export const NotificationBell: React.FC = () => {
     loadNotifications();
     
     // Подписка на изменения уведомлений в реальном времени
-    if (!channelRef.current && !isSubscribedRef.current) {
-      isSubscribedRef.current = true;
+    if (!channelRef.current) {
       channelRef.current = supabase
         .channel('notifications-updates')
         .on('postgres_changes', {
@@ -70,10 +67,9 @@ export const NotificationBell: React.FC = () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
-        isSubscribedRef.current = false;
       }
     };
-  }, [loadNotifications]);
+  }, []); // Remove loadNotifications from dependencies
 
   const markAsRead = async (notificationId: string) => {
     try {

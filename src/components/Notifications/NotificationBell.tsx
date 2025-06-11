@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -26,33 +26,9 @@ export const NotificationBell: React.FC = () => {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
   const channelRef = useRef<any>(null);
+  const isSubscribedRef = useRef(false);
 
-  useEffect(() => {
-    loadNotifications();
-    
-    // Подписка на изменения уведомлений в реальном времени
-    if (!channelRef.current) {
-      channelRef.current = supabase
-        .channel('notifications-updates')
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'notifications'
-        }, () => {
-          loadNotifications();
-        })
-        .subscribe();
-    }
-
-    return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, []);
-
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -70,7 +46,34 @@ export const NotificationBell: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadNotifications();
+    
+    // Подписка на изменения уведомлений в реальном времени
+    if (!channelRef.current && !isSubscribedRef.current) {
+      isSubscribedRef.current = true;
+      channelRef.current = supabase
+        .channel('notifications-updates')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'notifications'
+        }, () => {
+          loadNotifications();
+        })
+        .subscribe();
+    }
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+        isSubscribedRef.current = false;
+      }
+    };
+  }, [loadNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     try {

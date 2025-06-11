@@ -35,9 +35,43 @@ export const TripForm: React.FC<TripFormProps> = ({
   const [cargoTypes, setCargoTypes] = useState<CargoType[]>([]);
   const { toast } = useToast();
 
-  const form = useForm<TripFormData>({
-    resolver: zodResolver(tripSchema),
-    defaultValues: trip || {
+  // Функция для получения значений по умолчанию
+  const getDefaultValues = (): TripFormData => {
+    if (trip) {
+      return {
+        id: trip.id || '',
+        status: trip.status,
+        departureDate: trip.departureDate ? new Date(trip.departureDate) : new Date(),
+        arrivalDate: trip.arrivalDate ? new Date(trip.arrivalDate) : undefined,
+        pointA: trip.pointA || '',
+        pointB: trip.pointB || '',
+        contractorId: trip.contractorId || '',
+        driver: {
+          name: trip.driver?.name || '',
+          phone: trip.driver?.phone || '',
+          license: trip.driver?.license || ''
+        },
+        vehicle: {
+          brand: trip.vehicle?.brand || '',
+          model: trip.vehicle?.model || '',
+          licensePlate: trip.vehicle?.licensePlate || '',
+          capacity: trip.vehicle?.capacity
+        },
+        cargo: {
+          description: trip.cargo?.description || '',
+          weight: trip.cargo?.weight || 0,
+          volume: trip.cargo?.volume || 0,
+          value: trip.cargo?.value
+        },
+        comments: trip.comments || '',
+        documents: trip.documents || [],
+        createdAt: trip.createdAt ? new Date(trip.createdAt) : new Date(),
+        updatedAt: trip.updatedAt ? new Date(trip.updatedAt) : new Date(),
+        changeLog: trip.changeLog || []
+      };
+    }
+    
+    return {
       id: '',
       status: TripStatus.PLANNED,
       departureDate: new Date(),
@@ -53,14 +87,22 @@ export const TripForm: React.FC<TripFormProps> = ({
       createdAt: new Date(),
       updatedAt: new Date(),
       changeLog: []
-    }
+    };
+  };
+
+  const form = useForm<TripFormData>({
+    resolver: zodResolver(tripSchema),
+    defaultValues: getDefaultValues()
   });
 
+  // Сброс формы при изменении trip
   useEffect(() => {
     if (open) {
+      const defaultValues = getDefaultValues();
+      form.reset(defaultValues);
       loadData();
     }
-  }, [open]);
+  }, [open, trip]);
 
   const loadData = async () => {
     try {
@@ -237,7 +279,7 @@ export const TripForm: React.FC<TripFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Статус</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Выберите статус" />
@@ -261,7 +303,7 @@ export const TripForm: React.FC<TripFormProps> = ({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Контрагент</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Выберите контрагента" />

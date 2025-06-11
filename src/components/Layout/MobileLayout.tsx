@@ -60,16 +60,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           </div>
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             <NotificationBell />
-            {/* Кнопка "Выйти" скрыта на мобильных устройствах, показывается только на sm+ */}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={handleLogout}
-              className="hidden sm:flex p-1 sm:p-2 items-center gap-1"
-            >
-              <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="text-sm">Выйти</span>
-            </Button>
+            {/* Кнопка "Выйти" убрана из header - она есть только в sidebar */}
           </div>
         </div>
       </header>
@@ -207,7 +198,14 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 <Settings className="h-5 w-5 mr-3" />
                 Настройки
               </Button>
-              {/* Убрана кнопка "Выйти" из мобильного sidebar, так как она есть в bottom navigation */}
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start h-12" 
+                onClick={() => { handleLogout(); setIsSidebarOpen(false); }}
+              >
+                <LogOut className="h-5 w-5 mr-3" />
+                Выйти
+              </Button>
             </nav>
           </div>
         </SheetContent>
@@ -220,7 +218,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
         </div>
       </main>
 
-      {/* Bottom Navigation - только для мобильных */}
+      {/* Bottom Navigation - только для мобильных, без кнопки "Выйти" */}
       <footer className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 py-1 px-2 safe-area-inset">
         <div className="flex items-center justify-around max-w-md mx-auto">
           <Button 
@@ -253,11 +251,11 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           <Button 
             variant="ghost" 
             size="sm" 
-            onClick={handleLogout} 
+            onClick={() => navigate('/settings')} 
             className="flex flex-col items-center gap-1 h-auto py-2 px-2 min-w-0"
           >
-            <LogOut className="h-4 w-4" />
-            <span className="text-xs leading-none">Выйти</span>
+            <Settings className="h-4 w-4" />
+            <span className="text-xs leading-none">Настройки</span>
           </Button>
         </div>
       </footer>

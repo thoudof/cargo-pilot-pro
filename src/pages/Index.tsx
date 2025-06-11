@@ -2,7 +2,7 @@
 import { AuthProvider, useAuth } from '@/components/Auth/AuthProvider';
 import { AuthPage } from '@/components/Auth/AuthPage';
 import { Dashboard } from '@/components/Dashboard/Dashboard';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { TripsPage } from '@/pages/TripsPage';
 import { ContractorsPage } from '@/pages/ContractorsPage';
 import { DriversPage } from '@/pages/DriversPage';
@@ -39,23 +39,21 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={
-          <MobileLayout>
-            <Dashboard onNavigate={() => {}} />
-          </MobileLayout>
-        } />
-        <Route path="/trips" element={<TripsPage />} />
-        <Route path="/contractors" element={<ContractorsPage />} />
-        <Route path="/drivers" element={<DriversPage />} />
-        <Route path="/vehicles" element={<VehiclesPage />} />
-        <Route path="/routes" element={<RoutesPage />} />
-        <Route path="/cargo-types" element={<CargoTypesPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/" element={
+        <MobileLayout>
+          <Dashboard onNavigate={() => {}} />
+        </MobileLayout>
+      } />
+      <Route path="/trips" element={<TripsPage />} />
+      <Route path="/contractors" element={<ContractorsPage />} />
+      <Route path="/drivers" element={<DriversPage />} />
+      <Route path="/vehicles" element={<VehiclesPage />} />
+      <Route path="/routes" element={<RoutesPage />} />
+      <Route path="/cargo-types" element={<CargoTypesPage />} />
+      <Route path="/settings" element={<SettingsPage />} />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 

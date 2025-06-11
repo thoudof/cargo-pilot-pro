@@ -6,18 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Activity, Filter } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import type { Database } from '@/integrations/supabase/types';
 
-interface ActivityLog {
-  id: string;
-  action: string;
-  entity_type: string | null;
-  entity_id: string | null;
-  details: any;
-  user_id: string;
-  created_at: string;
-  user_agent: string | null;
-  ip_address: string | null;
-}
+type ActivityLog = Database['public']['Tables']['activity_logs']['Row'];
 
 export const ActivityLogs: React.FC = () => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);

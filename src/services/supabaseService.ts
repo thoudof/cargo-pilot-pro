@@ -24,6 +24,134 @@ class SupabaseService {
     return supabase;
   }
 
+  // Data transformation helpers
+  private transformContractor(dbContractor: any): any {
+    return {
+      id: dbContractor.id,
+      companyName: dbContractor.company_name,
+      inn: dbContractor.inn,
+      address: dbContractor.address,
+      contacts: dbContractor.contacts || [],
+      notes: dbContractor.notes,
+      createdAt: new Date(dbContractor.created_at),
+      updatedAt: new Date(dbContractor.updated_at)
+    };
+  }
+
+  private transformDriver(dbDriver: any): any {
+    return {
+      id: dbDriver.id,
+      name: dbDriver.name,
+      phone: dbDriver.phone,
+      license: dbDriver.license,
+      passportData: dbDriver.passport_data,
+      experienceYears: dbDriver.experience_years,
+      notes: dbDriver.notes,
+      createdAt: new Date(dbDriver.created_at),
+      updatedAt: new Date(dbDriver.updated_at)
+    };
+  }
+
+  private transformVehicle(dbVehicle: any): any {
+    return {
+      id: dbVehicle.id,
+      brand: dbVehicle.brand,
+      model: dbVehicle.model,
+      licensePlate: dbVehicle.license_plate,
+      capacity: dbVehicle.capacity,
+      year: dbVehicle.year,
+      vin: dbVehicle.vin,
+      registrationCertificate: dbVehicle.registration_certificate,
+      insurancePolicy: dbVehicle.insurance_policy,
+      insuranceExpiry: dbVehicle.insurance_expiry ? new Date(dbVehicle.insurance_expiry) : undefined,
+      technicalInspectionExpiry: dbVehicle.technical_inspection_expiry ? new Date(dbVehicle.technical_inspection_expiry) : undefined,
+      notes: dbVehicle.notes,
+      createdAt: new Date(dbVehicle.created_at),
+      updatedAt: new Date(dbVehicle.updated_at)
+    };
+  }
+
+  private transformRoute(dbRoute: any): any {
+    return {
+      id: dbRoute.id,
+      name: dbRoute.name,
+      pointA: dbRoute.point_a,
+      pointB: dbRoute.point_b,
+      distanceKm: dbRoute.distance_km,
+      estimatedDurationHours: dbRoute.estimated_duration_hours,
+      notes: dbRoute.notes,
+      createdAt: new Date(dbRoute.created_at),
+      updatedAt: new Date(dbRoute.updated_at)
+    };
+  }
+
+  private transformCargoType(dbCargoType: any): any {
+    return {
+      id: dbCargoType.id,
+      name: dbCargoType.name,
+      description: dbCargoType.description,
+      defaultWeight: dbCargoType.default_weight,
+      defaultVolume: dbCargoType.default_volume,
+      hazardous: dbCargoType.hazardous,
+      temperatureControlled: dbCargoType.temperature_controlled,
+      fragile: dbCargoType.fragile,
+      createdAt: new Date(dbCargoType.created_at),
+      updatedAt: new Date(dbCargoType.updated_at)
+    };
+  }
+
+  private transformTrip(dbTrip: any): any {
+    return {
+      id: dbTrip.id,
+      status: dbTrip.status,
+      departureDate: new Date(dbTrip.departure_date),
+      arrivalDate: dbTrip.arrival_date ? new Date(dbTrip.arrival_date) : undefined,
+      pointA: dbTrip.point_a,
+      pointB: dbTrip.point_b,
+      contractorId: dbTrip.contractor_id,
+      driverId: dbTrip.driver_id,
+      vehicleId: dbTrip.vehicle_id,
+      routeId: dbTrip.route_id,
+      cargoTypeId: dbTrip.cargo_type_id,
+      driver: {
+        name: dbTrip.driver_name,
+        phone: dbTrip.driver_phone,
+        license: dbTrip.driver_license
+      },
+      vehicle: {
+        brand: dbTrip.vehicle_brand,
+        model: dbTrip.vehicle_model,
+        licensePlate: dbTrip.vehicle_license_plate,
+        capacity: dbTrip.vehicle_capacity
+      },
+      cargo: {
+        description: dbTrip.cargo_description,
+        weight: dbTrip.cargo_weight,
+        volume: dbTrip.cargo_volume,
+        value: dbTrip.cargo_value
+      },
+      comments: dbTrip.comments,
+      documents: dbTrip.documents || [],
+      createdAt: new Date(dbTrip.created_at),
+      updatedAt: new Date(dbTrip.updated_at),
+      changeLog: []
+    };
+  }
+
+  private transformTripExpense(dbExpense: any): any {
+    return {
+      id: dbExpense.id,
+      tripId: dbExpense.trip_id,
+      expenseType: dbExpense.expense_type,
+      amount: dbExpense.amount,
+      description: dbExpense.description,
+      expenseDate: new Date(dbExpense.expense_date),
+      receiptUrl: dbExpense.receipt_url,
+      createdAt: new Date(dbExpense.created_at),
+      updatedAt: new Date(dbExpense.updated_at)
+    };
+  }
+
   // Authentication methods
   async signIn(email: string, password: string) {
     const { data, error } = await supabase.auth.signInWithPassword({
@@ -55,29 +183,40 @@ class SupabaseService {
   async getContractors() {
     const { data, error } = await supabase
       .from('contractors')
-      .select('*');
+      .select(`
+        *,
+        contacts(*)
+      `);
     if (error) throw error;
-    return data;
+    return data.map(contractor => this.transformContractor(contractor));
   }
 
   async saveContractor(contractor: any) {
+    // Transform camelCase to snake_case for database
+    const dbContractor = {
+      company_name: contractor.companyName,
+      inn: contractor.inn,
+      address: contractor.address,
+      notes: contractor.notes
+    };
+
     if (contractor.id) {
       const { data, error } = await supabase
         .from('contractors')
-        .update(contractor)
+        .update(dbContractor)
         .eq('id', contractor.id)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformContractor(data);
     } else {
       const { data, error } = await supabase
         .from('contractors')
-        .insert(contractor)
+        .insert(dbContractor)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformContractor(data);
     }
   }
 
@@ -94,27 +233,36 @@ class SupabaseService {
       .from('drivers')
       .select('*');
     if (error) throw error;
-    return data;
+    return data.map(driver => this.transformDriver(driver));
   }
 
   async saveDriver(driver: any) {
+    const dbDriver = {
+      name: driver.name,
+      phone: driver.phone,
+      license: driver.license,
+      passport_data: driver.passportData,
+      experience_years: driver.experienceYears,
+      notes: driver.notes
+    };
+
     if (driver.id) {
       const { data, error } = await supabase
         .from('drivers')
-        .update(driver)
+        .update(dbDriver)
         .eq('id', driver.id)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformDriver(data);
     } else {
       const { data, error } = await supabase
         .from('drivers')
-        .insert(driver)
+        .insert(dbDriver)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformDriver(data);
     }
   }
 
@@ -131,27 +279,41 @@ class SupabaseService {
       .from('vehicles')
       .select('*');
     if (error) throw error;
-    return data;
+    return data.map(vehicle => this.transformVehicle(vehicle));
   }
 
   async saveVehicle(vehicle: any) {
+    const dbVehicle = {
+      brand: vehicle.brand,
+      model: vehicle.model,
+      license_plate: vehicle.licensePlate,
+      capacity: vehicle.capacity,
+      year: vehicle.year,
+      vin: vehicle.vin,
+      registration_certificate: vehicle.registrationCertificate,
+      insurance_policy: vehicle.insurancePolicy,
+      insurance_expiry: vehicle.insuranceExpiry,
+      technical_inspection_expiry: vehicle.technicalInspectionExpiry,
+      notes: vehicle.notes
+    };
+
     if (vehicle.id) {
       const { data, error } = await supabase
         .from('vehicles')
-        .update(vehicle)
+        .update(dbVehicle)
         .eq('id', vehicle.id)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformVehicle(data);
     } else {
       const { data, error } = await supabase
         .from('vehicles')
-        .insert(vehicle)
+        .insert(dbVehicle)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformVehicle(data);
     }
   }
 
@@ -168,27 +330,36 @@ class SupabaseService {
       .from('routes')
       .select('*');
     if (error) throw error;
-    return data;
+    return data.map(route => this.transformRoute(route));
   }
 
   async saveRoute(route: any) {
+    const dbRoute = {
+      name: route.name,
+      point_a: route.pointA,
+      point_b: route.pointB,
+      distance_km: route.distanceKm,
+      estimated_duration_hours: route.estimatedDurationHours,
+      notes: route.notes
+    };
+
     if (route.id) {
       const { data, error } = await supabase
         .from('routes')
-        .update(route)
+        .update(dbRoute)
         .eq('id', route.id)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformRoute(data);
     } else {
       const { data, error } = await supabase
         .from('routes')
-        .insert(route)
+        .insert(dbRoute)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformRoute(data);
     }
   }
 
@@ -205,27 +376,37 @@ class SupabaseService {
       .from('cargo_types')
       .select('*');
     if (error) throw error;
-    return data;
+    return data.map(cargoType => this.transformCargoType(cargoType));
   }
 
   async saveCargoType(cargoType: any) {
+    const dbCargoType = {
+      name: cargoType.name,
+      description: cargoType.description,
+      default_weight: cargoType.defaultWeight,
+      default_volume: cargoType.defaultVolume,
+      hazardous: cargoType.hazardous,
+      temperature_controlled: cargoType.temperatureControlled,
+      fragile: cargoType.fragile
+    };
+
     if (cargoType.id) {
       const { data, error } = await supabase
         .from('cargo_types')
-        .update(cargoType)
+        .update(dbCargoType)
         .eq('id', cargoType.id)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformCargoType(data);
     } else {
       const { data, error } = await supabase
         .from('cargo_types')
-        .insert(cargoType)
+        .insert(dbCargoType)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformCargoType(data);
     }
   }
 
@@ -242,27 +423,53 @@ class SupabaseService {
       .from('trips')
       .select('*');
     if (error) throw error;
-    return data;
+    return data.map(trip => this.transformTrip(trip));
   }
 
   async saveTrip(trip: any) {
+    const dbTrip = {
+      status: trip.status,
+      departure_date: trip.departureDate,
+      arrival_date: trip.arrivalDate,
+      point_a: trip.pointA,
+      point_b: trip.pointB,
+      contractor_id: trip.contractorId,
+      driver_id: trip.driverId,
+      vehicle_id: trip.vehicleId,
+      route_id: trip.routeId,
+      cargo_type_id: trip.cargoTypeId,
+      driver_name: trip.driver?.name,
+      driver_phone: trip.driver?.phone,
+      driver_license: trip.driver?.license,
+      vehicle_brand: trip.vehicle?.brand,
+      vehicle_model: trip.vehicle?.model,
+      vehicle_license_plate: trip.vehicle?.licensePlate,
+      vehicle_capacity: trip.vehicle?.capacity,
+      cargo_description: trip.cargo?.description,
+      cargo_weight: trip.cargo?.weight,
+      cargo_volume: trip.cargo?.volume,
+      cargo_value: trip.cargo?.value,
+      comments: trip.comments,
+      documents: trip.documents
+    };
+
     if (trip.id) {
       const { data, error } = await supabase
         .from('trips')
-        .update(trip)
+        .update(dbTrip)
         .eq('id', trip.id)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformTrip(data);
     } else {
       const { data, error } = await supabase
         .from('trips')
-        .insert(trip)
+        .insert(dbTrip)
         .select()
         .single();
       if (error) throw error;
-      return data;
+      return this.transformTrip(data);
     }
   }
 
@@ -280,28 +487,45 @@ class SupabaseService {
       .select('*')
       .eq('trip_id', tripId);
     if (error) throw error;
-    return data;
+    return data.map(expense => this.transformTripExpense(expense));
   }
 
   async createTripExpense(expense: any) {
+    const dbExpense = {
+      trip_id: expense.tripId,
+      expense_type: expense.expenseType,
+      amount: expense.amount,
+      description: expense.description,
+      expense_date: expense.expenseDate,
+      receipt_url: expense.receiptUrl
+    };
+
     const { data, error } = await supabase
       .from('trip_expenses')
-      .insert(expense)
+      .insert(dbExpense)
       .select()
       .single();
     if (error) throw error;
-    return data;
+    return this.transformTripExpense(data);
   }
 
   async updateTripExpense(id: string, expense: any) {
+    const dbExpense = {
+      expense_type: expense.expenseType,
+      amount: expense.amount,
+      description: expense.description,
+      expense_date: expense.expenseDate,
+      receipt_url: expense.receiptUrl
+    };
+
     const { data, error } = await supabase
       .from('trip_expenses')
-      .update(expense)
+      .update(dbExpense)
       .eq('id', id)
       .select()
       .single();
     if (error) throw error;
-    return data;
+    return this.transformTripExpense(data);
   }
 
   async deleteTripExpense(id: string) {

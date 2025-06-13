@@ -28,7 +28,10 @@ export const TripList: React.FC = () => {
 
   const { data: trips = [], loading, refetch } = useDataCache<Trip[]>(
     'trips-optimized',
-    () => optimizedSupabaseService.getTripsOptimized(100),
+    async () => {
+      const result = await optimizedSupabaseService.getTripsOptimized(100);
+      return Array.isArray(result) ? result : [];
+    },
     { ttl: 2 * 60 * 1000 }
   );
 

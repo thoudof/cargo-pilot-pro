@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { ExpenseType } from '@/types/expenses';
 
@@ -148,7 +147,8 @@ class SupabaseService {
       expenseDate: new Date(dbExpense.expense_date),
       receiptUrl: dbExpense.receipt_url,
       createdAt: new Date(dbExpense.created_at),
-      updatedAt: new Date(dbExpense.updated_at)
+      updatedAt: new Date(dbExpense.updated_at),
+      userId: dbExpense.user_id
     };
   }
 
@@ -192,12 +192,16 @@ class SupabaseService {
   }
 
   async saveContractor(contractor: any) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
     // Transform camelCase to snake_case for database
     const dbContractor = {
       company_name: contractor.companyName,
       inn: contractor.inn,
       address: contractor.address,
-      notes: contractor.notes
+      notes: contractor.notes,
+      user_id: user.id
     };
 
     if (contractor.id) {
@@ -237,13 +241,17 @@ class SupabaseService {
   }
 
   async saveDriver(driver: any) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
     const dbDriver = {
       name: driver.name,
       phone: driver.phone,
       license: driver.license,
       passport_data: driver.passportData,
       experience_years: driver.experienceYears,
-      notes: driver.notes
+      notes: driver.notes,
+      user_id: user.id
     };
 
     if (driver.id) {
@@ -283,6 +291,9 @@ class SupabaseService {
   }
 
   async saveVehicle(vehicle: any) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
     const dbVehicle = {
       brand: vehicle.brand,
       model: vehicle.model,
@@ -294,7 +305,8 @@ class SupabaseService {
       insurance_policy: vehicle.insurancePolicy,
       insurance_expiry: vehicle.insuranceExpiry,
       technical_inspection_expiry: vehicle.technicalInspectionExpiry,
-      notes: vehicle.notes
+      notes: vehicle.notes,
+      user_id: user.id
     };
 
     if (vehicle.id) {
@@ -334,13 +346,17 @@ class SupabaseService {
   }
 
   async saveRoute(route: any) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
     const dbRoute = {
       name: route.name,
       point_a: route.pointA,
       point_b: route.pointB,
       distance_km: route.distanceKm,
       estimated_duration_hours: route.estimatedDurationHours,
-      notes: route.notes
+      notes: route.notes,
+      user_id: user.id
     };
 
     if (route.id) {
@@ -380,6 +396,9 @@ class SupabaseService {
   }
 
   async saveCargoType(cargoType: any) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
     const dbCargoType = {
       name: cargoType.name,
       description: cargoType.description,
@@ -387,7 +406,8 @@ class SupabaseService {
       default_volume: cargoType.defaultVolume,
       hazardous: cargoType.hazardous,
       temperature_controlled: cargoType.temperatureControlled,
-      fragile: cargoType.fragile
+      fragile: cargoType.fragile,
+      user_id: user.id
     };
 
     if (cargoType.id) {
@@ -427,6 +447,9 @@ class SupabaseService {
   }
 
   async saveTrip(trip: any) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
     const dbTrip = {
       status: trip.status,
       departure_date: trip.departureDate,
@@ -450,7 +473,8 @@ class SupabaseService {
       cargo_volume: trip.cargo?.volume,
       cargo_value: trip.cargo?.value,
       comments: trip.comments,
-      documents: trip.documents
+      documents: trip.documents,
+      user_id: user.id
     };
 
     if (trip.id) {
@@ -491,13 +515,17 @@ class SupabaseService {
   }
 
   async createTripExpense(expense: any) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
     const dbExpense = {
       trip_id: expense.tripId,
       expense_type: expense.expenseType,
       amount: expense.amount,
       description: expense.description,
       expense_date: expense.expenseDate,
-      receipt_url: expense.receiptUrl
+      receipt_url: expense.receiptUrl,
+      user_id: user.id
     };
 
     const { data, error } = await supabase

@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,7 +9,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { AppNavigation } from '@/components/Navigation/AppNavigation';
 import { activityLogger } from '@/services/activityLogger';
-import { supabaseService } from '@/services/supabaseService';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 interface MobileLayoutProps {
   children: React.ReactNode;
@@ -31,16 +33,56 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
-      await activityLogger.logLogout();
-      await supabaseService.signOut();
-      navigate('/');
+      console.log('Starting logout process...');
+      
+      // Логируем выход из системы
+      try {
+        await activityLogger.logLogout();
+      } catch (logError) {
+        console.warn('Failed to log logout activity:', logError);
+      }
+      
+      // Выходим из Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('Logout error:', error);
+        toast({
+          title: "Ошибка выхода",
+          description: "Не удалось выйти из системы. Попробуйте еще раз.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      console.log('Logout successful, redirecting...');
+      
+      // Показываем уведомление об успешном выходе
+      toast({
+        title: "Выход выполнен",
+        description: "Вы успешно вышли из системы",
+      });
+
+      // Перенаправляем на главную страницу
+      navigate('/', { replace: true });
+      
     } catch (error) {
-      console.error('Logout error:', error);
+      console.error('Unexpected logout error:', error);
+      toast({
+        title: "Ошибка",
+        description: "Произошла неожиданная ошибка при выходе",
+        variant: "destructive",
+      });
     }
-  };
+  }, [navigate, toast]);
+
+  const handleMobileLogout = useCallback(async () => {
+    setIsSidebarOpen(false);
+    await handleLogout();
+  }, [handleLogout]);
 
   const currentPage = useMemo(() => 
     location.pathname === '/' ? '/' : location.pathname,
@@ -52,6 +94,24 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
     [currentPage]
   );
 
+  const userInitial = useMemo(() => 
+    user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || "U",
+    [user?.user_metadata?.full_name, user?.email]
+  );
+
+  const userName = useMemo(() => 
+    user?.user_metadata?.full_name || 'Пользователь',
+    [user?.user_metadata?.full_name]
+  );
+
+  const closeSidebar = useCallback(() => {
+    setIsSidebarOpen(false);
+  }, []);
+
+  const openSidebar = useCallback(() => {
+    setIsSidebarOpen(true);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header с логотипом и кнопкой меню */}
@@ -61,7 +121,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => setIsSidebarOpen(true)}
+              onClick={openSidebar}
               className="lg:hidden p-2"
             >
               <Menu className="h-5 w-5" />
@@ -95,13 +155,13 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 <Avatar className="h-10 w-10 xl:h-12 xl:w-12 flex-shrink-0">
                   <AvatarImage 
                     src={user?.user_metadata?.avatar_url || ""} 
-                    alt={user?.user_metadata?.full_name || "User Avatar"} 
+                    alt={userName} 
                   />
-                  <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || "U"}</AvatarFallback>
+                  <AvatarFallback>{userInitial}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm xl:text-base truncate">
-                    {user?.user_metadata?.full_name || 'Пользователь'}
+                    {userName}
                   </p>
                   <p className="text-xs xl:text-sm text-gray-500 truncate break-all">{user?.email}</p>
                 </div>
@@ -146,13 +206,13 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 <Avatar className="h-10 w-10 flex-shrink-0">
                   <AvatarImage 
                     src={user?.user_metadata?.avatar_url || ""} 
-                    alt={user?.user_metadata?.full_name || "User Avatar"} 
+                    alt={userName} 
                   />
-                  <AvatarFallback>{user?.user_metadata?.full_name?.charAt(0) || "U"}</AvatarFallback>
+                  <AvatarFallback>{userInitial}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-sm truncate">
-                    {user?.user_metadata?.full_name || 'Пользователь'}
+                    {userName}
                   </p>
                   <p className="text-xs text-gray-500 truncate break-all">{user?.email}</p>
                 </div>
@@ -160,7 +220,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
               
               <AppNavigation 
                 variant="mobile" 
-                onItemClick={() => setIsSidebarOpen(false)} 
+                onItemClick={closeSidebar} 
               />
             </div>
           </ScrollArea>
@@ -169,7 +229,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <Button 
               variant="ghost" 
               className="w-full justify-start h-12" 
-              onClick={() => { handleLogout(); setIsSidebarOpen(false); }}
+              onClick={handleMobileLogout}
             >
               <LogOut className="h-5 w-5 mr-3" />
               Выйти

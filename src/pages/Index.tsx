@@ -14,6 +14,23 @@ import { RoutesPage } from "./RoutesPage";
 import { CargoTypesPage } from "./CargoTypesPage";
 import { SettingsPage } from "./SettingsPage";
 import AdminPage from "./AdminPage";
+import { Suspense, lazy, useMemo } from "react";
+
+// Загружаем компоненты лениво для улучшения производительности
+const LazyTripsPage = lazy(() => import("./TripsPage").then(module => ({ default: module.TripsPage })));
+const LazyContractorsPage = lazy(() => import("./ContractorsPage").then(module => ({ default: module.ContractorsPage })));
+const LazyDriversPage = lazy(() => import("./DriversPage").then(module => ({ default: module.DriversPage })));
+const LazyVehiclesPage = lazy(() => import("./VehiclesPage").then(module => ({ default: module.VehiclesPage })));
+const LazyRoutesPage = lazy(() => import("./RoutesPage").then(module => ({ default: module.RoutesPage })));
+const LazyCargoTypesPage = lazy(() => import("./CargoTypesPage").then(module => ({ default: module.CargoTypesPage })));
+const LazySettingsPage = lazy(() => import("./SettingsPage").then(module => ({ default: module.SettingsPage })));
+const LazyAdminPage = lazy(() => import("./AdminPage"));
+
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -23,14 +40,17 @@ const Index = () => {
 
   console.log('Index: Current state', { user: !!user, loading });
 
+  // Мемоизируем загрузочный спиннер
+  const loadingSpinner = useMemo(() => (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+    </div>
+  ), []);
+
   // Показываем загрузку только пока аутентификация инициализируется
   if (loading) {
     console.log('Index: Auth loading, showing spinner');
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
+    return loadingSpinner;
   }
 
   // Если пользователя нет, показываем страницу аутентификации
@@ -44,18 +64,20 @@ const Index = () => {
   return (
     <MobileLayout>
       <PushNotificationManager />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/trips" element={<TripsPage />} />
-        <Route path="/contractors" element={<ContractorsPage />} />
-        <Route path="/drivers" element={<DriversPage />} />
-        <Route path="/vehicles" element={<VehiclesPage />} />
-        <Route path="/routes" element={<RoutesPage />} />
-        <Route path="/cargo-types" element={<CargoTypesPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/trips" element={<LazyTripsPage />} />
+          <Route path="/contractors" element={<LazyContractorsPage />} />
+          <Route path="/drivers" element={<LazyDriversPage />} />
+          <Route path="/vehicles" element={<LazyVehiclesPage />} />
+          <Route path="/routes" element={<LazyRoutesPage />} />
+          <Route path="/cargo-types" element={<LazyCargoTypesPage />} />
+          <Route path="/admin" element={<LazyAdminPage />} />
+          <Route path="/settings" element={<LazySettingsPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Suspense>
     </MobileLayout>
   );
 };

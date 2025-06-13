@@ -7,17 +7,24 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/Auth/AuthProvider";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
+import { useMemo } from "react";
 
 function App() {
+  // Мемоизируем QueryClient для предотвращения пересоздания
+  const queryClient = useMemo(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 1,
+        refetchOnWindowFocus: false,
+        staleTime: 5 * 60 * 1000, // 5 минут
+        gcTime: 10 * 60 * 1000, // 10 минут
+      },
+      mutations: {
+        retry: 1,
+      },
+    },
+  }), []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

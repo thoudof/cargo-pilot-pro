@@ -34,14 +34,13 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
   const [searchTerm, setSearchTerm] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
 
-  // Загружаем только последние 20 рейсов для обзора
-  const { data: trips = [], loading } = useDataCache(
+  const { data: trips = [], loading } = useDataCache<Trip[]>(
     'trips-overview',
     () => optimizedSupabaseService.getTripsOptimized(20),
     { ttl: 2 * 60 * 1000 }
   );
 
-  const { data: contractors = [] } = useDataCache(
+  const { data: contractors = {} } = useDataCache<Record<string, string>>(
     'contractors-overview',
     async () => {
       const { data, error } = await optimizedSupabaseService.supabase
@@ -60,9 +59,8 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
     return contractors[contractorId] || 'Неизвестный контрагент';
   }, [contractors]);
 
-  // Простая фильтрация без сложной логики
   const filteredTrips = useMemo(() => {
-    if (!trips.length) return [];
+    if (!Array.isArray(trips) || trips.length === 0) return [];
     
     let result = trips;
     
@@ -79,7 +77,7 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
       );
     }
     
-    return result.slice(0, 10); // Показываем максимум 10
+    return result.slice(0, 10);
   }, [trips, searchTerm, statusFilter]);
 
   if (loading) {
@@ -132,7 +130,7 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
           {filteredTrips.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
-                {trips.length === 0 ? 'Нет рейсов' : 'Не найдено рейсов по заданным критериям'}
+                {Array.isArray(trips) && trips.length === 0 ? 'Нет рейсов' : 'Не найдено рейсов по заданным критериям'}
               </p>
             </div>
           ) : (
@@ -157,7 +155,7 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
                   </div>
                 </Card>
               ))}
-              {trips.length > 10 && (
+              {Array.isArray(trips) && trips.length > 10 && (
                 <div className="text-center">
                   <Button onClick={onNavigateToTrips} variant="link" size="sm">
                     Показать еще {trips.length - 10} рейсов

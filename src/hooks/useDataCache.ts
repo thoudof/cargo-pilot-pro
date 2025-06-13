@@ -51,12 +51,10 @@ class DataCache {
     this.cache.delete(key);
   }
 
-  // Метод для получения размера кэша (для отладки)
   size(): number {
     return this.cache.size;
   }
 
-  // Метод для очистки истекших записей
   cleanup(): void {
     const now = Date.now();
     for (const [key, entry] of this.cache.entries()) {
@@ -69,7 +67,6 @@ class DataCache {
 
 const globalCache = new DataCache();
 
-// Очищаем истекшие записи каждые 5 минут
 setInterval(() => {
   globalCache.cleanup();
 }, 5 * 60 * 1000);
@@ -90,13 +87,11 @@ export const useDataCache = <T>(
   const abortControllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
 
-  const fetchData = useCallback(async (forceRefresh = false) => {
-    // Отменяем предыдущий запрос
+  const fetchData = useCallback(async (forceRefresh = false): Promise<T | null> => {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
-    // Проверяем кэш только если не принудительное обновление
     if (!forceRefresh && globalCache.has(key)) {
       const cachedData = globalCache.get<T>(key);
       if (cachedData && mountedRef.current) {
@@ -106,7 +101,7 @@ export const useDataCache = <T>(
       }
     }
 
-    if (!mountedRef.current) return;
+    if (!mountedRef.current) return null;
 
     setLoading(true);
     setError(null);
@@ -130,7 +125,7 @@ export const useDataCache = <T>(
         setError(error);
         console.error(`Cache fetch error for key ${key}:`, error);
       }
-      throw err;
+      return null;
     } finally {
       if (!abortController.signal.aborted && mountedRef.current) {
         setLoading(false);

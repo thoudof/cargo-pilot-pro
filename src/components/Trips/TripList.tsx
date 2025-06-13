@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Trip, Contractor } from '@/types';
+import { Trip } from '@/types';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
 import { TripForm } from './TripForm';
 import { useToast } from '@/hooks/use-toast';
@@ -10,8 +10,13 @@ import { TripListFilters } from './TripListFilters';
 import { TripListEmptyState } from './TripListEmptyState';
 import { useDataCache } from '@/hooks/useDataCache';
 
+interface SimpleContractor {
+  id: string;
+  companyName: string;
+}
+
 export const TripList: React.FC = () => {
-  const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [contractors, setContractors] = useState<SimpleContractor[]>([]);
   const [tripExpenses, setTripExpenses] = useState<Record<string, number>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -21,15 +26,13 @@ export const TripList: React.FC = () => {
   const [selectedTrip, setSelectedTrip] = useState<Trip | undefined>();
   const { toast } = useToast();
 
-  // Используем оптимизированный запрос с кэшированием
-  const { data: trips = [], loading, refetch } = useDataCache(
+  const { data: trips = [], loading, refetch } = useDataCache<Trip[]>(
     'trips-optimized',
     () => optimizedSupabaseService.getTripsOptimized(100),
-    { ttl: 2 * 60 * 1000 } // 2 минуты кэш
+    { ttl: 2 * 60 * 1000 }
   );
 
-  // Загружаем контрагентов с кэшированием
-  const { data: contractorsData = [] } = useDataCache(
+  const { data: contractorsData = [] } = useDataCache<SimpleContractor[]>(
     'contractors',
     async () => {
       const { data, error } = await optimizedSupabaseService.supabase
@@ -38,16 +41,15 @@ export const TripList: React.FC = () => {
       if (error) throw error;
       return data.map(c => ({ id: c.id, companyName: c.company_name }));
     },
-    { ttl: 5 * 60 * 1000 } // 5 минут кэш
+    { ttl: 5 * 60 * 1000 }
   );
 
   useEffect(() => {
     setContractors(contractorsData);
   }, [contractorsData]);
 
-  // Загружаем расходы батчем только при наличии рейсов
   useEffect(() => {
-    if (trips.length > 0) {
+    if (Array.isArray(trips) && trips.length > 0) {
       loadTripExpensesBatch(trips.map(trip => trip.id));
     }
   }, [trips]);
@@ -83,7 +85,6 @@ export const TripList: React.FC = () => {
         .delete()
         .eq('id', trip.id);
       
-      // Инвалидируем кэш
       optimizedSupabaseService.invalidateCache('trips');
       refetch();
       
@@ -111,18 +112,15 @@ export const TripList: React.FC = () => {
     return contractor?.companyName || 'Неизвестный контрагент';
   }, [contractors]);
 
-  // Оптимизированная фильтрация с мемоизацией
   const filteredTrips = useMemo(() => {
-    if (!trips.length) return [];
+    if (!Array.isArray(trips) || trips.length === 0) return [];
     
     let result = trips;
     
-    // Фильтр по статусу
     if (statusFilter !== 'all') {
       result = result.filter(trip => trip.status === statusFilter);
     }
     
-    // Поиск по тексту
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       result = result.filter(trip => 

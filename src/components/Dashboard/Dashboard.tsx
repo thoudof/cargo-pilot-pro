@@ -7,15 +7,40 @@ import { RecentTripsSection } from './RecentTripsSection';
 import { useDataCache } from '@/hooks/useDataCache';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
 
+interface DashboardStatsType {
+  activeTrips: number;
+  totalTrips: number;
+  completedTrips: number;
+  plannedTrips: number;
+  cancelledTrips: number;
+  contractors: number;
+  drivers: number;
+  vehicles: number;
+  totalCargoValue: number;
+  completedCargoValue: number;
+  totalWeight: number;
+  totalVolume: number;
+  monthlyStats: Array<{
+    month: string;
+    trips: number;
+    revenue: number;
+    weight: number;
+  }>;
+  averageCargoValue: number;
+  completionRate: number;
+  totalExpenses: number;
+  profit: number;
+  profitMargin: number;
+}
+
 const Dashboard: React.FC = () => {
-  // Используем кэширование для статистики дашборда
-  const { data: stats, loading } = useDataCache(
+  const { data: stats, loading } = useDataCache<DashboardStatsType>(
     'dashboard-stats',
     () => optimizedSupabaseService.getDashboardStatsOptimized(),
-    { ttl: 3 * 60 * 1000 } // 3 минуты кэш
+    { ttl: 3 * 60 * 1000 }
   );
 
-  const defaultStats = {
+  const defaultStats: DashboardStatsType = {
     activeTrips: 0,
     totalTrips: 0,
     completedTrips: 0,

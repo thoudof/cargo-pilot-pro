@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 
@@ -7,74 +7,53 @@ export const useUserRole = () => {
   const { user } = useAuth();
   const [userRoles, setUserRoles] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const fetchedRef = useRef<string | null>(null);
-  const mountedRef = useRef(true);
-
-  const fetchUserRoles = useCallback(async (userId: string) => {
-    // Предотвращаем повторные запросы для того же пользователя
-    if (fetchedRef.current === userId) {
-      return;
-    }
-
-    console.log('useUserRole: Fetching roles for user:', userId);
-    setLoading(true);
-    fetchedRef.current = userId;
-
-    try {
-      const { data, error } = await supabase.rpc('get_user_roles', {
-        _user_id: userId
-      });
-
-      if (!mountedRef.current) return;
-
-      if (error) {
-        console.error('useUserRole: Error fetching user roles:', error);
-        setUserRoles([]);
-      } else {
-        console.log('useUserRole: Roles fetched successfully:', data);
-        setUserRoles(data || []);
-      }
-    } catch (error) {
-      if (!mountedRef.current) return;
-      console.error('useUserRole: Exception fetching user roles:', error);
-      setUserRoles([]);
-    } finally {
-      if (mountedRef.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
 
   useEffect(() => {
-    mountedRef.current = true;
-    
     if (!user?.id) {
-      console.log('useUserRole: No user, clearing roles');
       setUserRoles([]);
       setLoading(false);
-      fetchedRef.current = null;
       return;
     }
 
-    // Если уже загружали для этого пользователя, не перезагружаем
-    if (fetchedRef.current !== user.id) {
-      fetchUserRoles(user.id);
-    }
+    let mounted = true;
+    setLoading(true);
+
+    const fetchRoles = async () => {
+      try {
+        const { data, error } = await supabase.rpc('get_user_roles', {
+          _user_id: user.id
+        });
+
+        if (mounted) {
+          if (error) {
+            console.error('Error fetching roles:', error);
+            setUserRoles([]);
+          } else {
+            setUserRoles(data || []);
+          }
+          setLoading(false);
+        }
+      } catch (error) {
+        if (mounted) {
+          console.error('Exception fetching roles:', error);
+          setUserRoles([]);
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchRoles();
 
     return () => {
-      mountedRef.current = false;
+      mounted = false;
     };
-  }, [user?.id, fetchUserRoles]);
-
-  const roleFlags = {
-    isAdmin: userRoles.includes('admin'),
-    isDispatcher: userRoles.includes('dispatcher'),
-    isDriver: userRoles.includes('driver'),
-  };
+  }, [user?.id]);
 
   return {
     userRoles,
-    ...roleFlags,
+    isAdmin: userRoles.includes('admin'),
+    isDispatcher: userRoles.includes('dispatcher'),
+    isDriver: userRoles.includes('driver'),
     loading
   };
 };

@@ -36,27 +36,22 @@ const Index = () => {
   
   useActivityLogger();
 
-  console.log('Index: Current state', { user: !!user, loading });
-
-  // Показываем загрузку только во время инициализации
+  // Показываем загрузку только во время инициализации авторизации
   if (loading) {
-    console.log('Index: Auth loading, showing spinner');
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-        <span className="ml-3 text-lg">Загрузка...</span>
+        <span className="ml-3 text-lg">Загрузка приложения...</span>
       </div>
     );
   }
 
   // Если пользователя нет, показываем страницу аутентификации
   if (!user) {
-    console.log('Index: No user, showing auth page');
     return <AuthPage />;
   }
 
   // Если пользователь аутентифицирован, показываем основное приложение
-  console.log('Index: User authenticated, showing main app');
   return (
     <MobileLayout>
       <PushNotificationManager />

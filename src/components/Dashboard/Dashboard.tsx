@@ -1,11 +1,11 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { DashboardStats } from './DashboardStats';
 import { FinancialMetrics } from './FinancialMetrics';
 import { DashboardCharts } from './DashboardCharts';
 import { RecentTripsSection } from './RecentTripsSection';
 import { useDataCache } from '@/hooks/useDataCache';
-import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
+import { simpleSupabaseService } from '@/services/simpleSupabaseService';
 
 interface DashboardStatsType {
   activeTrips: number;
@@ -33,52 +33,49 @@ interface DashboardStatsType {
   profitMargin: number;
 }
 
+const defaultStats: DashboardStatsType = {
+  activeTrips: 0,
+  totalTrips: 0,
+  completedTrips: 0,
+  plannedTrips: 0,
+  cancelledTrips: 0,
+  contractors: 0,
+  drivers: 0,
+  vehicles: 0,
+  totalCargoValue: 0,
+  completedCargoValue: 0,
+  totalWeight: 0,
+  totalVolume: 0,
+  monthlyStats: [],
+  averageCargoValue: 0,
+  completionRate: 0,
+  totalExpenses: 0,
+  profit: 0,
+  profitMargin: 0
+};
+
 const Dashboard: React.FC = () => {
   const { data: stats, loading, error } = useDataCache<DashboardStatsType>(
-    'dashboard-stats',
-    async () => {
-      const result = await optimizedSupabaseService.getDashboardStatsOptimized();
-      return result as DashboardStatsType;
-    },
-    { ttl: 3 * 60 * 1000, immediate: true }
+    'dashboard-stats-simple',
+    () => simpleSupabaseService.getDashboardStats(),
+    { ttl: 5 * 60 * 1000, immediate: true }
   );
-
-  const defaultStats: DashboardStatsType = useMemo(() => ({
-    activeTrips: 0,
-    totalTrips: 0,
-    completedTrips: 0,
-    plannedTrips: 0,
-    cancelledTrips: 0,
-    contractors: 0,
-    drivers: 0,
-    vehicles: 0,
-    totalCargoValue: 0,
-    completedCargoValue: 0,
-    totalWeight: 0,
-    totalVolume: 0,
-    monthlyStats: [],
-    averageCargoValue: 0,
-    completionRate: 0,
-    totalExpenses: 0,
-    profit: 0,
-    profitMargin: 0
-  }), []);
 
   const dashboardStats = stats || defaultStats;
 
-  const formatCurrency = useMemo(() => (value: number) => {
+  const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
       currency: 'RUB',
       minimumFractionDigits: 0
     }).format(value);
-  }, []);
+  };
 
-  const formatWeight = useMemo(() => (value: number) => {
+  const formatWeight = (value: number) => {
     return `${value.toLocaleString('ru-RU')} кг`;
-  }, []);
+  };
 
-  const chartConfig = useMemo(() => ({
+  const chartConfig = {
     trips: {
       label: "Рейсы",
       color: "hsl(var(--chart-1))"
@@ -91,7 +88,7 @@ const Dashboard: React.FC = () => {
       label: "Вес (т)",
       color: "hsl(var(--chart-3))"
     }
-  }), []);
+  };
 
   if (error) {
     return (
@@ -109,11 +106,11 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  if (loading && !stats) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="ml-3">Загрузка данных...</span>
+        <span className="ml-3">Загрузка...</span>
       </div>
     );
   }

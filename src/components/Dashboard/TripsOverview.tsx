@@ -1,18 +1,16 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Search, Calendar as CalendarIcon, Filter, Truck, MapPin } from 'lucide-react';
-import { Trip, TripStatus, Contractor } from '@/types';
-import { supabaseService } from '@/services/supabaseService';
+import { Search, Truck } from 'lucide-react';
+import { Trip, TripStatus } from '@/types';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { useDataCache } from '@/hooks/useDataCache';
+import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
 
 const statusColors = {
   [TripStatus.PLANNED]: 'bg-blue-500',
@@ -33,106 +31,56 @@ interface TripsOverviewProps {
 }
 
 export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips }) => {
-  const [trips, setTrips] = useState<Trip[]>([]);
-  const [contractors, setContractors] = useState<Contractor[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  // Фильтры
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [departureFromDate, setDepartureFromDate] = useState<Date>();
-  const [departureToDate, setDepartureToDate] = useState<Date>();
-  const [arrivalFromDate, setArrivalFromDate] = useState<Date>();
-  const [arrivalToDate, setArrivalToDate] = useState<Date>();
-  const [cityFilter, setCityFilter] = useState('');
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [statusFilter, setStatusFilter] = React.useState<string>('all');
 
-  const loadData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const [tripsData, contractorsData] = await Promise.all([
-        supabaseService.getTrips(),
-        supabaseService.getContractors()
-      ]);
-      setTrips(tripsData);
-      setContractors(contractorsData);
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  // Загружаем только последние 20 рейсов для обзора
+  const { data: trips = [], loading } = useDataCache(
+    'trips-overview',
+    () => optimizedSupabaseService.getTripsOptimized(20),
+    { ttl: 2 * 60 * 1000 }
+  );
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const contractorMap = useMemo(() => {
-    return contractors.reduce((acc, contractor) => {
-      acc[contractor.id] = contractor.companyName;
-      return acc;
-    }, {} as Record<string, string>);
-  }, [contractors]);
+  const { data: contractors = [] } = useDataCache(
+    'contractors-overview',
+    async () => {
+      const { data, error } = await optimizedSupabaseService.supabase
+        .from('contractors')
+        .select('id, company_name');
+      if (error) throw error;
+      return data.reduce((acc, c) => {
+        acc[c.id] = c.company_name;
+        return acc;
+      }, {} as Record<string, string>);
+    },
+    { ttl: 5 * 60 * 1000 }
+  );
 
   const getContractorName = useCallback((contractorId: string) => {
-    return contractorMap[contractorId] || 'Неизвестный контрагент';
-  }, [contractorMap]);
+    return contractors[contractorId] || 'Неизвестный контрагент';
+  }, [contractors]);
 
+  // Простая фильтрация без сложной логики
   const filteredTrips = useMemo(() => {
-    if (trips.length === 0) return [];
+    if (!trips.length) return [];
     
-    return trips.filter(trip => {
-      // Поиск по тексту
-      if (searchTerm) {
-        const searchLower = searchTerm.toLowerCase();
-        const matchesSearch = 
-          trip.pointA.toLowerCase().includes(searchLower) ||
-          trip.pointB.toLowerCase().includes(searchLower) ||
-          trip.driver.name.toLowerCase().includes(searchLower) ||
-          trip.vehicle.licensePlate.toLowerCase().includes(searchLower) ||
-          getContractorName(trip.contractorId).toLowerCase().includes(searchLower);
-        
-        if (!matchesSearch) return false;
-      }
-      
-      // Фильтр по статусу
-      if (statusFilter !== 'all' && trip.status !== statusFilter) return false;
-      
-      // Фильтр по дате отправления
-      if (departureFromDate || departureToDate) {
-        const departureDate = new Date(trip.departureDate);
-        if (departureFromDate && departureDate < departureFromDate) return false;
-        if (departureToDate && departureDate > departureToDate) return false;
-      }
-      
-      // Фильтр по дате прибытия
-      if (arrivalFromDate || arrivalToDate) {
-        const arrivalDate = trip.arrivalDate ? new Date(trip.arrivalDate) : null;
-        if (arrivalFromDate && (!arrivalDate || arrivalDate < arrivalFromDate)) return false;
-        if (arrivalToDate && (!arrivalDate || arrivalDate > arrivalToDate)) return false;
-      }
-      
-      // Фильтр по городам
-      if (cityFilter) {
-        const cityLower = cityFilter.toLowerCase();
-        const matchesCity = 
-          trip.pointA.toLowerCase().includes(cityLower) ||
-          trip.pointB.toLowerCase().includes(cityLower);
-        if (!matchesCity) return false;
-      }
-      
-      return true;
-    });
-  }, [trips, searchTerm, statusFilter, departureFromDate, departureToDate, arrivalFromDate, arrivalToDate, cityFilter, getContractorName]);
-
-  const clearFilters = useCallback(() => {
-    setSearchTerm('');
-    setStatusFilter('all');
-    setDepartureFromDate(undefined);
-    setDepartureToDate(undefined);
-    setArrivalFromDate(undefined);
-    setArrivalToDate(undefined);
-    setCityFilter('');
-  }, []);
+    let result = trips;
+    
+    if (statusFilter !== 'all') {
+      result = result.filter(trip => trip.status === statusFilter);
+    }
+    
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      result = result.filter(trip => 
+        trip.pointA.toLowerCase().includes(searchLower) ||
+        trip.pointB.toLowerCase().includes(searchLower) ||
+        trip.driver.name.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return result.slice(0, 10); // Показываем максимум 10
+  }, [trips, searchTerm, statusFilter]);
 
   if (loading) {
     return (
@@ -157,154 +105,30 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Основные фильтры */}
-          <div className="flex flex-col gap-3">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Поиск рейсов..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Статус" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все статусы</SelectItem>
-                  <SelectItem value={TripStatus.PLANNED}>Планируется</SelectItem>
-                  <SelectItem value={TripStatus.IN_PROGRESS}>В пути</SelectItem>
-                  <SelectItem value={TripStatus.COMPLETED}>Завершён</SelectItem>
-                  <SelectItem value={TripStatus.CANCELLED}>Отменён</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск рейсов..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9"
+              />
             </div>
-
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Фильтр по городам..."
-                  value={cityFilter}
-                  onChange={(e) => setCityFilter(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-            </div>
-
-            {/* Фильтры по датам - упрощенная версия */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Дата отправления</label>
-                <div className="flex gap-1">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "flex-1 justify-start text-left font-normal",
-                          !departureFromDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {departureFromDate ? format(departureFromDate, "dd.MM.yy") : "От"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={departureFromDate}
-                        onSelect={setDepartureFromDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "flex-1 justify-start text-left font-normal",
-                          !departureToDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {departureToDate ? format(departureToDate, "dd.MM.yy") : "До"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={departureToDate}
-                        onSelect={setDepartureToDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Дата прибытия</label>
-                <div className="flex gap-1">
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "flex-1 justify-start text-left font-normal",
-                          !arrivalFromDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {arrivalFromDate ? format(arrivalFromDate, "dd.MM.yy") : "От"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={arrivalFromDate}
-                        onSelect={setArrivalFromDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className={cn(
-                          "flex-1 justify-start text-left font-normal",
-                          !arrivalToDate && "text-muted-foreground"
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {arrivalToDate ? format(arrivalToDate, "dd.MM.yy") : "До"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={arrivalToDate}
-                        onSelect={setArrivalToDate}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-              </div>
-            </div>
-
-            <Button onClick={clearFilters} variant="ghost" size="sm" className="self-start">
-              <Filter className="mr-2 h-4 w-4" />
-              Очистить фильтры
-            </Button>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Статус" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все статусы</SelectItem>
+                <SelectItem value={TripStatus.PLANNED}>Планируется</SelectItem>
+                <SelectItem value={TripStatus.IN_PROGRESS}>В пути</SelectItem>
+                <SelectItem value={TripStatus.COMPLETED}>Завершён</SelectItem>
+                <SelectItem value={TripStatus.CANCELLED}>Отменён</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          {/* Список рейсов */}
           {filteredTrips.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground">
@@ -313,7 +137,7 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
             </div>
           ) : (
             <div className="space-y-3 max-h-96 overflow-y-auto">
-              {filteredTrips.slice(0, 10).map((trip) => (
+              {filteredTrips.map((trip) => (
                 <Card key={trip.id} className="p-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
@@ -333,10 +157,10 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
                   </div>
                 </Card>
               ))}
-              {filteredTrips.length > 10 && (
+              {trips.length > 10 && (
                 <div className="text-center">
                   <Button onClick={onNavigateToTrips} variant="link" size="sm">
-                    Показать еще {filteredTrips.length - 10} рейсов
+                    Показать еще {trips.length - 10} рейсов
                   </Button>
                 </div>
               )}

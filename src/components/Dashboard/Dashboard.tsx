@@ -1,13 +1,21 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import { supabaseService } from '@/services/supabaseService';
+import React, { useMemo } from 'react';
 import { DashboardStats } from './DashboardStats';
 import { FinancialMetrics } from './FinancialMetrics';
 import { DashboardCharts } from './DashboardCharts';
 import { RecentTripsSection } from './RecentTripsSection';
+import { useDataCache } from '@/hooks/useDataCache';
+import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
 
 const Dashboard: React.FC = () => {
-  const [stats, setStats] = useState({
+  // Используем кэширование для статистики дашборда
+  const { data: stats, loading } = useDataCache(
+    'dashboard-stats',
+    () => optimizedSupabaseService.getDashboardStatsOptimized(),
+    { ttl: 3 * 60 * 1000 } // 3 минуты кэш
+  );
+
+  const defaultStats = {
     activeTrips: 0,
     totalTrips: 0,
     completedTrips: 0,
@@ -26,25 +34,11 @@ const Dashboard: React.FC = () => {
     totalExpenses: 0,
     profit: 0,
     profitMargin: 0
-  });
-  const [loading, setLoading] = useState(true);
+  };
 
-  const loadStats = useCallback(async () => {
-    try {
-      const data = await supabaseService.getDashboardStats();
-      setStats(data);
-    } catch (error) {
-      console.error('Failed to load dashboard stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const dashboardStats = stats || defaultStats;
 
-  useEffect(() => {
-    loadStats();
-  }, [loadStats]);
-
-  const formatCurrency = useCallback((value: number) => {
+  const formatCurrency = useMemo(() => (value: number) => {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
       currency: 'RUB',
@@ -52,11 +46,11 @@ const Dashboard: React.FC = () => {
     }).format(value);
   }, []);
 
-  const formatWeight = useCallback((value: number) => {
+  const formatWeight = useMemo(() => (value: number) => {
     return `${value.toLocaleString('ru-RU')} кг`;
   }, []);
 
-  const chartConfig = React.useMemo(() => ({
+  const chartConfig = useMemo(() => ({
     trips: {
       label: "Рейсы",
       color: "hsl(var(--chart-1))"
@@ -81,26 +75,19 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Основные метрики */}
-      <DashboardStats stats={stats} />
-
-      {/* Финансовые метрики */}
+      <DashboardStats stats={dashboardStats} />
       <FinancialMetrics 
-        stats={stats} 
+        stats={dashboardStats} 
         formatCurrency={formatCurrency} 
         formatWeight={formatWeight} 
       />
-
-      {/* Графики */}
       <DashboardCharts 
-        stats={stats} 
+        stats={dashboardStats} 
         formatCurrency={formatCurrency} 
         formatWeight={formatWeight} 
         chartConfig={chartConfig} 
       />
-
-      {/* Секция последних рейсов */}
-      <RecentTripsSection stats={stats} />
+      <RecentTripsSection stats={dashboardStats} />
     </div>
   );
 };

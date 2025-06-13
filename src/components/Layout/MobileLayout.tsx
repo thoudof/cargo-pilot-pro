@@ -70,7 +70,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
               <img 
                 src="/lovable-uploads/b2aa38ba-0396-49de-b859-549fd50b9a7f.png" 
                 alt="Fix Logistics" 
-                className="w-20 h-12 object-contain"
+                className="w-32 h-16 object-contain"
               />
             </div>
           </div>

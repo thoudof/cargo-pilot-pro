@@ -1,17 +1,12 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { BarChart3, TrendingUp, Package, Weight } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, LineChart, Line, ResponsiveContainer } from 'recharts';
+import { BarChart3, TrendingUp } from 'lucide-react';
 
 interface DashboardChartsProps {
   stats: {
-    activeTrips: number;
-    completedTrips: number;
-    plannedTrips: number;
-    cancelledTrips: number;
     monthlyStats: Array<{
       month: string;
       trips: number;
@@ -30,164 +25,98 @@ export const DashboardCharts: React.FC<DashboardChartsProps> = ({
   formatWeight, 
   chartConfig 
 }) => {
-  const isMobile = useIsMobile();
-
-  const tripStatusData = [
-    { name: 'Активные', value: stats.activeTrips, color: '#3b82f6' },
-    { name: 'Завершенные', value: stats.completedTrips, color: '#10b981' },
-    { name: 'Запланированные', value: stats.plannedTrips, color: '#f59e0b' },
-    { name: 'Отмененные', value: stats.cancelledTrips, color: '#ef4444' }
-  ];
+  // Преобразуем данные для графиков
+  const chartData = stats.monthlyStats.map(item => ({
+    month: item.month,
+    trips: item.trips,
+    revenue: item.revenue,
+    weight: Math.round(item.weight / 1000) // конвертируем в тонны
+  }));
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
-      {/* График по месяцам */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       <Card>
-        <CardHeader className="p-3 sm:p-6">
-          <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
-            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>Статистика по месяцам</span>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Статистика по месяцам
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0">
-          <ChartContainer config={chartConfig} className={`${isMobile ? 'h-[200px]' : 'h-[250px] sm:h-[300px]'}`}>
+        <CardContent>
+          <ChartContainer config={chartConfig} className="h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+              <BarChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="month" 
-                  fontSize={isMobile ? 10 : 12}
-                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
                 />
                 <YAxis 
-                  fontSize={isMobile ? 10 : 12}
-                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  width={30}
                 />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="trips" fill="var(--color-trips)" name="Рейсы" />
+                <ChartTooltip 
+                  content={<ChartTooltipContent />}
+                  cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
+                />
+                <Bar 
+                  dataKey="trips" 
+                  fill="var(--color-trips)" 
+                  radius={[2, 2, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
         </CardContent>
       </Card>
 
-      {/* График выручки */}
       <Card>
-        <CardHeader className="p-3 sm:p-6">
-          <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
-            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>Выручка по месяцам</span>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5" />
+            Выручка по месяцам
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0">
-          <ChartContainer config={chartConfig} className={`${isMobile ? 'h-[200px]' : 'h-[250px] sm:h-[300px]'}`}>
+        <CardContent>
+          <ChartContainer config={chartConfig} className="h-[200px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={stats.monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+              <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
                   dataKey="month" 
-                  fontSize={isMobile ? 10 : 12}
-                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
                 />
                 <YAxis 
-                  fontSize={isMobile ? 10 : 12}
-                  tick={{ fontSize: isMobile ? 10 : 12 }}
+                  fontSize={12}
+                  tickLine={false}
+                  axisLine={false}
+                  width={40}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                 />
                 <ChartTooltip 
-                  content={<ChartTooltipContent />}
-                  formatter={(value) => [formatCurrency(Number(value)), 'Выручка']}
+                  content={<ChartTooltipContent 
+                    formatter={(value, name) => [
+                      formatCurrency(Number(value)), 
+                      'Выручка'
+                    ]}
+                  />}
+                  cursor={{ stroke: 'var(--color-revenue)', strokeWidth: 1 }}
                 />
                 <Line 
                   type="monotone" 
                   dataKey="revenue" 
                   stroke="var(--color-revenue)" 
                   strokeWidth={2}
-                  name="Выручка"
+                  dot={{ fill: 'var(--color-revenue)', strokeWidth: 2, r: 3 }}
+                  activeDot={{ r: 4, stroke: 'var(--color-revenue)', strokeWidth: 2 }}
                 />
               </LineChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      {/* Круговая диаграмма статусов рейсов */}
-      <Card>
-        <CardHeader className="p-3 sm:p-6">
-          <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
-            <Package className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>Распределение рейсов по статусам</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0">
-          <div className={`${isMobile ? 'h-[200px]' : 'h-[250px] sm:h-[300px]'} flex items-center justify-center`}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={tripStatusData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={isMobile ? 30 : 60}
-                  outerRadius={isMobile ? 70 : 120}
-                  dataKey="value"
-                  label={isMobile ? false : ({ name, value, percent }) => 
-                    `${name}: ${value} (${(percent * 100).toFixed(0)}%)`
-                  }
-                  labelLine={false}
-                >
-                  {tripStatusData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <ChartTooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          {/* Легенда для мобильных устройств */}
-          {isMobile && (
-            <div className="grid grid-cols-2 gap-2 mt-2">
-              {tripStatusData.map((item, index) => (
-                <div key={index} className="flex items-center gap-2 text-xs">
-                  <div 
-                    className="w-3 h-3 rounded-full" 
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span>{item.name}: {item.value}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* График веса грузов */}
-      <Card>
-        <CardHeader className="p-3 sm:p-6">
-          <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
-            <Weight className="h-4 w-4 sm:h-5 sm:w-5" />
-            <span>Вес грузов по месяцам</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0">
-          <ChartContainer config={chartConfig} className={`${isMobile ? 'h-[200px]' : 'h-[250px] sm:h-[300px]'}`}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.monthlyStats} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                <XAxis 
-                  dataKey="month" 
-                  fontSize={isMobile ? 10 : 12}
-                  tick={{ fontSize: isMobile ? 10 : 12 }}
-                />
-                <YAxis 
-                  fontSize={isMobile ? 10 : 12}
-                  tick={{ fontSize: isMobile ? 10 : 12 }}
-                />
-                <ChartTooltip 
-                  content={<ChartTooltipContent />}
-                  formatter={(value) => [formatWeight(Number(value)), 'Вес']}
-                />
-                <Bar 
-                  dataKey="weight" 
-                  fill="var(--color-weight)" 
-                  name="Вес"
-                />
-              </BarChart>
             </ResponsiveContainer>
           </ChartContainer>
         </CardContent>

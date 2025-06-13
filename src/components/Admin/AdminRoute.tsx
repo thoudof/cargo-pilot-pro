@@ -13,16 +13,8 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
   const { isAdmin, loading: roleLoading } = useUserRole();
 
-  console.log('AdminRoute: Current state', { 
-    user: !!user, 
-    authLoading, 
-    roleLoading, 
-    isAdmin 
-  });
-
   // Если аутентификация загружается, показываем загрузку
   if (authLoading) {
-    console.log('AdminRoute: Auth loading, showing spinner');
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -32,13 +24,11 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
 
   // Если пользователя нет, возвращаем null (будет обработано в Index.tsx)
   if (!user) {
-    console.log('AdminRoute: No user, returning null');
     return null;
   }
 
   // Если роли загружаются, показываем загрузку
   if (roleLoading) {
-    console.log('AdminRoute: Roles loading, showing spinner');
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -48,7 +38,6 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
 
   // Если пользователь не администратор
   if (!isAdmin) {
-    console.log('AdminRoute: User is not admin, showing access denied');
     return (
       <div className="container mx-auto p-6">
         <Card className="max-w-md mx-auto">
@@ -68,6 +57,5 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     );
   }
 
-  console.log('AdminRoute: User is admin, rendering children');
   return <>{children}</>;
 };

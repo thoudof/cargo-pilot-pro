@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Trip } from '@/types';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';

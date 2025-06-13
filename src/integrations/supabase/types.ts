@@ -332,6 +332,53 @@ export type Database = {
         }
         Relationships: []
       }
+      trip_expenses: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          expense_date: string
+          expense_type: string
+          id: string
+          receipt_url: string | null
+          trip_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          expense_date?: string
+          expense_type: string
+          id?: string
+          receipt_url?: string | null
+          trip_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          expense_date?: string
+          expense_type?: string
+          id?: string
+          receipt_url?: string | null
+          trip_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_expenses_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           arrival_date: string | null
@@ -541,6 +588,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_trip_total_expenses: {
+        Args: { trip_uuid: string }
+        Returns: number
+      }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]

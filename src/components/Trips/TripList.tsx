@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +11,7 @@ import { TripForm } from './TripForm';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { TripDetails } from './TripDetails';
 
 const statusColors = {
   [TripStatus.PLANNED]: 'bg-blue-500',
@@ -35,6 +35,8 @@ export const TripList: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | undefined>();
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [selectedTrip, setSelectedTrip] = useState<Trip | undefined>();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -69,6 +71,11 @@ export const TripList: React.FC = () => {
   const handleEditTrip = (trip: Trip) => {
     setEditingTrip(trip);
     setFormOpen(true);
+  };
+
+  const handleViewDetails = (trip: Trip) => {
+    setSelectedTrip(trip);
+    setDetailsOpen(true);
   };
 
   const handleDeleteTrip = async (trip: Trip) => {
@@ -174,10 +181,10 @@ export const TripList: React.FC = () => {
       ) : (
         <div className="grid gap-4">
           {filteredTrips.map((trip) => (
-            <Card key={trip.id} className="hover:shadow-md transition-shadow">
+            <Card key={trip.id} className="hover:shadow-md transition-shadow cursor-pointer">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div className="flex-1">
+                  <div className="flex-1" onClick={() => handleViewDetails(trip)}>
                     <div className="flex items-center gap-2 mb-2">
                       <CardTitle className="text-lg">{trip.pointA} → {trip.pointB}</CardTitle>
                       <div className={`w-3 h-3 rounded-full ${statusColors[trip.status]}`}></div>
@@ -212,7 +219,7 @@ export const TripList: React.FC = () => {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0">
+              <CardContent className="pt-0" onClick={() => handleViewDetails(trip)}>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="font-medium">Водитель</p>
@@ -243,6 +250,12 @@ export const TripList: React.FC = () => {
         open={formOpen}
         onOpenChange={setFormOpen}
         onSuccess={handleFormSuccess}
+      />
+
+      <TripDetails
+        trip={selectedTrip}
+        open={detailsOpen}
+        onOpenChange={setDetailsOpen}
       />
     </div>
   );

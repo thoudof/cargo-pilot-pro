@@ -1,10 +1,10 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { TrendingUp, TrendingDown, Users, Truck, Calendar, Activity, Database, Clock } from 'lucide-react';
+import { ExpenseStats } from '@/components/Dashboard/ExpenseStats';
 
 interface StatsData {
   userGrowth: Array<{ month: string; users: number }>;
@@ -165,6 +165,14 @@ export const AdvancedStats: React.FC = () => {
   const userActivityRate = recentMetrics.totalUsers ? (recentMetrics.activeUsers / recentMetrics.totalUsers * 100) : 0;
   const tripCompletionRate = recentMetrics.totalTrips ? (recentMetrics.completedTrips / recentMetrics.totalTrips * 100) : 0;
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      minimumFractionDigits: 0
+    }).format(value);
+  };
+
   return (
     <div className="space-y-6">
       {/* Ключевые метрики */}
@@ -241,6 +249,9 @@ export const AdvancedStats: React.FC = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Добавляем статистику по расходам */}
+      <ExpenseStats stats={stats} formatCurrency={formatCurrency} />
 
       {/* Графики */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

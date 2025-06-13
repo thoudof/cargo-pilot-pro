@@ -1,6 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
-import { Contractor, Driver, Vehicle, CargoType, Route, Trip } from '@/types';
+import { Contractor, Driver, Vehicle, CargoType, Route, Trip, TripExpense } from '@/types';
 
 export class SupabaseService {
   public supabase = supabase;
@@ -122,6 +122,21 @@ export class SupabaseService {
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
       changeLog: []
+    };
+  }
+
+  private transformTripExpense(data: any): TripExpense {
+    return {
+      id: data.id,
+      tripId: data.trip_id,
+      expenseType: data.expense_type,
+      amount: parseFloat(data.amount),
+      description: data.description,
+      receiptUrl: data.receipt_url,
+      expenseDate: new Date(data.expense_date),
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
+      userId: data.user_id
     };
   }
 
@@ -560,7 +575,86 @@ export class SupabaseService {
     if (error) throw error;
   }
 
-  // Метод для получения статистики дашборда
+  // Методы для работы с расходами по рейсам
+  async getTripExpenses(tripId: string): Promise<TripExpense[]> {
+    const { data, error } = await this.supabase
+      .from('trip_expenses')
+      .select('*')
+      .eq('trip_id', tripId)
+      .order('expense_date', { ascending: false });
+
+    if (error) throw error;
+    return (data || []).map(this.transformTripExpense);
+  }
+
+  async createTripExpense(expense: {
+    tripId: string;
+    expenseType: string;
+    amount: number;
+    description?: string;
+    expenseDate: Date;
+  }) {
+    const user = await this.getCurrentUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data, error } = await this.supabase
+      .from('trip_expenses')
+      .insert({
+        trip_id: expense.tripId,
+        expense_type: expense.expenseType,
+        amount: expense.amount,
+        description: expense.description,
+        expense_date: expense.expenseDate.toISOString(),
+        user_id: user.id
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return this.transformTripExpense(data);
+  }
+
+  async updateTripExpense(expenseId: string, expense: {
+    expenseType: string;
+    amount: number;
+    description?: string;
+    expenseDate: Date;
+  }) {
+    const { data, error } = await this.supabase
+      .from('trip_expenses')
+      .update({
+        expense_type: expense.expenseType,
+        amount: expense.amount,
+        description: expense.description,
+        expense_date: expense.expenseDate.toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', expenseId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return this.transformTripExpense(data);
+  }
+
+  async deleteTripExpense(expenseId: string) {
+    const { error } = await this.supabase
+      .from('trip_expenses')
+      .delete()
+      .eq('id', expenseId);
+
+    if (error) throw error;
+  }
+
+  async getTripTotalExpenses(tripId: string): Promise<number> {
+    const { data, error } = await this.supabase
+      .rpc('get_trip_total_expenses', { trip_uuid: tripId });
+
+    if (error) throw error;
+    return parseFloat(data) || 0;
+  }
+
+  // Обновленный метод для получения статистики дашборда с расходами
   async getDashboardStats() {
     const [trips, contractors, drivers, vehicles] = await Promise.all([
       this.getTrips(),
@@ -568,6 +662,15 @@ export class SupabaseService {
       this.getDrivers(),
       this.getVehicles()
     ]);
+
+    // Получаем все расходы
+    const { data: expensesData, error: expensesError } = await this.supabase
+      .from('trip_expenses')
+      .select('*');
+
+    if (expensesError) throw expensesError;
+
+    const expenses = (expensesData || []).map(this.transformTripExpense);
 
     const activeTrips = trips.filter(trip => trip.status === 'in_progress').length;
     const completedTrips = trips.filter(trip => trip.status === 'completed').length;
@@ -583,6 +686,19 @@ export class SupabaseService {
     const totalWeight = trips.reduce((sum, trip) => sum + (trip.cargo.weight || 0), 0);
     const totalVolume = trips.reduce((sum, trip) => sum + (trip.cargo.volume || 0), 0);
 
+    // Статистика по расходам
+    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    const completedTripsIds = trips.filter(trip => trip.status === 'completed').map(trip => trip.id);
+    const completedTripsExpenses = expenses
+      .filter(expense => completedTripsIds.includes(expense.tripId))
+      .reduce((sum, expense) => sum + expense.amount, 0);
+
+    // Расходы по типам
+    const expensesByType = expenses.reduce((acc, expense) => {
+      acc[expense.expenseType] = (acc[expense.expenseType] || 0) + expense.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
     // Статистика по месяцам (последние 6 месяцев)
     const monthlyStats = [];
     const now = new Date();
@@ -594,13 +710,24 @@ export class SupabaseService {
                tripDate.getFullYear() === date.getFullYear();
       });
       
+      const monthExpenses = expenses.filter(expense => {
+        const expenseDate = new Date(expense.expenseDate);
+        return expenseDate.getMonth() === date.getMonth() && 
+               expenseDate.getFullYear() === date.getFullYear();
+      });
+
       monthlyStats.push({
         month: date.toLocaleDateString('ru-RU', { month: 'short' }),
         trips: monthTrips.length,
         revenue: monthTrips.reduce((sum, trip) => sum + (trip.cargo.value || 0), 0),
-        weight: monthTrips.reduce((sum, trip) => sum + (trip.cargo.weight || 0), 0)
+        weight: monthTrips.reduce((sum, trip) => sum + (trip.cargo.weight || 0), 0),
+        expenses: monthExpenses.reduce((sum, expense) => sum + expense.amount, 0)
       });
     }
+
+    // Прибыльность
+    const profit = completedCargoValue - completedTripsExpenses;
+    const profitMargin = completedCargoValue > 0 ? (profit / completedCargoValue) * 100 : 0;
 
     return {
       activeTrips,
@@ -615,9 +742,15 @@ export class SupabaseService {
       completedCargoValue,
       totalWeight,
       totalVolume,
+      totalExpenses,
+      completedTripsExpenses,
+      expensesByType,
+      profit,
+      profitMargin,
       monthlyStats,
       averageCargoValue: trips.length > 0 ? totalCargoValue / trips.length : 0,
-      completionRate: trips.length > 0 ? (completedTrips / trips.length) * 100 : 0
+      completionRate: trips.length > 0 ? (completedTrips / trips.length) * 100 : 0,
+      averageExpensePerTrip: trips.length > 0 ? totalExpenses / trips.length : 0
     };
   }
 }

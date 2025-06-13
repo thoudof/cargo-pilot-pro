@@ -161,3 +161,6 @@ export interface SyncStatus {
   isOnline: boolean;
   syncInProgress: boolean;
 }
+
+// Добавляем импорт типов расходов
+export * from './expenses';

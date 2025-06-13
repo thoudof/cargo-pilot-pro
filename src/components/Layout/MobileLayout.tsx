@@ -128,9 +128,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             </Button>
             <div className="flex items-center gap-2">
               <img 
-                src="/lovable-uploads/b2aa38ba-0396-49de-b859-549fd50b9a7f.png" 
+                src="/lovable-uploads/8085f690-6d29-4dc3-8dfc-890319ea82ed.png" 
                 alt="Fix Logistics" 
-                className="w-32 h-16 object-contain"
+                className="h-10 w-auto object-contain"
               />
             </div>
           </div>

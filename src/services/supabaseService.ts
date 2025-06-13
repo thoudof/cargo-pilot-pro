@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Database } from '@/integrations/supabase/types';
 import { Contractor, Driver, Vehicle, CargoType, Route, Trip, TripExpense } from '@/types';
+import { ExpenseType } from '@/types/expenses';
 
 export class SupabaseService {
   public supabase = supabase;
@@ -129,7 +130,7 @@ export class SupabaseService {
     return {
       id: data.id,
       tripId: data.trip_id,
-      expenseType: data.expense_type,
+      expenseType: data.expense_type as ExpenseType,
       amount: parseFloat(data.amount),
       description: data.description,
       receiptUrl: data.receipt_url,
@@ -309,7 +310,6 @@ export class SupabaseService {
   async saveContractor(contractor: any) {
     const { contacts, ...contractorData } = contractor;
     
-    // Convert camelCase to snake_case for database
     const dbData = {
       ...contractorData,
       company_name: contractorData.companyName,
@@ -325,7 +325,6 @@ export class SupabaseService {
 
     if (error) throw error;
 
-    // Сохранение контактов
     if (contacts && contacts.length > 0) {
       const contactsData = contacts.map((contact: any) => ({
         ...contact,
@@ -363,7 +362,6 @@ export class SupabaseService {
   }
 
   async saveDriver(driver: any) {
-    // Convert camelCase to snake_case for database
     const dbData = {
       ...driver,
       passport_data: driver.passportData,
@@ -403,7 +401,6 @@ export class SupabaseService {
   }
 
   async saveVehicle(vehicle: any) {
-    // Convert camelCase to snake_case for database
     const dbData = {
       ...vehicle,
       license_plate: vehicle.licensePlate,
@@ -446,7 +443,6 @@ export class SupabaseService {
   }
 
   async saveRoute(route: any) {
-    // Convert camelCase to snake_case for database
     const dbData = {
       ...route,
       point_a: route.pointA,
@@ -488,7 +484,6 @@ export class SupabaseService {
   }
 
   async saveCargoType(cargoType: any) {
-    // Convert camelCase to snake_case for database
     const dbData = {
       ...cargoType,
       default_weight: cargoType.defaultWeight,
@@ -529,7 +524,6 @@ export class SupabaseService {
   }
 
   async saveTrip(trip: any) {
-    // Convert camelCase to snake_case for database
     const dbData = {
       ...trip,
       departure_date: trip.departureDate,
@@ -577,7 +571,7 @@ export class SupabaseService {
 
   // Методы для работы с расходами по рейсам
   async getTripExpenses(tripId: string): Promise<TripExpense[]> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('trip_expenses')
       .select('*')
       .eq('trip_id', tripId)
@@ -585,12 +579,7 @@ export class SupabaseService {
 
     if (error) throw error;
 
-    return data.map(expense => ({
-      ...expense,
-      expenseDate: new Date(expense.expense_date),
-      createdAt: new Date(expense.created_at),
-      updatedAt: new Date(expense.updated_at)
-    }));
+    return (data || []).map(this.transformTripExpense);
   }
 
   async createTripExpense(expenseData: {
@@ -600,10 +589,10 @@ export class SupabaseService {
     description?: string;
     expenseDate: Date;
   }): Promise<TripExpense> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await this.supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('trip_expenses')
       .insert({
         trip_id: expenseData.tripId,
@@ -618,12 +607,7 @@ export class SupabaseService {
 
     if (error) throw error;
 
-    return {
-      ...data,
-      expenseDate: new Date(data.expense_date),
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
-    };
+    return this.transformTripExpense(data);
   }
 
   async updateTripExpense(expenseId: string, expenseData: {
@@ -633,7 +617,7 @@ export class SupabaseService {
     description?: string;
     expenseDate: Date;
   }): Promise<TripExpense> {
-    const { data, error } = await supabase
+    const { data, error } = await this.supabase
       .from('trip_expenses')
       .update({
         expense_type: expenseData.expenseType,
@@ -647,16 +631,11 @@ export class SupabaseService {
 
     if (error) throw error;
 
-    return {
-      ...data,
-      expenseDate: new Date(data.expense_date),
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
-    };
+    return this.transformTripExpense(data);
   }
 
   async deleteTripExpense(expenseId: string): Promise<void> {
-    const { error } = await supabase
+    const { error } = await this.supabase
       .from('trip_expenses')
       .delete()
       .eq('id', expenseId);
@@ -681,7 +660,6 @@ export class SupabaseService {
       this.getVehicles()
     ]);
 
-    // Получаем все расходы
     const { data: expensesData, error: expensesError } = await this.supabase
       .from('trip_expenses')
       .select('*');
@@ -695,7 +673,6 @@ export class SupabaseService {
     const plannedTrips = trips.filter(trip => trip.status === 'planned').length;
     const cancelledTrips = trips.filter(trip => trip.status === 'cancelled').length;
 
-    // Финансовые расчеты
     const totalCargoValue = trips.reduce((sum, trip) => sum + (trip.cargo.value || 0), 0);
     const completedCargoValue = trips
       .filter(trip => trip.status === 'completed')
@@ -704,20 +681,17 @@ export class SupabaseService {
     const totalWeight = trips.reduce((sum, trip) => sum + (trip.cargo.weight || 0), 0);
     const totalVolume = trips.reduce((sum, trip) => sum + (trip.cargo.volume || 0), 0);
 
-    // Статистика по расходам
     const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
     const completedTripsIds = trips.filter(trip => trip.status === 'completed').map(trip => trip.id);
     const completedTripsExpenses = expenses
       .filter(expense => completedTripsIds.includes(expense.tripId))
       .reduce((sum, expense) => sum + expense.amount, 0);
 
-    // Расходы по типам
     const expensesByType = expenses.reduce((acc, expense) => {
       acc[expense.expenseType] = (acc[expense.expenseType] || 0) + expense.amount;
       return acc;
     }, {} as Record<string, number>);
 
-    // Статистика по месяцам (последние 6 месяцев)
     const monthlyStats = [];
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
@@ -743,7 +717,6 @@ export class SupabaseService {
       });
     }
 
-    // Прибыльность
     const profit = completedCargoValue - completedTripsExpenses;
     const profitMargin = completedCargoValue > 0 ? (profit / completedCargoValue) * 100 : 0;
 
@@ -773,11 +746,9 @@ export class SupabaseService {
   }
 
   async getAdvancedStats(filters: any): Promise<any> {
-    // Базовая статистика
     const basicStats = await this.getDashboardStats();
     
-    // Расходы по типам
-    const { data: expensesByType } = await supabase
+    const { data: expensesByType } = await this.supabase
       .from('trip_expenses')
       .select('expense_type, amount');
 
@@ -786,8 +757,7 @@ export class SupabaseService {
       return acc;
     }, {} as Record<string, number>) || {};
 
-    // Производительность водителей
-    const { data: driverPerformance } = await supabase
+    const { data: driverPerformance } = await this.supabase
       .from('trips')
       .select('driver_name, driver_id, cargo_value')
       .not('driver_id', 'is', null);

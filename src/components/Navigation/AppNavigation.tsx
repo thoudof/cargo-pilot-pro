@@ -1,125 +1,146 @@
-
 import React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Home, Truck, Users, Settings, MapPin, Package, Shield } from 'lucide-react';
-import { activityLogger } from '@/services/activityLogger';
-import { useUserRole } from '@/hooks/useUserRole';
+import { Home, Truck, Building2, Users, Car, MapPin, Package, Settings, Shield, BarChart3 } from 'lucide-react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
+import { Menu } from 'lucide-react';
+import { useSidebar } from '@/components/Sidebar/SidebarProvider';
 
-interface NavigationItem {
-  path: string;
-  label: string;
-  icon: React.ComponentType<{ className?: string }>;
-  adminOnly?: boolean;
+interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+  current: boolean;
 }
 
-const navigationItems: NavigationItem[] = [
-  { path: '/', label: 'Главная', icon: Home },
-  { path: '/trips', label: 'Рейсы', icon: Truck },
-  { path: '/contractors', label: 'Контрагенты', icon: Users },
-  { path: '/drivers', label: 'Водители', icon: Users },
-  { path: '/vehicles', label: 'Транспорт', icon: Truck },
-  { path: '/routes', label: 'Маршруты', icon: MapPin },
-  { path: '/cargo-types', label: 'Типы грузов', icon: Package },
-  { path: '/admin', label: 'Админ панель', icon: Shield, adminOnly: true },
-  { path: '/settings', label: 'Настройки', icon: Settings },
+const navigation = [
+  {
+    name: 'Главная',
+    href: '/',
+    icon: Home,
+    current: false,
+  },
+  {
+    name: 'Рейсы',
+    href: '/trips',
+    icon: Truck,
+    current: false,
+  },
+  {
+    name: 'Отчеты',
+    href: '/reports',
+    icon: BarChart3,
+    current: false,
+  },
+  {
+    name: 'Контрагенты',
+    href: '/contractors',
+    icon: Building2,
+    current: false,
+  },
+  {
+    name: 'Водители',
+    href: '/drivers',
+    icon: Users,
+    current: false,
+  },
+  {
+    name: 'Транспорт',
+    href: '/vehicles',
+    icon: Car,
+    current: false,
+  },
+  {
+    name: 'Маршруты',
+    href: '/routes',
+    icon: MapPin,
+    current: false,
+  },
+  {
+    name: 'Типы грузов',
+    href: '/cargo-types',
+    icon: Package,
+    current: false,
+  },
 ];
 
-interface AppNavigationProps {
-  variant?: 'desktop' | 'mobile' | 'bottom';
-  className?: string;
-  onItemClick?: () => void;
-}
-
-export const AppNavigation: React.FC<AppNavigationProps> = ({ 
-  variant = 'desktop', 
-  className = '',
-  onItemClick 
-}) => {
-  const navigate = useNavigate();
+export const AppNavigation: React.FC = () => {
   const location = useLocation();
-  const { isAdmin } = useUserRole();
+  const { isOpen, onOpen, onClose } = useSidebar();
 
-  const handleNavigate = async (path: string, label: string) => {
-    navigate(path);
-    await activityLogger.logNavigation(label);
-    onItemClick?.();
-  };
-
-  const isActive = (path: string) => {
-    if (path === '/') {
-      return location.pathname === '/';
-    }
-    return location.pathname.startsWith(path);
-  };
-
-  const getButtonClass = (path: string) => {
-    const baseClass = variant === 'bottom' 
-      ? "flex flex-col items-center gap-1 h-auto py-2 px-2 min-w-0"
-      : variant === 'mobile'
-        ? "w-full justify-start h-12"
-        : "w-full justify-start h-10 xl:h-12 text-sm xl:text-base";
-    
-    const activeClass = isActive(path) ? "bg-accent text-accent-foreground" : "";
-    
-    return `${baseClass} ${activeClass}`;
-  };
-
-  const getIconSize = () => {
-    return variant === 'bottom' ? "h-4 w-4" : "h-4 w-4 xl:h-5 xl:w-5";
-  };
-
-  // Фильтруем элементы навигации в зависимости от прав пользователя
-  const filteredItems = navigationItems.filter(item => {
-    if (item.adminOnly && !isAdmin) {
-      return false;
-    }
-    return true;
-  });
-
-  if (variant === 'bottom') {
-    // Показываем только основные страницы в нижней навигации
-    const bottomItems = filteredItems.filter(item => 
-      ['/', '/trips', '/contractors', '/settings'].includes(item.path)
-    );
-
-    return (
-      <div className={`flex items-center justify-around max-w-md mx-auto ${className}`}>
-        {bottomItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <Button
-              key={item.path}
-              variant="ghost"
-              size="sm"
-              onClick={() => handleNavigate(item.path, item.label)}
-              className={getButtonClass(item.path)}
-            >
-              <Icon className={getIconSize()} />
-              <span className="text-xs leading-none">{item.label}</span>
-            </Button>
-          );
-        })}
-      </div>
-    );
-  }
+  const updatedNavigation = navigation.map(item => ({
+    ...item,
+    current: item.href === location.pathname,
+  }));
 
   return (
-    <nav className={`space-y-1 ${className}`}>
-      {filteredItems.map((item) => {
-        const Icon = item.icon;
-        return (
-          <Button
-            key={item.path}
-            variant="ghost"
-            onClick={() => handleNavigate(item.path, item.label)}
-            className={getButtonClass(item.path)}
-          >
-            <Icon className={`${getIconSize()} mr-3`} />
-            {item.label}
-          </Button>
-        );
-      })}
+    <nav className="flex flex-col space-y-1">
+      {updatedNavigation.map((item) => (
+        <NavLink
+          key={item.name}
+          to={item.href}
+          className={({ isActive }) =>
+            cn(
+              "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-muted hover:text-foreground",
+              isActive ? "bg-muted text-foreground" : "text-muted-foreground"
+            )
+          }
+        >
+          <item.icon className="mr-2 h-4 w-4" />
+          <span>{item.name}</span>
+        </NavLink>
+      ))}
     </nav>
   );
 };
+
+export const MobileAppNavigation: React.FC = () => {
+  const location = useLocation();
+    const { isOpen, onOpen, onClose } = useSidebar();
+
+
+  const updatedNavigation = navigation.map(item => ({
+    ...item,
+    current: item.href === location.pathname,
+  }));
+
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="sm" className="p-0">
+          <Menu className="h-5 w-5" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="p-0 pt-6 w-64">
+        <SheetHeader className="pl-4 pb-4">
+          <SheetTitle>Меню</SheetTitle>
+        </SheetHeader>
+        <nav className="flex flex-col space-y-1">
+          {updatedNavigation.map((item) => (
+            <NavLink
+              key={item.name}
+              to={item.href}
+              className={({ isActive }) =>
+                cn(
+                  "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-muted hover:text-foreground",
+                  isActive ? "bg-muted text-foreground" : "text-muted-foreground"
+                )
+              }
+              onClick={onClose}
+            >
+              <item.icon className="mr-2 h-4 w-4" />
+              <span>{item.name}</span>
+            </NavLink>
+          ))}
+        </nav>
+      </SheetContent>
+    </Sheet>
+  )
+}

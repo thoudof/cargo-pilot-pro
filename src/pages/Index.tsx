@@ -1,4 +1,3 @@
-
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { AuthPage } from "@/components/Auth/AuthPage";
@@ -14,6 +13,12 @@ import { RoutesPage } from "./RoutesPage";
 import { CargoTypesPage } from "./CargoTypesPage";
 import { SettingsPage } from "./SettingsPage";
 import AdminPage from "./AdminPage";
+import { Home, Truck, Building2, Users, Car, MapPin, Package, Settings, Shield, BarChart3 } from 'lucide-react';
+import { ReportsPage } from './ReportsPage';
+import { SidebarProvider } from "@/components/Layout/SidebarProvider";
+import { AppSidebar } from "@/components/Layout/AppSidebar";
+import { SidebarTrigger } from "@/components/Layout/SidebarTrigger";
+import { AdminRoute } from "@/components/Layout/AdminRoute";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -43,18 +48,31 @@ const Index = () => {
   return (
     <MobileLayout>
       <PushNotificationManager />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/trips" element={<TripsPage />} />
-        <Route path="/contractors" element={<ContractorsPage />} />
-        <Route path="/drivers" element={<DriversPage />} />
-        <Route path="/vehicles" element={<VehiclesPage />} />
-        <Route path="/routes" element={<RoutesPage />} />
-        <Route path="/cargo-types" element={<CargoTypesPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <SidebarProvider>
+        <div className="min-h-screen flex w-full">
+          <AppSidebar />
+          <main className="flex-1">
+            <SidebarTrigger />
+            <Routes>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/trips" element={<TripsPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/contractors" element={<ContractorsPage />} />
+              <Route path="/drivers" element={<DriversPage />} />
+              <Route path="/vehicles" element={<VehiclesPage />} />
+              <Route path="/routes" element={<RoutesPage />} />
+              <Route path="/cargo-types" element={<CargoTypesPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/admin" element={
+                <AdminRoute>
+                  <AdminPage />
+                </AdminRoute>
+              } />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+        </div>
+      </SidebarProvider>
     </MobileLayout>
   );
 };

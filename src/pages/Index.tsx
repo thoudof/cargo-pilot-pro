@@ -15,9 +15,6 @@ import { CargoTypesPage } from "./CargoTypesPage";
 import { SettingsPage } from "./SettingsPage";
 import AdminPage from "./AdminPage";
 import { ReportsPage } from './ReportsPage';
-import { SidebarProvider } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/Layout/AppSidebar";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminRoute } from "@/components/Admin/AdminRoute";
 
 const Index = () => {
@@ -48,31 +45,23 @@ const Index = () => {
   return (
     <MobileLayout>
       <PushNotificationManager />
-      <SidebarProvider>
-        <div className="min-h-screen flex w-full">
-          <AppSidebar />
-          <main className="flex-1">
-            <SidebarTrigger />
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/trips" element={<TripsPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/contractors" element={<ContractorsPage />} />
-              <Route path="/drivers" element={<DriversPage />} />
-              <Route path="/vehicles" element={<VehiclesPage />} />
-              <Route path="/routes" element={<RoutesPage />} />
-              <Route path="/cargo-types" element={<CargoTypesPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/admin" element={
-                <AdminRoute>
-                  <AdminPage />
-                </AdminRoute>
-              } />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </main>
-        </div>
-      </SidebarProvider>
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/trips" element={<TripsPage />} />
+        <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/contractors" element={<ContractorsPage />} />
+        <Route path="/drivers" element={<DriversPage />} />
+        <Route path="/vehicles" element={<VehiclesPage />} />
+        <Route path="/routes" element={<RoutesPage />} />
+        <Route path="/cargo-types" element={<CargoTypesPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/admin" element={
+          <AdminRoute>
+            <AdminPage />
+          </AdminRoute>
+        } />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </MobileLayout>
   );
 };

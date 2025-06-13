@@ -10,7 +10,7 @@ import { useAuth } from '@/components/Auth/AuthProvider';
 import { supabaseService } from '@/services/supabaseService';
 import { activityLogger } from '@/services/activityLogger';
 import { useToast } from '@/hooks/use-toast';
-import { User, Bell, Shield, Database, Download, Trash2, Key, Smartphone } from 'lucide-react';
+import { User, Bell, Shield, Database, Download, Trash2, Key, Smartphone, Settings } from 'lucide-react';
 import { ChangePasswordDialog } from '@/components/Settings/ChangePasswordDialog';
 import { TwoFactorSetupDialog } from '@/components/Settings/TwoFactorSetupDialog';
 

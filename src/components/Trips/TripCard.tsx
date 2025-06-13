@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -39,10 +39,25 @@ export const TripCard: React.FC<TripCardProps> = ({
   onEditTrip,
   onDeleteTrip
 }) => {
-  const getContractorName = (contractorId: string) => {
-    const contractor = contractors.find(c => c.id === contractorId);
+  const contractorName = useMemo(() => {
+    const contractor = contractors.find(c => c.id === trip.contractorId);
     return contractor?.companyName || 'Неизвестный контрагент';
-  };
+  }, [contractors, trip.contractorId]);
+
+  const formattedDepartureDate = useMemo(() => 
+    format(new Date(trip.departureDate), 'dd MMMM yyyy, HH:mm', { locale: ru }),
+    [trip.departureDate]
+  );
+
+  const expenseAmount = useMemo(() => 
+    (tripExpenses[trip.id] || 0).toLocaleString('ru-RU'),
+    [tripExpenses, trip.id]
+  );
+
+  const cargoValue = useMemo(() => 
+    (trip.cargo.value || 0).toLocaleString('ru-RU'),
+    [trip.cargo.value]
+  );
 
   return (
     <Card className="hover:shadow-md transition-shadow cursor-pointer">
@@ -57,15 +72,15 @@ export const TripCard: React.FC<TripCardProps> = ({
             <div className="space-y-1 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Calendar className="h-4 w-4" />
-                <span>{format(new Date(trip.departureDate), 'dd MMMM yyyy, HH:mm', { locale: ru })}</span>
+                <span>{formattedDepartureDate}</span>
               </div>
               <div className="flex items-center gap-1">
                 <User className="h-4 w-4" />
-                <span>{getContractorName(trip.contractorId)}</span>
+                <span>{contractorName}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Receipt className="h-4 w-4" />
-                <span>Расходы: {(tripExpenses[trip.id] || 0).toLocaleString('ru-RU')} ₽</span>
+                <span>Расходы: {expenseAmount} ₽</span>
               </div>
             </div>
           </div>
@@ -113,11 +128,11 @@ export const TripCard: React.FC<TripCardProps> = ({
               <p className="font-medium text-sm">Финансы</p>
               <p className="text-sm text-muted-foreground flex items-center gap-1">
                 <DollarSign className="h-3 w-3" />
-                Стоимость: {(trip.cargo.value || 0).toLocaleString('ru-RU')} ₽
+                Стоимость: {cargoValue} ₽
               </p>
               <p className="text-sm text-muted-foreground flex items-center gap-1">
                 <Receipt className="h-3 w-3" />
-                Расходы: {(tripExpenses[trip.id] || 0).toLocaleString('ru-RU')} ₽
+                Расходы: {expenseAmount} ₽
               </p>
             </div>
           </div>

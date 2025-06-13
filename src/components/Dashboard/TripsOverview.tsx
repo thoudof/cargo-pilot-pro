@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -65,43 +65,51 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
     }
   };
 
-  const getContractorName = (contractorId: string) => {
-    const contractor = contractors.find(c => c.id === contractorId);
-    return contractor?.companyName || 'Неизвестный контрагент';
-  };
+  const contractorMap = useMemo(() => {
+    return contractors.reduce((acc, contractor) => {
+      acc[contractor.id] = contractor.companyName;
+      return acc;
+    }, {} as Record<string, string>);
+  }, [contractors]);
 
-  const filteredTrips = trips.filter(trip => {
-    // Поиск по тексту
-    const matchesSearch = 
-      trip.pointA.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.pointB.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getContractorName(trip.contractorId).toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Фильтр по статусу
-    const matchesStatus = statusFilter === 'all' || trip.status === statusFilter;
-    
-    // Фильтр по дате отправления
-    const departureDate = new Date(trip.departureDate);
-    const matchesDepartureFrom = !departureFromDate || departureDate >= departureFromDate;
-    const matchesDepartureTo = !departureToDate || departureDate <= departureToDate;
-    
-    // Фильтр по дате прибытия
-    const arrivalDate = trip.arrivalDate ? new Date(trip.arrivalDate) : null;
-    const matchesArrivalFrom = !arrivalFromDate || (arrivalDate && arrivalDate >= arrivalFromDate);
-    const matchesArrivalTo = !arrivalToDate || (arrivalDate && arrivalDate <= arrivalToDate);
-    
-    // Фильтр по городам
-    const matchesCity = !cityFilter || 
-      trip.pointA.toLowerCase().includes(cityFilter.toLowerCase()) ||
-      trip.pointB.toLowerCase().includes(cityFilter.toLowerCase());
-    
-    return matchesSearch && matchesStatus && matchesDepartureFrom && 
-           matchesDepartureTo && matchesArrivalFrom && matchesArrivalTo && matchesCity;
-  });
+  const getContractorName = useCallback((contractorId: string) => {
+    return contractorMap[contractorId] || 'Неизвестный контрагент';
+  }, [contractorMap]);
 
-  const clearFilters = () => {
+  const filteredTrips = useMemo(() => {
+    return trips.filter(trip => {
+      // Поиск по тексту
+      const matchesSearch = 
+        trip.pointA.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trip.pointB.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trip.driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trip.vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getContractorName(trip.contractorId).toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Фильтр по статусу
+      const matchesStatus = statusFilter === 'all' || trip.status === statusFilter;
+      
+      // Фильтр по дате отправления
+      const departureDate = new Date(trip.departureDate);
+      const matchesDepartureFrom = !departureFromDate || departureDate >= departureFromDate;
+      const matchesDepartureTo = !departureToDate || departureDate <= departureToDate;
+      
+      // Фильтр по дате прибытия
+      const arrivalDate = trip.arrivalDate ? new Date(trip.arrivalDate) : null;
+      const matchesArrivalFrom = !arrivalFromDate || (arrivalDate && arrivalDate >= arrivalFromDate);
+      const matchesArrivalTo = !arrivalToDate || (arrivalDate && arrivalDate <= arrivalToDate);
+      
+      // Фильтр по городам
+      const matchesCity = !cityFilter || 
+        trip.pointA.toLowerCase().includes(cityFilter.toLowerCase()) ||
+        trip.pointB.toLowerCase().includes(cityFilter.toLowerCase());
+      
+      return matchesSearch && matchesStatus && matchesDepartureFrom && 
+             matchesDepartureTo && matchesArrivalFrom && matchesArrivalTo && matchesCity;
+    });
+  }, [trips, searchTerm, statusFilter, departureFromDate, departureToDate, arrivalFromDate, arrivalToDate, cityFilter, getContractorName]);
+
+  const clearFilters = useCallback(() => {
     setSearchTerm('');
     setStatusFilter('all');
     setDepartureFromDate(undefined);
@@ -109,7 +117,7 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
     setArrivalFromDate(undefined);
     setArrivalToDate(undefined);
     setCityFilter('');
-  };
+  }, []);
 
   if (loading) {
     return (

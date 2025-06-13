@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -43,11 +43,15 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
     }
   };
 
-  const getPageTitle = (path: string | null) => {
-    return pageTitles[path || '/'] || 'Страница';
-  };
+  const currentPage = useMemo(() => 
+    location.pathname === '/' ? '/' : location.pathname,
+    [location.pathname]
+  );
 
-  const currentPage = location.pathname === '/' ? '/' : location.pathname;
+  const pageTitle = useMemo(() => 
+    pageTitles[currentPage] || 'Страница',
+    [currentPage]
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -64,10 +68,11 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
               <Menu className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">TM</span>
-              </div>
-              <span className="font-semibold text-lg hidden sm:block">Transport Manager</span>
+              <img 
+                src="/lovable-uploads/b2aa38ba-0396-49de-b859-549fd50b9a7f.png" 
+                alt="Fix Logistics" 
+                className="w-8 h-8 object-contain"
+              />
             </div>
           </div>
         </div>
@@ -77,7 +82,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       <div className="bg-white border-b border-gray-100 px-4 py-2">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-lg font-medium text-gray-900">
-            {getPageTitle(currentPage)}
+            {pageTitle}
           </h1>
         </div>
       </div>

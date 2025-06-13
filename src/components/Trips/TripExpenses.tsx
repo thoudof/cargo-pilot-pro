@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog } from '@/components/ui/dialog';
 import { TripExpense, ExpenseType } from '@/types/expenses';
@@ -27,11 +27,7 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
   });
   const { toast } = useToast();
 
-  useEffect(() => {
-    loadExpenses();
-  }, [tripId]);
-
-  const loadExpenses = async () => {
+  const loadExpenses = useCallback(async () => {
     try {
       const data = await supabaseService.getTripExpenses(tripId);
       setExpenses(data);
@@ -45,9 +41,13 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tripId, toast]);
 
-  const resetForm = () => {
+  useEffect(() => {
+    loadExpenses();
+  }, [loadExpenses]);
+
+  const resetForm = useCallback(() => {
     setFormData({
       expenseType: ExpenseType.FUEL,
       amount: '',
@@ -55,14 +55,14 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
       expenseDate: new Date().toISOString().split('T')[0]
     });
     setEditingExpense(undefined);
-  };
+  }, []);
 
-  const handleAddExpense = () => {
+  const handleAddExpense = useCallback(() => {
     resetForm();
     setFormOpen(true);
-  };
+  }, [resetForm]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
@@ -99,9 +99,9 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
         variant: 'destructive'
       });
     }
-  };
+  }, [formData, editingExpense, tripId, toast, resetForm, loadExpenses]);
 
-  const handleEdit = (expense: TripExpense) => {
+  const handleEdit = useCallback((expense: TripExpense) => {
     setEditingExpense(expense);
     setFormData({
       expenseType: expense.expenseType,
@@ -110,9 +110,9 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
       expenseDate: format(expense.expenseDate, 'yyyy-MM-dd')
     });
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleDelete = async (expense: TripExpense) => {
+  const handleDelete = useCallback(async (expense: TripExpense) => {
     if (!confirm('Вы уверены, что хотите удалить этот расход?')) {
       return;
     }
@@ -132,14 +132,17 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
         variant: 'destructive'
       });
     }
-  };
+  }, [toast, loadExpenses]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setFormOpen(false);
     resetForm();
-  };
+  }, [resetForm]);
 
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalExpenses = useMemo(() => 
+    expenses.reduce((sum, expense) => sum + expense.amount, 0), 
+    [expenses]
+  );
 
   if (loading) {
     return (

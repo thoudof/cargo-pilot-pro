@@ -1,6 +1,21 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { globalCache } from '@/hooks/useDataCache';
+
+// Простой кэш для оптимизированного сервиса
+const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+
+const getCachedData = <T>(key: string): T | null => {
+  const cached = cache.get(key);
+  if (cached && Date.now() < cached.timestamp + cached.ttl) {
+    return cached.data as T;
+  }
+  cache.delete(key);
+  return null;
+};
+
+const setCachedData = <T>(key: string, data: T, ttl: number = 5 * 60 * 1000) => {
+  cache.set(key, { data, timestamp: Date.now(), ttl });
+};
 
 class OptimizedSupabaseService {
   private batchSize = 50;
@@ -32,7 +47,7 @@ class OptimizedSupabaseService {
     const cacheKey = `trip-expenses-batch-${tripIds.sort().join(',')}`;
     
     return this.dedupRequest(cacheKey, async () => {
-      const cached = globalCache.get<Record<string, number>>(cacheKey);
+      const cached = getCachedData<Record<string, number>>(cacheKey);
       if (cached) return cached;
 
       try {
@@ -51,7 +66,7 @@ class OptimizedSupabaseService {
           return acc;
         }, {} as Record<string, number>) || {};
 
-        globalCache.set(cacheKey, expensesMap, 3 * 60 * 1000);
+        setCachedData(cacheKey, expensesMap, 3 * 60 * 1000);
         return expensesMap;
       } catch (error) {
         console.error('Failed to get trip expenses batch:', error);
@@ -65,7 +80,7 @@ class OptimizedSupabaseService {
     const cacheKey = `trips-optimized-${limit}-${offset}`;
     
     return this.dedupRequest(cacheKey, async () => {
-      const cached = globalCache.get(cacheKey);
+      const cached = getCachedData(cacheKey);
       if (cached) return cached;
 
       try {
@@ -127,7 +142,7 @@ class OptimizedSupabaseService {
           createdAt: new Date(trip.created_at)
         })) || [];
 
-        globalCache.set(cacheKey, transformedData, 2 * 60 * 1000);
+        setCachedData(cacheKey, transformedData, 2 * 60 * 1000);
         return transformedData;
       } catch (error) {
         console.error('Failed to get trips optimized:', error);
@@ -141,7 +156,7 @@ class OptimizedSupabaseService {
     const cacheKey = 'dashboard-stats-optimized';
     
     return this.dedupRequest(cacheKey, async () => {
-      const cached = globalCache.get(cacheKey);
+      const cached = getCachedData(cacheKey);
       if (cached) return cached;
 
       try {
@@ -203,7 +218,7 @@ class OptimizedSupabaseService {
           profitMargin: completedCargoValue > 0 ? ((completedCargoValue - totalExpenses) / completedCargoValue) * 100 : 0
         };
 
-        globalCache.set(cacheKey, result, 3 * 60 * 1000);
+        setCachedData(cacheKey, result, 3 * 60 * 1000);
         return result;
       } catch (error) {
         console.error('Failed to get dashboard stats optimized:', error);
@@ -261,7 +276,7 @@ class OptimizedSupabaseService {
   // Инвалидация кэша
   invalidateCache(pattern?: string) {
     this.activeRequests.clear();
-    globalCache.clear();
+    cache.clear();
   }
 }
 

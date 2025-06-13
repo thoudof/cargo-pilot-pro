@@ -30,6 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   const signOut = useCallback(async () => {
     try {
@@ -43,11 +44,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
+    if (initialized) return; // Предотвращаем повторную инициализацию
+
     console.log('AuthProvider: Initializing auth...');
     
     let mounted = true;
     
-    // Получаем текущую сессию
     const getInitialSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -59,7 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             setSession(session);
             setUser(session?.user ?? null);
             
-            // Логируем успешную аутентификацию при инициализации
             if (session?.user) {
               try {
                 await activityLogger.logLogin('session_restore');
@@ -74,13 +75,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } finally {
         if (mounted) {
           setLoading(false);
+          setInitialized(true);
         }
       }
     };
 
     getInitialSession();
 
-    // Слушаем изменения аутентификации
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('AuthProvider: Auth state changed:', event, !!session);
@@ -88,9 +89,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
-          setLoading(false);
+          
+          if (initialized) { // Только если уже инициализированы
+            setLoading(false);
+          }
 
-          // Логируем события аутентификации
           try {
             if (event === 'SIGNED_IN' && session?.user) {
               await activityLogger.logLogin('password');
@@ -109,7 +112,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('AuthProvider: Cleaning up...');
       subscription.unsubscribe();
     };
-  }, []); // Убираем все зависимости - эффект должен выполниться только один раз
+  }, [initialized]);
 
   const value = {
     user,
@@ -118,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signOut
   };
 
-  console.log('AuthProvider: Current state:', { user: !!user, loading });
+  console.log('AuthProvider: Current state:', { user: !!user, loading, initialized });
 
   return (
     <AuthContext.Provider value={value}>

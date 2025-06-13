@@ -50,31 +50,9 @@ class DataCache {
   delete(key: string): void {
     this.cache.delete(key);
   }
-
-  size(): number {
-    return this.cache.size;
-  }
-
-  cleanup(): void {
-    const now = Date.now();
-    for (const [key, entry] of this.cache.entries()) {
-      if (now > entry.expiry) {
-        this.cache.delete(key);
-      }
-    }
-  }
 }
 
 const globalCache = new DataCache();
-
-// Очистка кэша каждые 5 минут
-let cleanupInterval: NodeJS.Timeout | null = null;
-
-if (typeof window !== 'undefined' && !cleanupInterval) {
-  cleanupInterval = setInterval(() => {
-    globalCache.cleanup();
-  }, 5 * 60 * 1000);
-}
 
 export const useDataCache = <T>(
   key: string,
@@ -91,21 +69,26 @@ export const useDataCache = <T>(
   const [error, setError] = useState<Error | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
-  const fetchFnRef = useRef(fetchFn);
-  
-  // Обновляем fetchFn без перерендера
-  fetchFnRef.current = fetchFn;
+  const lastFetchKeyRef = useRef<string>('');
 
   const fetchData = useCallback(async (forceRefresh = false): Promise<T | null> => {
+    const currentKey = `${key}-${JSON.stringify(dependencies)}`;
+    
+    // Предотвращаем повторные запросы
+    if (!forceRefresh && lastFetchKeyRef.current === currentKey) {
+      return data;
+    }
+
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
 
-    if (!forceRefresh && globalCache.has(key)) {
-      const cachedData = globalCache.get<T>(key);
+    if (!forceRefresh && globalCache.has(currentKey)) {
+      const cachedData = globalCache.get<T>(currentKey);
       if (cachedData && mountedRef.current) {
         setData(cachedData);
         setError(null);
+        lastFetchKeyRef.current = currentKey;
         return cachedData;
       }
     }
@@ -114,15 +97,16 @@ export const useDataCache = <T>(
 
     setLoading(true);
     setError(null);
+    lastFetchKeyRef.current = currentKey;
 
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
     try {
-      const result = await fetchFnRef.current();
+      const result = await fetchFn();
       
       if (!abortController.signal.aborted && mountedRef.current) {
-        globalCache.set(key, result, ttl);
+        globalCache.set(currentKey, result, ttl);
         setData(result);
         setError(null);
       }
@@ -141,11 +125,13 @@ export const useDataCache = <T>(
       }
       abortControllerRef.current = null;
     }
-  }, [key, ttl]);
+  }, [key, ttl, fetchFn, data, dependencies]);
 
   const invalidate = useCallback(() => {
-    globalCache.delete(key);
-  }, [key]);
+    const currentKey = `${key}-${JSON.stringify(dependencies)}`;
+    globalCache.delete(currentKey);
+    lastFetchKeyRef.current = '';
+  }, [key, dependencies]);
 
   const refresh = useCallback(() => {
     return fetchData(true);
@@ -164,7 +150,7 @@ export const useDataCache = <T>(
         abortControllerRef.current.abort();
       }
     };
-  }, [fetchData, immediate, ...dependencies]);
+  }, [immediate, ...dependencies]);
 
   return {
     data,

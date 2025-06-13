@@ -16,7 +16,6 @@ import { SettingsPage } from "./SettingsPage";
 import AdminPage from "./AdminPage";
 import { Suspense, lazy } from "react";
 
-// Загружаем компоненты лениво для улучшения производительности
 const LazyTripsPage = lazy(() => import("./TripsPage").then(module => ({ default: module.TripsPage })));
 const LazyContractorsPage = lazy(() => import("./ContractorsPage").then(module => ({ default: module.ContractorsPage })));
 const LazyDriversPage = lazy(() => import("./DriversPage").then(module => ({ default: module.DriversPage })));
@@ -35,17 +34,17 @@ const LoadingSpinner = () => (
 const Index = () => {
   const { user, loading } = useAuth();
   
-  // Используем хук для автоматического логирования навигации
   useActivityLogger();
 
   console.log('Index: Current state', { user: !!user, loading });
 
-  // Показываем загрузку только пока аутентификация инициализируется
+  // Показываем загрузку только во время инициализации
   if (loading) {
     console.log('Index: Auth loading, showing spinner');
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <span className="ml-3 text-lg">Загрузка...</span>
       </div>
     );
   }

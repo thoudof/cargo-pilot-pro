@@ -34,16 +34,16 @@ interface DashboardStatsType {
 }
 
 const Dashboard: React.FC = () => {
-  const { data: stats, loading } = useDataCache<DashboardStatsType>(
+  const { data: stats, loading, error } = useDataCache<DashboardStatsType>(
     'dashboard-stats',
     async () => {
       const result = await optimizedSupabaseService.getDashboardStatsOptimized();
       return result as DashboardStatsType;
     },
-    { ttl: 3 * 60 * 1000 }
+    { ttl: 3 * 60 * 1000, immediate: true }
   );
 
-  const defaultStats: DashboardStatsType = {
+  const defaultStats: DashboardStatsType = useMemo(() => ({
     activeTrips: 0,
     totalTrips: 0,
     completedTrips: 0,
@@ -62,7 +62,7 @@ const Dashboard: React.FC = () => {
     totalExpenses: 0,
     profit: 0,
     profitMargin: 0
-  };
+  }), []);
 
   const dashboardStats = stats || defaultStats;
 
@@ -93,10 +93,27 @@ const Dashboard: React.FC = () => {
     }
   }), []);
 
-  if (loading) {
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-500 mb-2">Ошибка загрузки данных</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="px-4 py-2 bg-primary text-white rounded"
+          >
+            Обновить
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading && !stats) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="ml-3">Загрузка данных...</span>
       </div>
     );
   }

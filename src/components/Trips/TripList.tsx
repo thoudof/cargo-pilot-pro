@@ -45,7 +45,9 @@ export const TripList: React.FC = () => {
   );
 
   useEffect(() => {
-    setContractors(contractorsData);
+    if (Array.isArray(contractorsData)) {
+      setContractors(contractorsData);
+    }
   }, [contractorsData]);
 
   useEffect(() => {

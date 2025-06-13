@@ -36,7 +36,10 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
 
   const { data: trips = [], loading } = useDataCache<Trip[]>(
     'trips-overview',
-    () => optimizedSupabaseService.getTripsOptimized(20),
+    async () => {
+      const result = await optimizedSupabaseService.getTripsOptimized(20);
+      return Array.isArray(result) ? result : [];
+    },
     { ttl: 2 * 60 * 1000 }
   );
 

@@ -36,7 +36,10 @@ interface DashboardStatsType {
 const Dashboard: React.FC = () => {
   const { data: stats, loading } = useDataCache<DashboardStatsType>(
     'dashboard-stats',
-    () => optimizedSupabaseService.getDashboardStatsOptimized(),
+    async () => {
+      const result = await optimizedSupabaseService.getDashboardStatsOptimized();
+      return result as DashboardStatsType;
+    },
     { ttl: 3 * 60 * 1000 }
   );
 

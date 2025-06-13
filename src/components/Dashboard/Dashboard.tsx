@@ -22,7 +22,10 @@ const Dashboard: React.FC = () => {
     totalVolume: 0,
     monthlyStats: [],
     averageCargoValue: 0,
-    completionRate: 0
+    completionRate: 0,
+    totalExpenses: 0,
+    profit: 0,
+    profitMargin: 0
   });
   const [loading, setLoading] = useState(true);
 

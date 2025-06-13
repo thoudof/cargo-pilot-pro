@@ -577,68 +577,86 @@ export class SupabaseService {
 
   // Методы для работы с расходами по рейсам
   async getTripExpenses(tripId: string): Promise<TripExpense[]> {
-    const { data, error } = await this.supabase
+    const { data, error } = await supabase
       .from('trip_expenses')
       .select('*')
       .eq('trip_id', tripId)
       .order('expense_date', { ascending: false });
 
     if (error) throw error;
-    return (data || []).map(this.transformTripExpense);
+
+    return data.map(expense => ({
+      ...expense,
+      expenseDate: new Date(expense.expense_date),
+      createdAt: new Date(expense.created_at),
+      updatedAt: new Date(expense.updated_at)
+    }));
   }
 
-  async createTripExpense(expense: {
+  async createTripExpense(expenseData: {
     tripId: string;
-    expenseType: string;
+    expenseType: ExpenseType;
     amount: number;
     description?: string;
     expenseDate: Date;
-  }) {
-    const user = await this.getCurrentUser();
+  }): Promise<TripExpense> {
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    const { data, error } = await this.supabase
+    const { data, error } = await supabase
       .from('trip_expenses')
       .insert({
-        trip_id: expense.tripId,
-        expense_type: expense.expenseType,
-        amount: expense.amount,
-        description: expense.description,
-        expense_date: expense.expenseDate.toISOString(),
+        trip_id: expenseData.tripId,
+        expense_type: expenseData.expenseType,
+        amount: expenseData.amount,
+        description: expenseData.description,
+        expense_date: expenseData.expenseDate.toISOString(),
         user_id: user.id
       })
       .select()
       .single();
 
     if (error) throw error;
-    return this.transformTripExpense(data);
+
+    return {
+      ...data,
+      expenseDate: new Date(data.expense_date),
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at)
+    };
   }
 
-  async updateTripExpense(expenseId: string, expense: {
-    expenseType: string;
+  async updateTripExpense(expenseId: string, expenseData: {
+    tripId: string;
+    expenseType: ExpenseType;
     amount: number;
     description?: string;
     expenseDate: Date;
-  }) {
-    const { data, error } = await this.supabase
+  }): Promise<TripExpense> {
+    const { data, error } = await supabase
       .from('trip_expenses')
       .update({
-        expense_type: expense.expenseType,
-        amount: expense.amount,
-        description: expense.description,
-        expense_date: expense.expenseDate.toISOString(),
-        updated_at: new Date().toISOString()
+        expense_type: expenseData.expenseType,
+        amount: expenseData.amount,
+        description: expenseData.description,
+        expense_date: expenseData.expenseDate.toISOString()
       })
       .eq('id', expenseId)
       .select()
       .single();
 
     if (error) throw error;
-    return this.transformTripExpense(data);
+
+    return {
+      ...data,
+      expenseDate: new Date(data.expense_date),
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at)
+    };
   }
 
-  async deleteTripExpense(expenseId: string) {
-    const { error } = await this.supabase
+  async deleteTripExpense(expenseId: string): Promise<void> {
+    const { error } = await supabase
       .from('trip_expenses')
       .delete()
       .eq('id', expenseId);
@@ -751,6 +769,53 @@ export class SupabaseService {
       averageCargoValue: trips.length > 0 ? totalCargoValue / trips.length : 0,
       completionRate: trips.length > 0 ? (completedTrips / trips.length) * 100 : 0,
       averageExpensePerTrip: trips.length > 0 ? totalExpenses / trips.length : 0
+    };
+  }
+
+  async getAdvancedStats(filters: any): Promise<any> {
+    // Базовая статистика
+    const basicStats = await this.getDashboardStats();
+    
+    // Расходы по типам
+    const { data: expensesByType } = await supabase
+      .from('trip_expenses')
+      .select('expense_type, amount');
+
+    const expensesByTypeMap = expensesByType?.reduce((acc, expense) => {
+      acc[expense.expense_type] = (acc[expense.expense_type] || 0) + expense.amount;
+      return acc;
+    }, {} as Record<string, number>) || {};
+
+    // Производительность водителей
+    const { data: driverPerformance } = await supabase
+      .from('trips')
+      .select('driver_name, driver_id, cargo_value')
+      .not('driver_id', 'is', null);
+
+    const driverStats = driverPerformance?.reduce((acc, trip) => {
+      const key = trip.driver_id || 'unknown';
+      if (!acc[key]) {
+        acc[key] = {
+          driverId: key,
+          driverName: trip.driver_name,
+          tripsCount: 0,
+          totalRevenue: 0,
+          totalExpenses: 0
+        };
+      }
+      acc[key].tripsCount++;
+      acc[key].totalRevenue += trip.cargo_value || 0;
+      return acc;
+    }, {} as Record<string, any>) || {};
+
+    return {
+      ...basicStats,
+      expensesByType: expensesByTypeMap,
+      completedTripsExpenses: basicStats.totalExpenses,
+      averageExpensePerTrip: basicStats.totalTrips > 0 ? basicStats.totalExpenses / basicStats.totalTrips : 0,
+      driverPerformance: Object.values(driverStats),
+      topRoutes: [],
+      vehicleUtilization: []
     };
   }
 }

@@ -1,156 +1,141 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { TrendingUp, TrendingDown, Users, Truck, Calendar, Activity, Database, Clock } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { DatePickerWithRange } from '@/components/ui/date-picker';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { supabaseService } from '@/services/supabaseService';
 import { ExpenseStats } from '@/components/Dashboard/ExpenseStats';
+import { TrendingUp, TrendingDown, DollarSign, Package, Users, Truck, Calendar, Filter } from 'lucide-react';
+import { DateRange } from 'react-day-picker';
+import { addDays, subDays, format } from 'date-fns';
+import { ru } from 'date-fns/locale';
 
 interface StatsData {
-  userGrowth: Array<{ month: string; users: number }>;
-  tripsByStatus: Array<{ status: string; count: number; color: string }>;
-  usersByRole: Array<{ role: string; count: number; color: string }>;
-  dailyActivity: Array<{ date: string; activities: number }>;
-  recentMetrics: {
-    totalUsers: number;
-    activeUsers: number;
-    totalTrips: number;
-    completedTrips: number;
-    avgTripsPerUser: number;
-    systemLoad: number;
-  };
+  activeTrips: number;
+  totalTrips: number;
+  completedTrips: number;
+  plannedTrips: number;
+  cancelledTrips: number;
+  contractors: number;
+  drivers: number;
+  vehicles: number;
+  totalCargoValue: number;
+  completedCargoValue: number;
+  totalWeight: number;
+  totalVolume: number;
+  averageCargoValue: number;
+  completionRate: number;
+  totalExpenses: number;
+  completedTripsExpenses: number;
+  expensesByType: Record<string, number>;
+  profit: number;
+  profitMargin: number;
+  averageExpensePerTrip: number;
+  monthlyStats: Array<{
+    month: string;
+    trips: number;
+    revenue: number;
+    weight: number;
+    expenses: number;
+  }>;
+  topRoutes: Array<{
+    route: string;
+    count: number;
+    revenue: number;
+  }>;
+  driverPerformance: Array<{
+    driverId: string;
+    driverName: string;
+    tripsCount: number;
+    totalRevenue: number;
+    totalExpenses: number;
+  }>;
+  vehicleUtilization: Array<{
+    vehicleId: string;
+    vehicleName: string;
+    tripsCount: number;
+    totalKm: number;
+    totalRevenue: number;
+  }>;
 }
 
 export const AdvancedStats: React.FC = () => {
   const [stats, setStats] = useState<StatsData>({
-    userGrowth: [],
-    tripsByStatus: [],
-    usersByRole: [],
-    dailyActivity: [],
-    recentMetrics: {
-      totalUsers: 0,
-      activeUsers: 0,
-      totalTrips: 0,
-      completedTrips: 0,
-      avgTripsPerUser: 0,
-      systemLoad: 0
-    }
+    activeTrips: 0,
+    totalTrips: 0,
+    completedTrips: 0,
+    plannedTrips: 0,
+    cancelledTrips: 0,
+    contractors: 0,
+    drivers: 0,
+    vehicles: 0,
+    totalCargoValue: 0,
+    completedCargoValue: 0,
+    totalWeight: 0,
+    totalVolume: 0,
+    averageCargoValue: 0,
+    completionRate: 0,
+    totalExpenses: 0,
+    completedTripsExpenses: 0,
+    expensesByType: {},
+    profit: 0,
+    profitMargin: 0,
+    averageExpensePerTrip: 0,
+    monthlyStats: [],
+    topRoutes: [],
+    driverPerformance: [],
+    vehicleUtilization: []
   });
+  
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    dateRange: {
+      from: subDays(new Date(), 30),
+      to: new Date()
+    } as DateRange,
+    status: 'all',
+    contractorId: 'all',
+    driverId: 'all'
+  });
 
   useEffect(() => {
-    fetchAdvancedStats();
-  }, []);
+    loadStats();
+  }, [filters]);
 
-  const fetchAdvancedStats = async () => {
+  const loadStats = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-
-      // Базовые метрики
-      const [
-        { count: totalUsers },
-        { count: totalTrips },
-        { count: completedTrips },
-        { data: userRoles },
-        { data: tripStatuses },
-        { data: recentActivity }
-      ] = await Promise.all([
-        supabase.from('profiles').select('*', { count: 'exact', head: true }),
-        supabase.from('trips').select('*', { count: 'exact', head: true }),
-        supabase.from('trips').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
-        supabase.from('user_roles').select('role'),
-        supabase.from('trips').select('status'),
-        supabase.from('activity_logs')
-          .select('created_at')
-          .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
-      ]);
-
-      // Активные пользователи (вошли в систему за последние 30 дней)
-      const { count: activeUsers } = await supabase
-        .from('activity_logs')
-        .select('*', { count: 'exact', head: true })
-        .eq('action', 'login')
-        .gte('created_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString());
-
-      // Рост пользователей по месяцам
-      const { data: userGrowthData } = await supabase
-        .from('profiles')
-        .select('created_at')
-        .order('created_at');
-
-      const userGrowthByMonth = (userGrowthData || []).reduce((acc: any, user) => {
-        const month = new Date(user.created_at).toLocaleDateString('ru-RU', { 
-          year: 'numeric', 
-          month: 'short' 
-        });
-        acc[month] = (acc[month] || 0) + 1;
-        return acc;
-      }, {});
-
-      const userGrowth = Object.entries(userGrowthByMonth).map(([month, users]) => ({
-        month,
-        users: users as number
-      }));
-
-      // Статистика по ролям
-      const roleStats = (userRoles || []).reduce((acc: any, ur) => {
-        acc[ur.role] = (acc[ur.role] || 0) + 1;
-        return acc;
-      }, {});
-
-      const usersByRole = Object.entries(roleStats).map(([role, count], index) => ({
-        role: role === 'admin' ? 'Админы' : role === 'dispatcher' ? 'Диспетчеры' : 'Водители',
-        count: count as number,
-        color: ['#3b82f6', '#10b981', '#f59e0b'][index % 3]
-      }));
-
-      // Статистика по статусам рейсов
-      const statusStats = (tripStatuses || []).reduce((acc: any, trip) => {
-        acc[trip.status] = (acc[trip.status] || 0) + 1;
-        return acc;
-      }, {});
-
-      const tripsByStatus = Object.entries(statusStats).map(([status, count], index) => ({
-        status: status === 'completed' ? 'Завершено' : 
-                status === 'in_progress' ? 'В пути' : 
-                status === 'cancelled' ? 'Отменено' : 'Запланировано',
-        count: count as number,
-        color: ['#10b981', '#3b82f6', '#ef4444', '#f59e0b'][index % 4]
-      }));
-
-      // Активность по дням
-      const activityByDay = (recentActivity || []).reduce((acc: any, activity) => {
-        const date = new Date(activity.created_at).toLocaleDateString('ru-RU');
-        acc[date] = (acc[date] || 0) + 1;
-        return acc;
-      }, {});
-
-      const dailyActivity = Object.entries(activityByDay)
-        .slice(-7)
-        .map(([date, activities]) => ({
-          date,
-          activities: activities as number
-        }));
-
-      setStats({
-        userGrowth,
-        tripsByStatus,
-        usersByRole,
-        dailyActivity,
-        recentMetrics: {
-          totalUsers: totalUsers || 0,
-          activeUsers: activeUsers || 0,
-          totalTrips: totalTrips || 0,
-          completedTrips: completedTrips || 0,
-          avgTripsPerUser: totalUsers ? Math.round((totalTrips || 0) / totalUsers * 10) / 10 : 0,
-          systemLoad: Math.random() * 100 // Заглушка для нагрузки системы
-        }
-      });
+      const data = await supabaseService.getAdvancedStats(filters);
+      setStats(data);
     } catch (error) {
-      console.error('Error fetching advanced stats:', error);
+      console.error('Failed to load advanced stats:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      minimumFractionDigits: 0
+    }).format(value);
+  };
+
+  const formatPercentage = (value: number) => {
+    return `${value.toFixed(1)}%`;
+  };
+
+  const getChangeIcon = (current: number, previous: number) => {
+    if (current > previous) {
+      return <TrendingUp className="h-4 w-4 text-green-500" />;
+    } else if (current < previous) {
+      return <TrendingDown className="h-4 w-4 text-red-500" />;
+    }
+    return null;
   };
 
   if (loading) {
@@ -161,186 +146,225 @@ export const AdvancedStats: React.FC = () => {
     );
   }
 
-  const { recentMetrics } = stats;
-  const userActivityRate = recentMetrics.totalUsers ? (recentMetrics.activeUsers / recentMetrics.totalUsers * 100) : 0;
-  const tripCompletionRate = recentMetrics.totalTrips ? (recentMetrics.completedTrips / recentMetrics.totalTrips * 100) : 0;
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0
-    }).format(value);
-  };
-
   return (
     <div className="space-y-6">
-      {/* Ключевые метрики */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Users className="h-4 w-4 text-blue-600" />
-              Активность пользователей
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Активные</span>
-                <span>{recentMetrics.activeUsers}/{recentMetrics.totalUsers}</span>
-              </div>
-              <Progress value={userActivityRate} className="h-2" />
-              <div className="text-xs text-muted-foreground">
-                {userActivityRate.toFixed(1)}% активности
-              </div>
+      {/* Фильтры */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Фильтры
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Период</label>
+              <DatePickerWithRange
+                date={filters.dateRange}
+                onDateChange={(range) => setFilters({ ...filters, dateRange: range || { from: subDays(new Date(), 30), to: new Date() } })}
+              />
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Truck className="h-4 w-4 text-green-600" />
-              Выполнение рейсов
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Завершено</span>
-                <span>{recentMetrics.completedTrips}/{recentMetrics.totalTrips}</span>
-              </div>
-              <Progress value={tripCompletionRate} className="h-2" />
-              <div className="text-xs text-muted-foreground">
-                {tripCompletionRate.toFixed(1)}% завершено
-              </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Статус</label>
+              <Select 
+                value={filters.status} 
+                onValueChange={(value) => setFilters({ ...filters, status: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все статусы</SelectItem>
+                  <SelectItem value="planned">Планируется</SelectItem>
+                  <SelectItem value="in_progress">В пути</SelectItem>
+                  <SelectItem value="completed">Завершён</SelectItem>
+                  <SelectItem value="cancelled">Отменён</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Activity className="h-4 w-4 text-purple-600" />
-              Средние рейсы
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{recentMetrics.avgTripsPerUser}</div>
-            <div className="text-xs text-muted-foreground">на пользователя</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Database className="h-4 w-4 text-orange-600" />
-              Нагрузка системы
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              <Progress value={recentMetrics.systemLoad} className="h-2" />
-              <div className="text-xs text-muted-foreground">
-                {recentMetrics.systemLoad.toFixed(1)}% использования
-              </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Заказчик</label>
+              <Select 
+                value={filters.contractorId} 
+                onValueChange={(value) => setFilters({ ...filters, contractorId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все заказчики</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Водитель</label>
+              <Select 
+                value={filters.driverId} 
+                onValueChange={(value) => setFilters({ ...filters, driverId: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все водители</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Добавляем статистику по расходам */}
-      <ExpenseStats stats={stats} formatCurrency={formatCurrency} />
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="overview">Обзор</TabsTrigger>
+          <TabsTrigger value="expenses">Расходы</TabsTrigger>
+          <TabsTrigger value="performance">Производительность</TabsTrigger>
+          <TabsTrigger value="routes">Маршруты</TabsTrigger>
+        </TabsList>
 
-      {/* Графики */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Рост пользователей</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={stats.userGrowth}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="users" stroke="#3b82f6" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <TabsContent value="overview">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Общая выручка</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.totalCargoValue)}</div>
+                <p className="text-xs text-muted-foreground">
+                  Завершено: {formatCurrency(stats.completedCargoValue)}
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Активность за неделю</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={stats.dailyActivity}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="activities" fill="#10b981" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Всего рейсов</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalTrips}</div>
+                <p className="text-xs text-muted-foreground">
+                  Завершено: {stats.completedTrips} ({formatPercentage(stats.completionRate)})
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Пользователи по ролям</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={stats.usersByRole}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={60}
-                  fill="#8884d8"
-                  dataKey="count"
-                  label={({ role, count }) => `${role}: ${count}`}
-                >
-                  {stats.usersByRole.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Общий вес</CardTitle>
+                <Package className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.totalWeight.toLocaleString('ru-RU')} кг</div>
+                <p className="text-xs text-muted-foreground">
+                  Объем: {stats.totalVolume.toLocaleString('ru-RU')} м³
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Средняя стоимость</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.averageCargoValue)}</div>
+                <p className="text-xs text-muted-foreground">За рейс</p>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="expenses">
+          <ExpenseStats stats={stats} formatCurrency={formatCurrency} />
+        </TabsContent>
+
+        <TabsContent value="performance">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Производительность водителей</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {stats.driverPerformance.map((driver) => (
+                    <div key={driver.driverId} className="flex items-center justify-between p-3 border rounded">
+                      <div>
+                        <p className="font-medium">{driver.driverName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {driver.tripsCount} рейсов
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{formatCurrency(driver.totalRevenue)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Расходы: {formatCurrency(driver.totalExpenses)}
+                        </p>
+                      </div>
+                    </div>
                   ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Рейсы по статусам</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={stats.tripsByStatus}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={60}
-                  fill="#8884d8"
-                  dataKey="count"
-                  label={({ status, count }) => `${status}: ${count}`}
-                >
-                  {stats.tripsByStatus.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Использование транспорта</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {stats.vehicleUtilization.map((vehicle) => (
+                    <div key={vehicle.vehicleId} className="flex items-center justify-between p-3 border rounded">
+                      <div>
+                        <p className="font-medium">{vehicle.vehicleName}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {vehicle.tripsCount} рейсов
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-medium">{formatCurrency(vehicle.totalRevenue)}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {vehicle.totalKm.toLocaleString('ru-RU')} км
+                        </p>
+                      </div>
+                    </div>
                   ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="routes">
+          <Card>
+            <CardHeader>
+              <CardTitle>Популярные маршруты</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {stats.topRoutes.map((route, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 border rounded">
+                    <div>
+                      <p className="font-medium">{route.route}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {route.count} рейсов
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-medium">{formatCurrency(route.revenue)}</p>
+                      <Badge variant="outline">
+                        {formatCurrency(route.revenue / route.count)} за рейс
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

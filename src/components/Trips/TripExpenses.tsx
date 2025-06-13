@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Edit, Trash2, Receipt, Ruble } from 'lucide-react';
+import { Plus, Edit, Trash2, Receipt, DollarSign } from 'lucide-react';
 import { TripExpense, ExpenseType, expenseTypeLabels } from '@/types/expenses';
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
@@ -155,7 +155,7 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
           </CardTitle>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1 text-sm">
-              <Ruble className="h-4 w-4" />
+              <DollarSign className="h-4 w-4" />
               <span className="font-medium">
                 Итого: {totalExpenses.toLocaleString('ru-RU')} ₽
               </span>

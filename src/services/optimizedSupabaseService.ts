@@ -17,6 +17,33 @@ const setCachedData = <T>(key: string, data: T, ttl: number = 5 * 60 * 1000) => 
   cache.set(key, { data, timestamp: Date.now(), ttl });
 };
 
+interface DashboardStats {
+  activeTrips: number;
+  totalTrips: number;
+  completedTrips: number;
+  plannedTrips: number;
+  cancelledTrips: number;
+  contractors: number;
+  drivers: number;
+  vehicles: number;
+  totalCargoValue: number;
+  completedCargoValue: number;
+  totalWeight: number;
+  totalVolume: number;
+  monthlyStats: Array<{
+    month: string;
+    trips: number;
+    revenue: number;
+    weight: number;
+    expenses: number;
+  }>;
+  averageCargoValue: number;
+  completionRate: number;
+  totalExpenses: number;
+  profit: number;
+  profitMargin: number;
+}
+
 class OptimizedSupabaseService {
   private batchSize = 50;
   private activeRequests = new Map<string, Promise<any>>();
@@ -152,11 +179,11 @@ class OptimizedSupabaseService {
   }
 
   // Оптимизированная статистика дашборда
-  async getDashboardStatsOptimized() {
+  async getDashboardStatsOptimized(): Promise<DashboardStats> {
     const cacheKey = 'dashboard-stats-optimized';
     
     return this.dedupRequest(cacheKey, async () => {
-      const cached = getCachedData(cacheKey);
+      const cached = getCachedData<DashboardStats>(cacheKey);
       if (cached) return cached;
 
       try {
@@ -197,7 +224,7 @@ class OptimizedSupabaseService {
 
         const monthlyStats = this.generateMonthlyStatsOptimized(trips || [], expenses || []);
 
-        const result = {
+        const result: DashboardStats = {
           activeTrips,
           totalTrips,
           completedTrips,

@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, Filter } from 'lucide-react';
+import { Search, Download, Filter, TrendingUp, TrendingDown, Clock, DollarSign, Calculator, Target } from 'lucide-react';
 import { useDataCache } from '@/hooks/useDataCache';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
 import { Trip, TripStatus } from '@/types';
@@ -15,7 +15,9 @@ import { ru } from 'date-fns/locale';
 
 interface TripWithExpenses extends Trip {
   totalExpenses: number;
-  profit: number;
+  actualProfit: number;
+  potentialProfit: number;
+  isProfitActual: boolean;
 }
 
 const statusLabels = {
@@ -76,12 +78,36 @@ export const TripsReportTable: React.FC = () => {
     return trips.map(trip => {
       const totalExpenses = expensesData[trip.id] || 0;
       const revenue = trip.cargo?.value || 0;
-      const profit = revenue - totalExpenses;
+      
+      // Расчет прибыли в зависимости от статуса
+      let actualProfit = 0;
+      let potentialProfit = 0;
+      let isProfitActual = false;
+
+      switch (trip.status) {
+        case TripStatus.COMPLETED:
+          // Завершенные рейсы - фактическая прибыль
+          actualProfit = revenue - totalExpenses;
+          isProfitActual = true;
+          break;
+        case TripStatus.CANCELLED:
+          // Отмененные рейсы - только расходы (отрицательная прибыль)
+          actualProfit = -totalExpenses;
+          isProfitActual = true;
+          break;
+        case TripStatus.IN_PROGRESS:
+        case TripStatus.PLANNED:
+          // Запланированные и в процессе - потенциальная прибыль
+          potentialProfit = revenue - totalExpenses;
+          break;
+      }
       
       return {
         ...trip,
         totalExpenses,
-        profit
+        actualProfit,
+        potentialProfit,
+        isProfitActual
       };
     });
   }, [trips, expensesData]);
@@ -120,10 +146,6 @@ export const TripsReportTable: React.FC = () => {
           aValue = `${a.pointA} - ${a.pointB}`;
           bValue = `${b.pointA} - ${b.pointB}`;
           break;
-        case 'distance':
-          aValue = 0; // Можно добавить расчет расстояния
-          bValue = 0;
-          break;
         case 'revenue':
           aValue = a.cargo?.value || 0;
           bValue = b.cargo?.value || 0;
@@ -132,9 +154,13 @@ export const TripsReportTable: React.FC = () => {
           aValue = a.totalExpenses;
           bValue = b.totalExpenses;
           break;
-        case 'profit':
-          aValue = a.profit;
-          bValue = b.profit;
+        case 'actualProfit':
+          aValue = a.actualProfit;
+          bValue = b.actualProfit;
+          break;
+        case 'potentialProfit':
+          aValue = a.potentialProfit;
+          bValue = b.potentialProfit;
           break;
         default:
           aValue = a.id;
@@ -150,18 +176,55 @@ export const TripsReportTable: React.FC = () => {
   }, [processedTrips, searchTerm, statusFilter, sortField, sortDirection, contractors]);
 
   const summaryStats = useMemo(() => {
-    const totalRevenue = filteredAndSortedTrips.reduce((sum, trip) => sum + (trip.cargo?.value || 0), 0);
-    const totalExpenses = filteredAndSortedTrips.reduce((sum, trip) => sum + trip.totalExpenses, 0);
-    const totalProfit = totalRevenue - totalExpenses;
+    // Разделение по статусам для точного подсчета
+    const completedTrips = filteredAndSortedTrips.filter(trip => trip.status === TripStatus.COMPLETED);
+    const cancelledTrips = filteredAndSortedTrips.filter(trip => trip.status === TripStatus.CANCELLED);
+    const activeTrips = filteredAndSortedTrips.filter(trip => 
+      trip.status === TripStatus.IN_PROGRESS || trip.status === TripStatus.PLANNED
+    );
+
+    // Фактические показатели (завершенные + отмененные)
+    const actualRevenue = completedTrips.reduce((sum, trip) => sum + (trip.cargo?.value || 0), 0);
+    const actualExpenses = [...completedTrips, ...cancelledTrips].reduce((sum, trip) => sum + trip.totalExpenses, 0);
+    const actualProfit = completedTrips.reduce((sum, trip) => sum + trip.actualProfit, 0) + 
+                        cancelledTrips.reduce((sum, trip) => sum + trip.actualProfit, 0);
+
+    // Потенциальные показатели (планируемые + в процессе)
+    const potentialRevenue = activeTrips.reduce((sum, trip) => sum + (trip.cargo?.value || 0), 0);
+    const potentialExpenses = activeTrips.reduce((sum, trip) => sum + trip.totalExpenses, 0);
+    const potentialProfit = activeTrips.reduce((sum, trip) => sum + trip.potentialProfit, 0);
+
+    // Общие показатели
+    const totalRevenue = actualRevenue + potentialRevenue;
+    const totalExpenses = actualExpenses + potentialExpenses;
     const totalWeight = filteredAndSortedTrips.reduce((sum, trip) => sum + (trip.cargo?.weight || 0), 0);
+    
+    // Рентабельность
+    const actualProfitMargin = actualRevenue > 0 ? (actualProfit / actualRevenue) * 100 : 0;
+    const potentialProfitMargin = potentialRevenue > 0 ? (potentialProfit / potentialRevenue) * 100 : 0;
+    const overallProfitMargin = totalRevenue > 0 ? ((actualProfit + potentialProfit) / totalRevenue) * 100 : 0;
     
     return {
       totalTrips: filteredAndSortedTrips.length,
+      completedTrips: completedTrips.length,
+      activeTrips: activeTrips.length,
+      cancelledTrips: cancelledTrips.length,
+      
+      actualRevenue,
+      actualExpenses,
+      actualProfit,
+      
+      potentialRevenue,
+      potentialExpenses,
+      potentialProfit,
+      
       totalRevenue,
       totalExpenses,
-      totalProfit,
       totalWeight: totalWeight / 1000, // в тоннах
-      profitMargin: totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0
+      
+      actualProfitMargin,
+      potentialProfitMargin,
+      overallProfitMargin
     };
   }, [filteredAndSortedTrips]);
 
@@ -184,38 +247,84 @@ export const TripsReportTable: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Сводная статистика */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+      {/* Расширенная сводная статистика */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Общая статистика */}
         <Card>
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground">Всего рейсов</div>
             <div className="text-2xl font-bold">{summaryStats.totalTrips}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-sm text-muted-foreground">Общий доход</div>
-            <div className="text-2xl font-bold text-green-600">
-              {summaryStats.totalRevenue.toLocaleString('ru-RU')} ₽
+            <div className="text-xs text-muted-foreground mt-1">
+              Завершено: {summaryStats.completedTrips} | Активных: {summaryStats.activeTrips} | Отменено: {summaryStats.cancelledTrips}
             </div>
           </CardContent>
         </Card>
+
+        {/* Фактическая прибыль */}
         <Card>
           <CardContent className="p-4">
-            <div className="text-sm text-muted-foreground">Общие расходы</div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-green-600" />
+              <div className="text-sm text-muted-foreground">Фактическая прибыль</div>
+            </div>
+            <div className={`text-2xl font-bold ${summaryStats.actualProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {summaryStats.actualProfit.toLocaleString('ru-RU')} ₽
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Рентабельность: {summaryStats.actualProfitMargin.toFixed(1)}%
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Потенциальная прибыль */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-blue-600" />
+              <div className="text-sm text-muted-foreground">Потенциальная прибыль</div>
+            </div>
+            <div className={`text-2xl font-bold ${summaryStats.potentialProfit >= 0 ? 'text-blue-600' : 'text-orange-600'}`}>
+              {summaryStats.potentialProfit.toLocaleString('ru-RU')} ₽
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Ожидаемая рентабельность: {summaryStats.potentialProfitMargin.toFixed(1)}%
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Общие доходы */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-emerald-600" />
+              <div className="text-sm text-muted-foreground">Общие доходы</div>
+            </div>
+            <div className="text-2xl font-bold text-emerald-600">
+              {summaryStats.totalRevenue.toLocaleString('ru-RU')} ₽
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Факт: {summaryStats.actualRevenue.toLocaleString('ru-RU')} ₽ | План: {summaryStats.potentialRevenue.toLocaleString('ru-RU')} ₽
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Общие расходы */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <TrendingDown className="h-4 w-4 text-red-600" />
+              <div className="text-sm text-muted-foreground">Общие расходы</div>
+            </div>
             <div className="text-2xl font-bold text-red-600">
               {summaryStats.totalExpenses.toLocaleString('ru-RU')} ₽
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-sm text-muted-foreground">Прибыль</div>
-            <div className={`text-2xl font-bold ${summaryStats.totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {summaryStats.totalProfit.toLocaleString('ru-RU')} ₽
+            <div className="text-xs text-muted-foreground mt-1">
+              Факт: {summaryStats.actualExpenses.toLocaleString('ru-RU')} ₽ | План: {summaryStats.potentialExpenses.toLocaleString('ru-RU')} ₽
             </div>
           </CardContent>
         </Card>
+
+        {/* Общий вес */}
         <Card>
           <CardContent className="p-4">
             <div className="text-sm text-muted-foreground">Общий вес</div>
@@ -224,11 +333,32 @@ export const TripsReportTable: React.FC = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Общая рентабельность */}
         <Card>
           <CardContent className="p-4">
-            <div className="text-sm text-muted-foreground">Рентабельность</div>
-            <div className={`text-2xl font-bold ${summaryStats.profitMargin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              {summaryStats.profitMargin.toFixed(1)}%
+            <div className="flex items-center gap-2">
+              <Calculator className="h-4 w-4 text-purple-600" />
+              <div className="text-sm text-muted-foreground">Общая рентабельность</div>
+            </div>
+            <div className={`text-2xl font-bold ${summaryStats.overallProfitMargin >= 0 ? 'text-purple-600' : 'text-red-600'}`}>
+              {summaryStats.overallProfitMargin.toFixed(1)}%
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Итоговая прибыль */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-600" />
+              <div className="text-sm text-muted-foreground">Итоговая прибыль</div>
+            </div>
+            <div className={`text-2xl font-bold ${(summaryStats.actualProfit + summaryStats.potentialProfit) >= 0 ? 'text-amber-600' : 'text-red-600'}`}>
+              {(summaryStats.actualProfit + summaryStats.potentialProfit).toLocaleString('ru-RU')} ₽
+            </div>
+            <div className="text-xs text-muted-foreground mt-1">
+              Факт + Потенциал
             </div>
           </CardContent>
         </Card>
@@ -305,9 +435,15 @@ export const TripsReportTable: React.FC = () => {
                   </TableHead>
                   <TableHead 
                     className="cursor-pointer hover:bg-muted/50 text-right"
-                    onClick={() => handleSort('profit')}
+                    onClick={() => handleSort('actualProfit')}
                   >
-                    Прибыль
+                    Фактическая прибыль
+                  </TableHead>
+                  <TableHead 
+                    className="cursor-pointer hover:bg-muted/50 text-right"
+                    onClick={() => handleSort('potentialProfit')}
+                  >
+                    Потенциальная прибыль
                   </TableHead>
                   <TableHead>Статус</TableHead>
                 </TableRow>
@@ -348,8 +484,19 @@ export const TripsReportTable: React.FC = () => {
                     <TableCell className="text-right font-medium text-red-600">
                       {trip.totalExpenses.toLocaleString('ru-RU')} ₽
                     </TableCell>
-                    <TableCell className={`text-right font-medium ${trip.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {trip.profit.toLocaleString('ru-RU')} ₽
+                    <TableCell className={`text-right font-medium ${
+                      trip.isProfitActual 
+                        ? (trip.actualProfit >= 0 ? 'text-green-600' : 'text-red-600')
+                        : 'text-gray-400'
+                    }`}>
+                      {trip.isProfitActual ? `${trip.actualProfit.toLocaleString('ru-RU')} ₽` : '—'}
+                    </TableCell>
+                    <TableCell className={`text-right font-medium ${
+                      !trip.isProfitActual 
+                        ? (trip.potentialProfit >= 0 ? 'text-blue-600' : 'text-orange-600')
+                        : 'text-gray-400'
+                    }`}>
+                      {!trip.isProfitActual ? `${trip.potentialProfit.toLocaleString('ru-RU')} ₽` : '—'}
                     </TableCell>
                     <TableCell>
                       <Badge 

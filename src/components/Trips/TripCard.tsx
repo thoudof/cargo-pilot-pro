@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, User, Edit2, Trash2, Receipt, DollarSign } from 'lucide-react';
-import { Trip, TripStatus, Contractor } from '@/types';
+import { Trip, TripStatus } from '@/types';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -22,9 +22,14 @@ const statusLabels = {
   [TripStatus.CANCELLED]: 'Отменён'
 };
 
+interface SimpleContractor {
+  id: string;
+  companyName: string;
+}
+
 interface TripCardProps {
   trip: Trip;
-  contractors: Contractor[];
+  contractors: SimpleContractor[];
   tripExpenses: Record<string, number>;
   onViewDetails: (trip: Trip) => void;
   onEditTrip: (trip: Trip) => void;

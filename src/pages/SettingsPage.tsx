@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +10,9 @@ import { useAuth } from '@/components/Auth/AuthProvider';
 import { supabaseService } from '@/services/supabaseService';
 import { activityLogger } from '@/services/activityLogger';
 import { useToast } from '@/hooks/use-toast';
-import { User, Bell, Shield, Database, Download, Trash2 } from 'lucide-react';
+import { User, Bell, Shield, Database, Download, Trash2, Key, Smartphone } from 'lucide-react';
+import { ChangePasswordDialog } from '@/components/Settings/ChangePasswordDialog';
+import { TwoFactorSetupDialog } from '@/components/Settings/TwoFactorSetupDialog';
 
 interface UserProfile {
   full_name: string;
@@ -24,10 +27,19 @@ interface NotificationSettings {
   systemAlerts: boolean;
 }
 
+interface AppSettings {
+  theme: 'light' | 'dark' | 'system';
+  language: 'ru' | 'en';
+  autoSync: boolean;
+  compactView: boolean;
+}
+
 export const SettingsPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [twoFactorOpen, setTwoFactorOpen] = useState(false);
   const [profile, setProfile] = useState<UserProfile>({
     full_name: '',
     username: '',
@@ -39,6 +51,12 @@ export const SettingsPage: React.FC = () => {
     tripUpdates: true,
     systemAlerts: true
   });
+  const [appSettings, setAppSettings] = useState<AppSettings>({
+    theme: 'system',
+    language: 'ru',
+    autoSync: true,
+    compactView: false
+  });
 
   useEffect(() => {
     if (user) {
@@ -48,7 +66,26 @@ export const SettingsPage: React.FC = () => {
         role: user.user_metadata?.role || 'dispatcher'
       });
     }
+    loadSettings();
   }, [user]);
+
+  const loadSettings = async () => {
+    try {
+      // Загружаем настройки из localStorage или Supabase
+      const savedNotifications = localStorage.getItem('notification_settings');
+      const savedAppSettings = localStorage.getItem('app_settings');
+      
+      if (savedNotifications) {
+        setNotifications(JSON.parse(savedNotifications));
+      }
+      
+      if (savedAppSettings) {
+        setAppSettings(JSON.parse(savedAppSettings));
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    }
+  };
 
   const handleProfileUpdate = async () => {
     setLoading(true);
@@ -86,7 +123,9 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleNotificationUpdate = async (key: keyof NotificationSettings, value: boolean) => {
-    setNotifications(prev => ({ ...prev, [key]: value }));
+    const updatedNotifications = { ...notifications, [key]: value };
+    setNotifications(updatedNotifications);
+    localStorage.setItem('notification_settings', JSON.stringify(updatedNotifications));
     
     await activityLogger.log({
       action: 'update_notification_settings',
@@ -96,23 +135,94 @@ export const SettingsPage: React.FC = () => {
 
     toast({
       title: 'Настройки обновлены',
-      description: `Настройка "${key}" ${value ? 'включена' : 'отключена'}`
+      description: `Настройка "${getNotificationLabel(key)}" ${value ? 'включена' : 'отключена'}`
     });
+  };
+
+  const handleAppSettingUpdate = async (key: keyof AppSettings, value: any) => {
+    const updatedSettings = { ...appSettings, [key]: value };
+    setAppSettings(updatedSettings);
+    localStorage.setItem('app_settings', JSON.stringify(updatedSettings));
+    
+    // Применяем тему сразу
+    if (key === 'theme') {
+      applyTheme(value);
+    }
+
+    toast({
+      title: 'Настройки приложения обновлены',
+      description: `${getAppSettingLabel(key)} изменена`
+    });
+  };
+
+  const applyTheme = (theme: 'light' | 'dark' | 'system') => {
+    const root = document.documentElement;
+    if (theme === 'system') {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      root.classList.toggle('dark', prefersDark);
+    } else {
+      root.classList.toggle('dark', theme === 'dark');
+    }
+  };
+
+  const getNotificationLabel = (key: keyof NotificationSettings): string => {
+    const labels = {
+      emailNotifications: 'Email уведомления',
+      pushNotifications: 'Push уведомления',
+      tripUpdates: 'Уведомления о рейсах',
+      systemAlerts: 'Системные уведомления'
+    };
+    return labels[key];
+  };
+
+  const getAppSettingLabel = (key: keyof AppSettings): string => {
+    const labels = {
+      theme: 'Тема',
+      language: 'Язык',
+      autoSync: 'Автосинхронизация',
+      compactView: 'Компактный вид'
+    };
+    return labels[key];
   };
 
   const handleExportData = async () => {
     try {
+      const exportData = {
+        profile,
+        notifications,
+        appSettings,
+        exportDate: new Date().toISOString()
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+        type: 'application/json'
+      });
+      
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `transport-app-data-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
       await activityLogger.log({
         action: 'export_data',
         entityType: 'user_data'
       });
 
       toast({
-        title: 'Экспорт данных',
-        description: 'Функция экспорта будет реализована в следующих версиях'
+        title: 'Данные экспортированы',
+        description: 'Файл с данными загружен на ваше устройство'
       });
     } catch (error) {
       console.error('Export error:', error);
+      toast({
+        title: 'Ошибка экспорта',
+        description: 'Не удалось экспортировать данные',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -204,14 +314,64 @@ export const SettingsPage: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {Object.entries(notifications).map(([key, value]) => (
+            <div key={key}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>{getNotificationLabel(key as keyof NotificationSettings)}</Label>
+                  <p className="text-sm text-gray-500">
+                    {key === 'emailNotifications' && 'Получать уведомления на email'}
+                    {key === 'pushNotifications' && 'Получать push-уведомления в браузере'}
+                    {key === 'tripUpdates' && 'Уведомления об изменениях в рейсах'}
+                    {key === 'systemAlerts' && 'Важные системные сообщения'}
+                  </p>
+                </div>
+                <Switch
+                  checked={value}
+                  onCheckedChange={(checked) => handleNotificationUpdate(key as keyof NotificationSettings, checked)}
+                />
+              </div>
+              <Separator className="mt-4" />
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+
+      {/* Настройки приложения */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            Настройки приложения
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Email уведомления</Label>
-              <p className="text-sm text-gray-500">Получать уведомления на email</p>
+              <Label>Тема</Label>
+              <p className="text-sm text-gray-500">Выберите тему оформления</p>
+            </div>
+            <select
+              value={appSettings.theme}
+              onChange={(e) => handleAppSettingUpdate('theme', e.target.value)}
+              className="border rounded px-3 py-1"
+            >
+              <option value="light">Светлая</option>
+              <option value="dark">Темная</option>
+              <option value="system">Системная</option>
+            </select>
+          </div>
+
+          <Separator />
+
+          <div className="flex items-center justify-between">
+            <div>
+              <Label>Автосинхронизация</Label>
+              <p className="text-sm text-gray-500">Автоматически синхронизировать данные</p>
             </div>
             <Switch
-              checked={notifications.emailNotifications}
-              onCheckedChange={(value) => handleNotificationUpdate('emailNotifications', value)}
+              checked={appSettings.autoSync}
+              onCheckedChange={(value) => handleAppSettingUpdate('autoSync', value)}
             />
           </div>
 
@@ -219,38 +379,12 @@ export const SettingsPage: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div>
-              <Label>Push уведомления</Label>
-              <p className="text-sm text-gray-500">Получать push-уведомления в браузере</p>
+              <Label>Компактный вид</Label>
+              <p className="text-sm text-gray-500">Отображать информацию в компактном виде</p>
             </div>
             <Switch
-              checked={notifications.pushNotifications}
-              onCheckedChange={(value) => handleNotificationUpdate('pushNotifications', value)}
-            />
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Уведомления о рейсах</Label>
-              <p className="text-sm text-gray-500">Уведомления об изменениях в рейсах</p>
-            </div>
-            <Switch
-              checked={notifications.tripUpdates}
-              onCheckedChange={(value) => handleNotificationUpdate('tripUpdates', value)}
-            />
-          </div>
-
-          <Separator />
-
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Системные уведомления</Label>
-              <p className="text-sm text-gray-500">Важные системные сообщения</p>
-            </div>
-            <Switch
-              checked={notifications.systemAlerts}
-              onCheckedChange={(value) => handleNotificationUpdate('systemAlerts', value)}
+              checked={appSettings.compactView}
+              onCheckedChange={(value) => handleAppSettingUpdate('compactView', value)}
             />
           </div>
         </CardContent>
@@ -265,10 +399,20 @@ export const SettingsPage: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button variant="outline" className="w-full">
+          <Button
+            variant="outline"
+            className="w-full flex items-center gap-2"
+            onClick={() => setChangePasswordOpen(true)}
+          >
+            <Key className="h-4 w-4" />
             Изменить пароль
           </Button>
-          <Button variant="outline" className="w-full">
+          <Button
+            variant="outline"
+            className="w-full flex items-center gap-2"
+            onClick={() => setTwoFactorOpen(true)}
+          >
+            <Smartphone className="h-4 w-4" />
             Настроить двухфакторную аутентификацию
           </Button>
         </CardContent>
@@ -310,6 +454,16 @@ export const SettingsPage: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      <ChangePasswordDialog
+        open={changePasswordOpen}
+        onOpenChange={setChangePasswordOpen}
+      />
+
+      <TwoFactorSetupDialog
+        open={twoFactorOpen}
+        onOpenChange={setTwoFactorOpen}
+      />
     </div>
   );
 };

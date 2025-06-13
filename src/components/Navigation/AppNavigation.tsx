@@ -1,17 +1,9 @@
+
 import React from 'react';
-import { Home, Truck, Building2, Users, Car, MapPin, Package, Settings, Shield, BarChart3 } from 'lucide-react';
+import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3 } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet"
-import { Menu } from 'lucide-react';
-import { useSidebar } from '@/components/Sidebar/SidebarProvider';
+import { Button } from '@/components/ui/button';
 
 interface NavItem {
   name: string;
@@ -71,15 +63,49 @@ const navigation = [
   },
 ];
 
-export const AppNavigation: React.FC = () => {
+interface AppNavigationProps {
+  variant?: 'desktop' | 'mobile' | 'bottom';
+  onItemClick?: () => void;
+}
+
+export const AppNavigation: React.FC<AppNavigationProps> = ({ 
+  variant = 'desktop', 
+  onItemClick 
+}) => {
   const location = useLocation();
-  const { isOpen, onOpen, onClose } = useSidebar();
 
   const updatedNavigation = navigation.map(item => ({
     ...item,
     current: item.href === location.pathname,
   }));
 
+  if (variant === 'bottom') {
+    // Bottom navigation for mobile
+    return (
+      <div className="grid grid-cols-4 gap-1">
+        {updatedNavigation.slice(0, 4).map((item) => (
+          <NavLink
+            key={item.name}
+            to={item.href}
+            className={({ isActive }) =>
+              cn(
+                "flex flex-col items-center justify-center p-2 text-xs font-medium rounded-md transition-colors",
+                isActive 
+                  ? "text-primary bg-primary/10" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+              )
+            }
+            onClick={onItemClick}
+          >
+            <item.icon className="h-5 w-5 mb-1" />
+            <span className="truncate">{item.name}</span>
+          </NavLink>
+        ))}
+      </div>
+    );
+  }
+
+  // Desktop and mobile variants
   return (
     <nav className="flex flex-col space-y-1">
       {updatedNavigation.map((item) => (
@@ -92,6 +118,7 @@ export const AppNavigation: React.FC = () => {
               isActive ? "bg-muted text-foreground" : "text-muted-foreground"
             )
           }
+          onClick={onItemClick}
         >
           <item.icon className="mr-2 h-4 w-4" />
           <span>{item.name}</span>
@@ -100,47 +127,3 @@ export const AppNavigation: React.FC = () => {
     </nav>
   );
 };
-
-export const MobileAppNavigation: React.FC = () => {
-  const location = useLocation();
-    const { isOpen, onOpen, onClose } = useSidebar();
-
-
-  const updatedNavigation = navigation.map(item => ({
-    ...item,
-    current: item.href === location.pathname,
-  }));
-
-  return (
-    <Sheet>
-      <SheetTrigger asChild>
-        <Button variant="ghost" size="sm" className="p-0">
-          <Menu className="h-5 w-5" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent side="left" className="p-0 pt-6 w-64">
-        <SheetHeader className="pl-4 pb-4">
-          <SheetTitle>Меню</SheetTitle>
-        </SheetHeader>
-        <nav className="flex flex-col space-y-1">
-          {updatedNavigation.map((item) => (
-            <NavLink
-              key={item.name}
-              to={item.href}
-              className={({ isActive }) =>
-                cn(
-                  "group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-muted hover:text-foreground",
-                  isActive ? "bg-muted text-foreground" : "text-muted-foreground"
-                )
-              }
-              onClick={onClose}
-            >
-              <item.icon className="mr-2 h-4 w-4" />
-              <span>{item.name}</span>
-            </NavLink>
-          ))}
-        </nav>
-      </SheetContent>
-    </Sheet>
-  )
-}

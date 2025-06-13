@@ -1,3 +1,4 @@
+
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { AuthPage } from "@/components/Auth/AuthPage";
@@ -13,12 +14,11 @@ import { RoutesPage } from "./RoutesPage";
 import { CargoTypesPage } from "./CargoTypesPage";
 import { SettingsPage } from "./SettingsPage";
 import AdminPage from "./AdminPage";
-import { Home, Truck, Building2, Users, Car, MapPin, Package, Settings, Shield, BarChart3 } from 'lucide-react';
 import { ReportsPage } from './ReportsPage';
-import { SidebarProvider } from "@/components/Layout/SidebarProvider";
+import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/Layout/AppSidebar";
-import { SidebarTrigger } from "@/components/Layout/SidebarTrigger";
-import { AdminRoute } from "@/components/Layout/AdminRoute";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { AdminRoute } from "@/components/Admin/AdminRoute";
 
 const Index = () => {
   const { user, loading } = useAuth();

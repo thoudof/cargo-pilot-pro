@@ -19,6 +19,7 @@ interface MobileLayoutProps {
 const pageTitles: { [key: string]: string } = {
   '/': 'Главная',
   '/trips': 'Рейсы',
+  '/reports': 'Отчеты',
   '/contractors': 'Контрагенты',
   '/drivers': 'Водители',
   '/vehicles': 'Транспорт',
@@ -167,7 +168,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 </div>
               </div>
               
-              <AppNavigation variant="desktop" />
+              <AppNavigation />
             </div>
           </ScrollArea>
           
@@ -218,10 +219,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 </div>
               </div>
               
-              <AppNavigation 
-                variant="mobile" 
-                onItemClick={closeSidebar} 
-              />
+              <AppNavigation onItemClick={closeSidebar} />
             </div>
           </ScrollArea>
 

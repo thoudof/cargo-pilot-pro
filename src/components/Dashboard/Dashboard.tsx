@@ -4,64 +4,10 @@ import { DashboardStats } from './DashboardStats';
 import { FinancialMetrics } from './FinancialMetrics';
 import { DashboardCharts } from './DashboardCharts';
 import { RecentTripsSection } from './RecentTripsSection';
-import { useDataCache } from '@/hooks/useDataCache';
-import { simpleSupabaseService } from '@/services/simpleSupabaseService';
-
-interface DashboardStatsType {
-  activeTrips: number;
-  totalTrips: number;
-  completedTrips: number;
-  plannedTrips: number;
-  cancelledTrips: number;
-  contractors: number;
-  drivers: number;
-  vehicles: number;
-  totalCargoValue: number;
-  completedCargoValue: number;
-  totalWeight: number;
-  totalVolume: number;
-  monthlyStats: Array<{
-    month: string;
-    trips: number;
-    revenue: number;
-    weight: number;
-  }>;
-  averageCargoValue: number;
-  completionRate: number;
-  totalExpenses: number;
-  profit: number;
-  profitMargin: number;
-}
-
-const defaultStats: DashboardStatsType = {
-  activeTrips: 0,
-  totalTrips: 0,
-  completedTrips: 0,
-  plannedTrips: 0,
-  cancelledTrips: 0,
-  contractors: 0,
-  drivers: 0,
-  vehicles: 0,
-  totalCargoValue: 0,
-  completedCargoValue: 0,
-  totalWeight: 0,
-  totalVolume: 0,
-  monthlyStats: [],
-  averageCargoValue: 0,
-  completionRate: 0,
-  totalExpenses: 0,
-  profit: 0,
-  profitMargin: 0
-};
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 const Dashboard: React.FC = () => {
-  const { data: stats, loading, error } = useDataCache<DashboardStatsType>(
-    'dashboard-stats-simple',
-    () => simpleSupabaseService.getDashboardStats(),
-    { ttl: 5 * 60 * 1000, immediate: true }
-  );
-
-  const dashboardStats = stats || defaultStats;
+  const { data: stats, loading, error } = useDashboardData();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('ru-RU', {
@@ -95,11 +41,12 @@ const Dashboard: React.FC = () => {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-500 mb-2">Ошибка загрузки данных</p>
+          <p className="text-sm text-gray-500">{error}</p>
           <button 
             onClick={() => window.location.reload()} 
-            className="px-4 py-2 bg-primary text-white rounded"
+            className="mt-4 px-4 py-2 bg-primary text-white rounded"
           >
-            Обновить
+            Обновить страницу
           </button>
         </div>
       </div>
@@ -109,27 +56,29 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        <span className="ml-3">Загрузка...</span>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-3 text-sm text-gray-500">Загрузка данных...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <DashboardStats stats={dashboardStats} />
+      <DashboardStats stats={stats} />
       <FinancialMetrics 
-        stats={dashboardStats} 
+        stats={stats} 
         formatCurrency={formatCurrency} 
         formatWeight={formatWeight} 
       />
       <DashboardCharts 
-        stats={dashboardStats} 
+        stats={stats} 
         formatCurrency={formatCurrency} 
         formatWeight={formatWeight} 
         chartConfig={chartConfig} 
       />
-      <RecentTripsSection stats={dashboardStats} />
+      <RecentTripsSection stats={stats} />
     </div>
   );
 };

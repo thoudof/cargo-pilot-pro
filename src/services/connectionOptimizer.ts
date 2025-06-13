@@ -89,7 +89,8 @@ class ConnectionOptimizer {
   private async loadMinimalData() {
     // Загружаем только основную статистику
     const { optimizedSupabaseService } = await import('./optimizedSupabaseService');
-    return optimizedSupabaseService.getDashboardStatsOptimized();
+    const stats = await optimizedSupabaseService.getDashboardStatsOptimized();
+    return { stats };
   }
 
   private async loadDataInChunks() {
@@ -108,12 +109,12 @@ class ConnectionOptimizer {
     // Загружаем все данные как обычно
     const { optimizedSupabaseService } = await import('./optimizedSupabaseService');
     
-    const [stats, trips] = await Promise.all([
+    const [stats, recentTrips] = await Promise.all([
       optimizedSupabaseService.getDashboardStatsOptimized(),
       optimizedSupabaseService.getTripsOptimized(100)
     ]);
     
-    return { stats, trips };
+    return { stats, recentTrips };
   }
 }
 

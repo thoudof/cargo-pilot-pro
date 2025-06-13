@@ -9,6 +9,34 @@ import { RecentTripsSection } from './RecentTripsSection';
 export const OptimizedDashboard: React.FC = () => {
   const { data, loading, error, connectionQuality, retry } = useOptimizedDashboard();
 
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
+
+  const formatWeight = (value: number) => {
+    return `${(value / 1000).toFixed(1)} т`;
+  };
+
+  const chartConfig = {
+    trips: {
+      label: "Рейсы",
+      color: "hsl(var(--chart-1))",
+    },
+    revenue: {
+      label: "Выручка",
+      color: "hsl(var(--chart-2))",
+    },
+    weight: {
+      label: "Вес (т)",
+      color: "hsl(var(--chart-3))",
+    },
+  };
+
   if (loading && !data) {
     return (
       <div className="space-y-6">
@@ -44,9 +72,16 @@ export const OptimizedDashboard: React.FC = () => {
         onRetry={retry}
       />
       
-      {data?.stats && <DashboardStats data={data.stats} />}
-      {data?.stats?.monthlyStats && <DashboardCharts data={data.stats.monthlyStats} />}
-      {data?.recentTrips && <RecentTripsSection trips={data.recentTrips.slice(0, 5)} />}
+      {data?.stats && <DashboardStats stats={data.stats} />}
+      {data?.stats?.monthlyStats && (
+        <DashboardCharts 
+          stats={{ monthlyStats: data.stats.monthlyStats }}
+          formatCurrency={formatCurrency}
+          formatWeight={formatWeight}
+          chartConfig={chartConfig}
+        />
+      )}
+      {data?.stats && <RecentTripsSection stats={data.stats} />}
     </div>
   );
 };

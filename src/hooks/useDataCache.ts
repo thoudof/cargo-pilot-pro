@@ -67,9 +67,14 @@ class DataCache {
 
 const globalCache = new DataCache();
 
-setInterval(() => {
-  globalCache.cleanup();
-}, 5 * 60 * 1000);
+// Очистка кэша каждые 5 минут
+let cleanupInterval: NodeJS.Timeout | null = null;
+
+if (typeof window !== 'undefined' && !cleanupInterval) {
+  cleanupInterval = setInterval(() => {
+    globalCache.cleanup();
+  }, 5 * 60 * 1000);
+}
 
 export const useDataCache = <T>(
   key: string,
@@ -86,6 +91,10 @@ export const useDataCache = <T>(
   const [error, setError] = useState<Error | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
+  const fetchFnRef = useRef(fetchFn);
+  
+  // Обновляем fetchFn без перерендера
+  fetchFnRef.current = fetchFn;
 
   const fetchData = useCallback(async (forceRefresh = false): Promise<T | null> => {
     if (abortControllerRef.current) {
@@ -110,7 +119,7 @@ export const useDataCache = <T>(
     abortControllerRef.current = abortController;
 
     try {
-      const result = await fetchFn();
+      const result = await fetchFnRef.current();
       
       if (!abortController.signal.aborted && mountedRef.current) {
         globalCache.set(key, result, ttl);
@@ -132,7 +141,7 @@ export const useDataCache = <T>(
       }
       abortControllerRef.current = null;
     }
-  }, [key, fetchFn, ttl]);
+  }, [key, ttl]);
 
   const invalidate = useCallback(() => {
     globalCache.delete(key);

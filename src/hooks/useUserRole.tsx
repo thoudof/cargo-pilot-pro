@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/components/Auth/AuthProvider';
 
@@ -40,14 +40,16 @@ export const useUserRole = () => {
       return;
     }
 
-    fetchUserRoles(user.id);
+    // Используем стабильную ссылку на user.id
+    const userId = user.id;
+    fetchUserRoles(userId);
   }, [user?.id, fetchUserRoles]);
 
-  const roleFlags = useMemo(() => ({
+  const roleFlags = {
     isAdmin: userRoles.includes('admin'),
     isDispatcher: userRoles.includes('dispatcher'),
     isDriver: userRoles.includes('driver'),
-  }), [userRoles]);
+  };
 
   console.log('useUserRole: Current state', { 
     userRoles, 

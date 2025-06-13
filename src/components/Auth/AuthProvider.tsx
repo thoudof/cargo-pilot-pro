@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { activityLogger } from '@/services/activityLogger';
@@ -45,6 +45,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     console.log('AuthProvider: Initializing auth...');
     
+    let mounted = true;
+    
     // Получаем текущую сессию
     const getInitialSession = async () => {
       try {
@@ -53,18 +55,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('AuthProvider: Error getting session:', error);
         } else {
           console.log('AuthProvider: Initial session:', !!session);
-          setSession(session);
-          setUser(session?.user ?? null);
-          
-          // Логируем успешную аутентификацию при инициализации
-          if (session?.user) {
-            await activityLogger.logLogin('session_restore');
+          if (mounted) {
+            setSession(session);
+            setUser(session?.user ?? null);
+            
+            // Логируем успешную аутентификацию при инициализации
+            if (session?.user) {
+              try {
+                await activityLogger.logLogin('session_restore');
+              } catch (logError) {
+                console.warn('Failed to log session restore:', logError);
+              }
+            }
           }
         }
       } catch (error) {
         console.error('AuthProvider: Exception getting session:', error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -74,31 +84,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('AuthProvider: Auth state changed:', event, !!session);
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
+        
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
 
-        // Логируем события аутентификации
-        if (event === 'SIGNED_IN' && session?.user) {
-          await activityLogger.logLogin('password');
-        } else if (event === 'SIGNED_OUT') {
-          await activityLogger.logLogout();
+          // Логируем события аутентификации
+          try {
+            if (event === 'SIGNED_IN' && session?.user) {
+              await activityLogger.logLogin('password');
+            } else if (event === 'SIGNED_OUT') {
+              await activityLogger.logLogout();
+            }
+          } catch (logError) {
+            console.warn('Failed to log auth event:', logError);
+          }
         }
       }
     );
 
     return () => {
+      mounted = false;
       console.log('AuthProvider: Cleaning up...');
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Убираем все зависимости - эффект должен выполниться только один раз
 
-  const value = useMemo(() => ({
+  const value = {
     user,
     session,
     loading,
     signOut
-  }), [user, session, loading, signOut]);
+  };
 
   console.log('AuthProvider: Current state:', { user: !!user, loading });
 

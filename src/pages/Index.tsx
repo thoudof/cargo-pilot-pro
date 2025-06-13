@@ -14,7 +14,7 @@ import { RoutesPage } from "./RoutesPage";
 import { CargoTypesPage } from "./CargoTypesPage";
 import { SettingsPage } from "./SettingsPage";
 import AdminPage from "./AdminPage";
-import { Suspense, lazy, useMemo } from "react";
+import { Suspense, lazy } from "react";
 
 // Загружаем компоненты лениво для улучшения производительности
 const LazyTripsPage = lazy(() => import("./TripsPage").then(module => ({ default: module.TripsPage })));
@@ -40,17 +40,14 @@ const Index = () => {
 
   console.log('Index: Current state', { user: !!user, loading });
 
-  // Мемоизируем загрузочный спиннер
-  const loadingSpinner = useMemo(() => (
-    <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-    </div>
-  ), []);
-
   // Показываем загрузку только пока аутентификация инициализируется
   if (loading) {
     console.log('Index: Auth loading, showing spinner');
-    return loadingSpinner;
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   // Если пользователя нет, показываем страницу аутентификации

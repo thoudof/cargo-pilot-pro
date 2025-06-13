@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Trip, Contractor } from '@/types';
 import { supabaseService } from '@/services/supabaseService';
 import { TripForm } from './TripForm';
@@ -26,34 +26,23 @@ export const TripList: React.FC = () => {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
+      setLoading(true);
+      
+      // Загружаем основные данные параллельно
       const [tripsData, contractorsData] = await Promise.all([
         supabaseService.getTrips(),
         supabaseService.getContractors()
       ]);
+      
       setTrips(tripsData);
       setContractors(contractorsData);
       
-      // Загружаем расходы для каждого рейса
-      const expensesPromises = tripsData.map(async (trip) => {
-        try {
-          const expenses = await supabaseService.getTripExpenses(trip.id);
-          const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-          return { tripId: trip.id, total };
-        } catch (error) {
-          console.error(`Failed to load expenses for trip ${trip.id}:`, error);
-          return { tripId: trip.id, total: 0 };
-        }
-      });
-      
-      const expensesResults = await Promise.all(expensesPromises);
-      const expensesMap = expensesResults.reduce((acc, { tripId, total }) => {
-        acc[tripId] = total;
-        return acc;
-      }, {} as Record<string, number>);
-      
-      setTripExpenses(expensesMap);
+      // Оптимизированная загрузка расходов - батч запрос
+      if (tripsData.length > 0) {
+        await loadTripExpensesBatch(tripsData.map(trip => trip.id));
+      }
     } catch (error) {
       console.error('Failed to load data:', error);
       toast({
@@ -64,24 +53,52 @@ export const TripList: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const handleAddTrip = () => {
+  const loadTripExpensesBatch = useCallback(async (tripIds: string[]) => {
+    try {
+      // Делаем один запрос для всех рейсов сразу
+      const { data: expensesData, error } = await supabaseService.supabase
+        .from('trip_expenses')
+        .select('trip_id, amount')
+        .in('trip_id', tripIds);
+
+      if (error) {
+        console.error('Failed to load expenses:', error);
+        return;
+      }
+
+      // Группируем расходы по trip_id
+      const expensesMap = expensesData?.reduce((acc, expense) => {
+        if (!acc[expense.trip_id]) {
+          acc[expense.trip_id] = 0;
+        }
+        acc[expense.trip_id] += expense.amount;
+        return acc;
+      }, {} as Record<string, number>) || {};
+
+      setTripExpenses(expensesMap);
+    } catch (error) {
+      console.error('Failed to load expenses batch:', error);
+    }
+  }, []);
+
+  const handleAddTrip = useCallback(() => {
     setEditingTrip(undefined);
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleEditTrip = (trip: Trip) => {
+  const handleEditTrip = useCallback((trip: Trip) => {
     setEditingTrip(trip);
     setFormOpen(true);
-  };
+  }, []);
 
-  const handleViewDetails = (trip: Trip) => {
+  const handleViewDetails = useCallback((trip: Trip) => {
     setSelectedTrip(trip);
     setDetailsOpen(true);
-  };
+  }, []);
 
-  const handleDeleteTrip = async (trip: Trip) => {
+  const handleDeleteTrip = useCallback(async (trip: Trip) => {
     try {
       await supabaseService.deleteTrip(trip.id);
       await loadData();
@@ -97,29 +114,31 @@ export const TripList: React.FC = () => {
         variant: 'destructive'
       });
     }
-  };
+  }, [loadData, toast]);
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = useCallback(() => {
     loadData();
-  };
+  }, [loadData]);
 
-  const getContractorName = (contractorId: string) => {
+  const getContractorName = useCallback((contractorId: string) => {
     const contractor = contractors.find(c => c.id === contractorId);
     return contractor?.companyName || 'Неизвестный контрагент';
-  };
+  }, [contractors]);
 
-  const filteredTrips = trips.filter(trip => {
-    const matchesSearch = 
-      trip.pointA.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.pointB.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getContractorName(trip.contractorId).toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || trip.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredTrips = useMemo(() => {
+    return trips.filter(trip => {
+      const matchesSearch = 
+        trip.pointA.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trip.pointB.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trip.driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        trip.vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getContractorName(trip.contractorId).toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || trip.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    });
+  }, [trips, searchTerm, statusFilter, getContractorName]);
 
   if (loading) {
     return (

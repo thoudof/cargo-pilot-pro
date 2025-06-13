@@ -46,12 +46,9 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
   const [arrivalToDate, setArrivalToDate] = useState<Date>();
   const [cityFilter, setCityFilter] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
+      setLoading(true);
       const [tripsData, contractorsData] = await Promise.all([
         supabaseService.getTrips(),
         supabaseService.getContractors()
@@ -63,7 +60,11 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const contractorMap = useMemo(() => {
     return contractors.reduce((acc, contractor) => {
@@ -77,35 +78,49 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
   }, [contractorMap]);
 
   const filteredTrips = useMemo(() => {
+    if (trips.length === 0) return [];
+    
     return trips.filter(trip => {
       // Поиск по тексту
-      const matchesSearch = 
-        trip.pointA.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trip.pointB.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trip.driver.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        trip.vehicle.licensePlate.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        getContractorName(trip.contractorId).toLowerCase().includes(searchTerm.toLowerCase());
+      if (searchTerm) {
+        const searchLower = searchTerm.toLowerCase();
+        const matchesSearch = 
+          trip.pointA.toLowerCase().includes(searchLower) ||
+          trip.pointB.toLowerCase().includes(searchLower) ||
+          trip.driver.name.toLowerCase().includes(searchLower) ||
+          trip.vehicle.licensePlate.toLowerCase().includes(searchLower) ||
+          getContractorName(trip.contractorId).toLowerCase().includes(searchLower);
+        
+        if (!matchesSearch) return false;
+      }
       
       // Фильтр по статусу
-      const matchesStatus = statusFilter === 'all' || trip.status === statusFilter;
+      if (statusFilter !== 'all' && trip.status !== statusFilter) return false;
       
       // Фильтр по дате отправления
-      const departureDate = new Date(trip.departureDate);
-      const matchesDepartureFrom = !departureFromDate || departureDate >= departureFromDate;
-      const matchesDepartureTo = !departureToDate || departureDate <= departureToDate;
+      if (departureFromDate || departureToDate) {
+        const departureDate = new Date(trip.departureDate);
+        if (departureFromDate && departureDate < departureFromDate) return false;
+        if (departureToDate && departureDate > departureToDate) return false;
+      }
       
       // Фильтр по дате прибытия
-      const arrivalDate = trip.arrivalDate ? new Date(trip.arrivalDate) : null;
-      const matchesArrivalFrom = !arrivalFromDate || (arrivalDate && arrivalDate >= arrivalFromDate);
-      const matchesArrivalTo = !arrivalToDate || (arrivalDate && arrivalDate <= arrivalToDate);
+      if (arrivalFromDate || arrivalToDate) {
+        const arrivalDate = trip.arrivalDate ? new Date(trip.arrivalDate) : null;
+        if (arrivalFromDate && (!arrivalDate || arrivalDate < arrivalFromDate)) return false;
+        if (arrivalToDate && (!arrivalDate || arrivalDate > arrivalToDate)) return false;
+      }
       
       // Фильтр по городам
-      const matchesCity = !cityFilter || 
-        trip.pointA.toLowerCase().includes(cityFilter.toLowerCase()) ||
-        trip.pointB.toLowerCase().includes(cityFilter.toLowerCase());
+      if (cityFilter) {
+        const cityLower = cityFilter.toLowerCase();
+        const matchesCity = 
+          trip.pointA.toLowerCase().includes(cityLower) ||
+          trip.pointB.toLowerCase().includes(cityLower);
+        if (!matchesCity) return false;
+      }
       
-      return matchesSearch && matchesStatus && matchesDepartureFrom && 
-             matchesDepartureTo && matchesArrivalFrom && matchesArrivalTo && matchesCity;
+      return true;
     });
   }, [trips, searchTerm, statusFilter, departureFromDate, departureToDate, arrivalFromDate, arrivalToDate, cityFilter, getContractorName]);
 
@@ -180,7 +195,7 @@ export const TripsOverview: React.FC<TripsOverviewProps> = ({ onNavigateToTrips 
               </div>
             </div>
 
-            {/* Фильтры по датам */}
+            {/* Фильтры по датам - упрощенная версия */}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-2">
                 <label className="text-sm font-medium">Дата отправления</label>

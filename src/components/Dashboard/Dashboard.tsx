@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabaseService } from '@/services/supabaseService';
 import { DashboardStats } from './DashboardStats';
 import { FinancialMetrics } from './FinancialMetrics';
@@ -29,11 +29,7 @@ const Dashboard: React.FC = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    loadStats();
-  }, []);
-
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     try {
       const data = await supabaseService.getDashboardStats();
       setStats(data);
@@ -42,21 +38,25 @@ const Dashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const formatCurrency = (value: number) => {
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
+
+  const formatCurrency = useCallback((value: number) => {
     return new Intl.NumberFormat('ru-RU', {
       style: 'currency',
       currency: 'RUB',
       minimumFractionDigits: 0
     }).format(value);
-  };
+  }, []);
 
-  const formatWeight = (value: number) => {
+  const formatWeight = useCallback((value: number) => {
     return `${value.toLocaleString('ru-RU')} кг`;
-  };
+  }, []);
 
-  const chartConfig = {
+  const chartConfig = React.useMemo(() => ({
     trips: {
       label: "Рейсы",
       color: "hsl(var(--chart-1))"
@@ -69,7 +69,7 @@ const Dashboard: React.FC = () => {
       label: "Вес (т)",
       color: "hsl(var(--chart-3))"
     }
-  };
+  }), []);
 
   if (loading) {
     return (

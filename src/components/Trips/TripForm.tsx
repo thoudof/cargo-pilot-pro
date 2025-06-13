@@ -8,9 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, CalendarIcon, Truck, User, Package } from 'lucide-react';
+import { Calendar, CalendarIcon, Truck, User, Package, Receipt, Plus, Trash2 } from 'lucide-react';
 import { tripSchema, TripFormData } from '@/lib/validations';
 import { Trip, Contractor, Driver, Vehicle, TripStatus, Route, CargoType } from '@/types';
+import { ExpenseType, expenseTypeLabels } from '@/types/expenses';
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -19,6 +20,13 @@ interface TripFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
+}
+
+interface ExpenseFormData {
+  expenseType: ExpenseType;
+  amount: string;
+  description: string;
+  expenseDate: string;
 }
 
 export const TripForm: React.FC<TripFormProps> = ({
@@ -33,6 +41,7 @@ export const TripForm: React.FC<TripFormProps> = ({
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [cargoTypes, setCargoTypes] = useState<CargoType[]>([]);
+  const [expenses, setExpenses] = useState<ExpenseFormData[]>([]);
   const { toast } = useToast();
 
   // Функция для получения значений по умолчанию
@@ -101,6 +110,13 @@ export const TripForm: React.FC<TripFormProps> = ({
       const defaultValues = getDefaultValues();
       form.reset(defaultValues);
       loadData();
+      
+      // Загружаем расходы если редактируем существующий рейс
+      if (trip?.id) {
+        loadTripExpenses(trip.id);
+      } else {
+        setExpenses([]);
+      }
     }
   }, [open, trip]);
 
@@ -122,6 +138,51 @@ export const TripForm: React.FC<TripFormProps> = ({
       console.error('Failed to load data:', error);
     }
   };
+
+  const loadTripExpenses = async (tripId: string) => {
+    try {
+      const expensesData = await supabaseService.getTripExpenses(tripId);
+      const formattedExpenses = expensesData.map(expense => ({
+        expenseType: expense.expenseType,
+        amount: expense.amount.toString(),
+        description: expense.description || '',
+        expenseDate: new Date(expense.expenseDate).toISOString().split('T')[0]
+      }));
+      setExpenses(formattedExpenses);
+    } catch (error) {
+      console.error('Failed to load trip expenses:', error);
+    }
+  };
+
+  const addExpense = () => {
+    setExpenses([...expenses, {
+      expenseType: ExpenseType.FUEL,
+      amount: '',
+      description: '',
+      expenseDate: new Date().toISOString().split('T')[0]
+    }]);
+  };
+
+  const removeExpense = (index: number) => {
+    setExpenses(expenses.filter((_, i) => i !== index));
+  };
+
+  const updateExpense = (index: number, field: keyof ExpenseFormData, value: string) => {
+    const updatedExpenses = [...expenses];
+    updatedExpenses[index] = { ...updatedExpenses[index], [field]: value };
+    setExpenses(updatedExpenses);
+  };
+
+  // Сброс расходов при изменении trip
+  useEffect(() => {
+    if (open) {
+      if (trip?.id) {
+        loadTripExpenses(trip.id);
+      } else {
+        setExpenses([]);
+      }
+    }
+  }, [open, trip]);
 
   const handleDriverChange = (driverId: string) => {
     const selectedDriver = drivers.find(d => d.id === driverId);
@@ -230,6 +291,46 @@ export const TripForm: React.FC<TripFormProps> = ({
         throw result.error;
       }
 
+      const savedTrip = result.data[0];
+
+      // Сохраняем расходы
+      if (expenses.length > 0) {
+        // Если редактируем рейс, сначала удаляем старые расходы
+        if (trip?.id) {
+          await supabaseService.supabase
+            .from('trip_expenses')
+            .delete()
+            .eq('trip_id', trip.id);
+        }
+
+        // Добавляем новые расходы
+        const expensesToSave = expenses
+          .filter(expense => expense.amount && parseFloat(expense.amount) > 0)
+          .map(expense => ({
+            trip_id: savedTrip.id,
+            expense_type: expense.expenseType,
+            amount: parseFloat(expense.amount),
+            description: expense.description || null,
+            expense_date: new Date(expense.expenseDate).toISOString(),
+            user_id: user.id
+          }));
+
+        if (expensesToSave.length > 0) {
+          const expensesResult = await supabaseService.supabase
+            .from('trip_expenses')
+            .insert(expensesToSave);
+
+          if (expensesResult.error) {
+            console.error('Failed to save expenses:', expensesResult.error);
+            toast({
+              title: 'Предупреждение',
+              description: 'Рейс сохранен, но не удалось сохранить расходы',
+              variant: 'destructive'
+            });
+          }
+        }
+      }
+
       console.log('Trip saved successfully:', result.data);
       
       toast({
@@ -240,6 +341,7 @@ export const TripForm: React.FC<TripFormProps> = ({
       onSuccess();
       onOpenChange(false);
       form.reset();
+      setExpenses([]);
     } catch (error) {
       console.error('Failed to save trip:', error);
       toast({
@@ -252,9 +354,14 @@ export const TripForm: React.FC<TripFormProps> = ({
     }
   };
 
+  const totalExpenses = expenses.reduce((sum, expense) => {
+    const amount = parseFloat(expense.amount) || 0;
+    return sum + amount;
+  }, 0);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
             {trip ? 'Редактировать рейс' : 'Создать рейс'}
@@ -679,6 +786,105 @@ export const TripForm: React.FC<TripFormProps> = ({
                     )}
                   />
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Расходы */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Receipt className="h-5 w-5" />
+                    Расходы по рейсу
+                  </CardTitle>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium">
+                      Итого: {totalExpenses.toLocaleString('ru-RU')} ₽
+                    </span>
+                    <Button type="button" onClick={addExpense} size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Добавить расход
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {expenses.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Receipt className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p>Расходы не добавлены</p>
+                    <Button type="button" onClick={addExpense} variant="outline" className="mt-2">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Добавить первый расход
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {expenses.map((expense, index) => (
+                      <Card key={index} className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                          <div>
+                            <label className="text-sm font-medium">Тип расхода</label>
+                            <Select
+                              value={expense.expenseType}
+                              onValueChange={(value) => updateExpense(index, 'expenseType', value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.entries(expenseTypeLabels).map(([key, label]) => (
+                                  <SelectItem key={key} value={key}>
+                                    {label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Сумма (₽)</label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              value={expense.amount}
+                              onChange={(e) => updateExpense(index, 'amount', e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium">Дата</label>
+                            <Input
+                              type="date"
+                              value={expense.expenseDate}
+                              onChange={(e) => updateExpense(index, 'expenseDate', e.target.value)}
+                            />
+                          </div>
+                          <div className="flex items-end">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeExpense(index)}
+                              className="w-full"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                        <div className="mt-3">
+                          <label className="text-sm font-medium">Описание</label>
+                          <Textarea
+                            placeholder="Дополнительное описание расхода..."
+                            value={expense.description}
+                            onChange={(e) => updateExpense(index, 'description', e.target.value)}
+                            rows={2}
+                          />
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 

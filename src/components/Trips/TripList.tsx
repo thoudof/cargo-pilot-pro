@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Calendar, User, Edit2, Trash2 } from 'lucide-react';
+import { Plus, Search, Calendar, User, Edit2, Trash2, Receipt, DollarSign } from 'lucide-react';
 import { Trip, TripStatus, Contractor } from '@/types';
 import { supabaseService } from '@/services/supabaseService';
 import { TripForm } from './TripForm';
@@ -30,6 +31,7 @@ const statusLabels = {
 export const TripList: React.FC = () => {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [contractors, setContractors] = useState<Contractor[]>([]);
+  const [tripExpenses, setTripExpenses] = useState<Record<string, number>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,26 @@ export const TripList: React.FC = () => {
       ]);
       setTrips(tripsData);
       setContractors(contractorsData);
+      
+      // Загружаем расходы для каждого рейса
+      const expensesPromises = tripsData.map(async (trip) => {
+        try {
+          const expenses = await supabaseService.getTripExpenses(trip.id);
+          const total = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+          return { tripId: trip.id, total };
+        } catch (error) {
+          console.error(`Failed to load expenses for trip ${trip.id}:`, error);
+          return { tripId: trip.id, total: 0 };
+        }
+      });
+      
+      const expensesResults = await Promise.all(expensesPromises);
+      const expensesMap = expensesResults.reduce((acc, { tripId, total }) => {
+        acc[tripId] = total;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      setTripExpenses(expensesMap);
     } catch (error) {
       console.error('Failed to load data:', error);
       toast({
@@ -199,6 +221,10 @@ export const TripList: React.FC = () => {
                         <User className="h-4 w-4" />
                         <span>{getContractorName(trip.contractorId)}</span>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <Receipt className="h-4 w-4" />
+                        <span>Расходы: {(tripExpenses[trip.id] || 0).toLocaleString('ru-RU')} ₽</span>
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -233,11 +259,26 @@ export const TripList: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-3 pt-3 border-t">
-                  <p className="font-medium text-sm">Груз</p>
-                  <p className="text-sm text-muted-foreground">{trip.cargo.description}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {trip.cargo.weight} кг, {trip.cargo.volume} м³
-                  </p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-medium text-sm">Груз</p>
+                      <p className="text-sm text-muted-foreground">{trip.cargo.description}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {trip.cargo.weight} кг, {trip.cargo.volume} м³
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">Финансы</p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <DollarSign className="h-3 w-3" />
+                        Стоимость: {(trip.cargo.value || 0).toLocaleString('ru-RU')} ₽
+                      </p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Receipt className="h-3 w-3" />
+                        Расходы: {(tripExpenses[trip.id] || 0).toLocaleString('ru-RU')} ₽
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

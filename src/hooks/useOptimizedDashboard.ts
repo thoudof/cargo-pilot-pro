@@ -1,7 +1,7 @@
-
 import { connectionOptimizer } from '@/services/connectionOptimizer';
 import { useOptimizedData } from './useOptimizedData';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
+import type { Trip } from '@/types'; // Предполагаем, что Trip экспортируется из @/types
 
 interface DashboardStats {
   activeTrips: number;
@@ -32,7 +32,7 @@ interface DashboardStats {
 
 interface DashboardData {
   stats: DashboardStats;
-  recentTrips?: any[];
+  recentTrips?: Trip[]; // Заменяем any[] на Trip[]
 }
 
 export const useOptimizedDashboard = () => {

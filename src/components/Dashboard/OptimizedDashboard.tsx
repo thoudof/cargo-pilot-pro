@@ -1,26 +1,13 @@
-
 import React from 'react';
 import { useOptimizedDashboard } from '@/hooks/useOptimizedDashboard';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
 import { DashboardStats } from './DashboardStats';
 import { DashboardCharts } from './DashboardCharts';
 import { RecentTripsSection } from './RecentTripsSection';
+import { formatCurrency, formatWeight } from '@/lib/formatters';
 
 export const OptimizedDashboard: React.FC = () => {
   const { data, loading, error, connectionQuality, retry } = useOptimizedDashboard();
-
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('ru-RU', {
-      style: 'currency',
-      currency: 'RUB',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
-
-  const formatWeight = (value: number) => {
-    return `${(value / 1000).toFixed(1)} т`;
-  };
 
   const chartConfig = {
     trips: {

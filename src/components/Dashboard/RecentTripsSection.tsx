@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Calendar } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useToast } from '@/hooks/use-toast';
 
 interface RecentTripsSectionProps {
   stats: {
@@ -15,6 +15,15 @@ interface RecentTripsSectionProps {
 
 export const RecentTripsSection: React.FC<RecentTripsSectionProps> = ({ stats }) => {
   const isMobile = useIsMobile();
+  const { toast } = useToast();
+
+  const handleShowAllClick = () => {
+    toast({
+      title: "Функция в разработке",
+      description: "Отображение всех рейсов будет добавлено в ближайшее время.",
+    });
+    console.log("Показать все рейсы - функциональность будет добавлена.");
+  };
 
   return (
     <Card>
@@ -23,7 +32,10 @@ export const RecentTripsSection: React.FC<RecentTripsSectionProps> = ({ stats })
           <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
           <span>Последние рейсы</span>
         </CardTitle>
-        <button className="text-xs sm:text-sm text-primary hover:underline">
+        <button 
+          className="text-xs sm:text-sm text-primary hover:underline"
+          onClick={handleShowAllClick}
+        >
           Показать все
         </button>
       </CardHeader>

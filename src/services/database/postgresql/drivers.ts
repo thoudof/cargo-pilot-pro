@@ -1,4 +1,3 @@
-
 import type postgres from 'postgres';
 import type { Driver } from '@/types';
 
@@ -27,7 +26,7 @@ export class PostgresDriversHandler {
     }
   }
 
-  async saveDriver(driver: Partial<Driver> & { name: string; phone: string; }): Promise<Driver> {
+  async saveDriver(driver: Partial<Driver> & { name: string; phone: string; }, userId: string): Promise<Driver> {
     const sql = this.getDB();
     console.log('PostgreSQLService: Saving driver:', driver.id ? 'update' : 'insert', driver);
     try {
@@ -48,8 +47,17 @@ export class PostgresDriversHandler {
         console.log('PostgreSQLService: Driver updated:', updatedDriver);
         return updatedDriver;
       } else {
-        console.warn('PostgreSQLService: saveDriver (insert) not fully implemented due to missing user_id context.');
-        throw new Error('saveDriver (insert) not implemented for PostgreSQL. Missing user context.');
+        if (!userId) {
+          throw new Error('User ID is required to create a new driver.');
+        }
+        const [newDriver] = await sql<Driver[]>`
+          INSERT INTO drivers (name, phone, license, passport_data, experience_years, notes, user_id)
+          VALUES (${driver.name}, ${driver.phone}, ${driver.license || null}, ${driver.passportData || null}, ${driver.experienceYears || null}, ${driver.notes || null}, ${userId})
+          RETURNING id, name, phone, license, passport_data AS "passportData", experience_years AS "experienceYears", notes, created_at AS "createdAt", updated_at AS "updatedAt"
+        `;
+        if (!newDriver) throw new Error('Driver creation failed.');
+        console.log('PostgreSQLService: Driver created:', newDriver);
+        return newDriver;
       }
     } catch (error) {
       console.error('PostgreSQLService: Error saving driver:', error);

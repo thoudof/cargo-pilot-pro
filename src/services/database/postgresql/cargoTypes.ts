@@ -1,4 +1,3 @@
-
 import type postgres from 'postgres';
 import type { CargoType } from '@/types';
 
@@ -27,7 +26,7 @@ export class PostgresCargoTypesHandler {
       throw new Error(`Failed to fetch cargo types: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  async saveCargoType(cargoType: Partial<CargoType> & { name: string; }): Promise<CargoType> {
+  async saveCargoType(cargoType: Partial<CargoType> & { name: string; }, userId: string): Promise<CargoType> {
     const sql = this.getDB();
     console.log('PostgreSQLService: Saving cargo type:', cargoType.id ? 'update' : 'insert', cargoType);
     try {
@@ -49,8 +48,17 @@ export class PostgresCargoTypesHandler {
         console.log('PostgreSQLService: Cargo type updated:', updatedCargoType);
         return updatedCargoType;
       } else {
-        console.warn('PostgreSQLService: saveCargoType (insert) not fully implemented due to missing user_id context.');
-        throw new Error('saveCargoType (insert) not implemented for PostgreSQL. Missing user context.');
+        if (!userId) {
+          throw new Error('User ID is required to create a new cargo type.');
+        }
+        const [newCargoType] = await sql<CargoType[]>`
+          INSERT INTO cargo_types (name, description, default_weight, default_volume, hazardous, temperature_controlled, fragile, user_id)
+          VALUES (${cargoType.name}, ${cargoType.description || null}, ${cargoType.defaultWeight || null}, ${cargoType.defaultVolume || null}, ${cargoType.hazardous || false}, ${cargoType.temperatureControlled || false}, ${cargoType.fragile || false}, ${userId})
+          RETURNING id, name, description, default_weight AS "defaultWeight", default_volume AS "defaultVolume", hazardous, temperature_controlled AS "temperatureControlled", fragile, created_at AS "createdAt", updated_at AS "updatedAt"
+        `;
+        if (!newCargoType) throw new Error('Cargo type creation failed.');
+        console.log('PostgreSQLService: Cargo type created:', newCargoType);
+        return newCargoType;
       }
     } catch (error) {
       console.error('PostgreSQLService: Error saving cargo type:', error);

@@ -2,20 +2,55 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { AppPermission } from '@/types';
+
+const fetchUserPermissions = async (userId: string | undefined): Promise<AppPermission[]> => {
+  if (!userId) return [];
+
+  const { data: userRoles, error: rolesError } = await supabase
+    .from('user_roles')
+    .select('role')
+    .eq('user_id', userId);
+
+  if (rolesError) {
+    console.error('Error fetching user roles:', rolesError);
+    return [];
+  }
+
+  const roles = userRoles.map(r => r.role);
+  if (roles.length === 0) return [];
+
+  const { data: permissions, error: permissionsError } = await supabase
+    .from('role_permissions')
+    .select('permission')
+    .in('role', roles);
+
+  if (permissionsError) {
+    console.error('Error fetching role permissions:', permissionsError);
+    return [];
+  }
+
+  const uniquePermissions = [...new Set(permissions.map(p => p.permission))];
+  return uniquePermissions as AppPermission[];
+};
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  hasPermission: (permission: AppPermission) => boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   session: null,
   loading: true,
-  signOut: async () => {}
+  signOut: async () => {},
+  hasPermission: () => false,
+  isAdmin: false,
 });
 
 export const useAuth = () => {
@@ -29,13 +64,26 @@ export const useAuth = () => {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const queryClient = useQueryClient();
+
+  const { data: permissions, isLoading: permissionsLoading } = useQuery({
+    queryKey: ['user-permissions', user?.id],
+    queryFn: () => fetchUserPermissions(user?.id),
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000, // 5 минут
+  });
+
+  const hasPermission = (permission: AppPermission) => {
+    return permissions?.includes(permission) ?? false;
+  };
+
+  const isAdmin = hasPermission(AppPermission.VIEW_ADMIN_PANEL);
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
-      queryClient.clear(); // Очищаем кэш при выходе
+      queryClient.clear();
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -44,7 +92,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     let mounted = true;
 
-    // Получаем текущую сессию
     const getSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -52,31 +99,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
-          setLoading(false);
+          setAuthLoading(false);
         }
       } catch (error) {
         console.error('Auth error:', error);
         if (mounted) {
           setSession(null);
           setUser(null);
-          setLoading(false);
+          setAuthLoading(false);
         }
       }
     };
 
-    // Подписываемся на изменения
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
-          setLoading(false);
+          setAuthLoading(false);
 
-          // При входе, обновлении токена или пользователя - удаляем кэш прав для принудительной перезагрузки
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-            queryClient.removeQueries({ queryKey: ['user-permissions'] });
+            queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
           }
-          // При выходе - очищаем весь кэш
           if (event === 'SIGNED_OUT') {
             queryClient.clear();
           }
@@ -91,9 +135,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe();
     };
   }, [queryClient]);
+  
+  const loading = authLoading || (!!user && permissionsLoading);
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, signOut, hasPermission, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

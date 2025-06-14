@@ -13,7 +13,6 @@ import {
 } from "@/components/ui/sidebar";
 import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, Shield } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-import { usePermissions } from '@/hooks/usePermissions';
 import { AppPermission } from '@/types';
 import { useAuth } from "@/components/Auth/AuthProvider";
 
@@ -31,10 +30,7 @@ const allMenuItems = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
-  const { loading: authLoading } = useAuth();
-
-  const isLoading = authLoading || permissionsLoading;
+  const { hasPermission, loading } = useAuth();
   
   const menuItems = allMenuItems.filter(item => !item.permission || hasPermission(item.permission));
 
@@ -54,7 +50,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Приложение</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {isLoading ? (
+              {loading ? (
                 Array.from({ length: 9 }).map((_, index) => (
                   <SidebarMenuSkeleton key={index} showIcon />
                 ))

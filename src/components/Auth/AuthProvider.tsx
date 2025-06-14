@@ -5,22 +5,23 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppPermission } from '@/types';
 
-const fetchUserPermissions = async (userId: string | undefined): Promise<AppPermission[]> => {
+const fetchUserRoles = async (userId: string | undefined): Promise<string[]> => {
   if (!userId) return [];
-
-  const { data: userRoles, error: rolesError } = await supabase
+  const { data, error } = await supabase
     .from('user_roles')
     .select('role')
     .eq('user_id', userId);
 
-  if (rolesError) {
-    console.error('Error fetching user roles:', rolesError);
+  if (error) {
+    console.error('Error fetching user roles:', error);
     return [];
   }
+  return data.map(r => r.role as string);
+};
 
-  const roles = userRoles.map(r => r.role);
-  if (roles.length === 0) return [];
-
+const fetchPermissionsForRoles = async (roles: string[] | undefined): Promise<AppPermission[]> => {
+  if (!roles || roles.length === 0) return [];
+  
   const { data: permissions, error: permissionsError } = await supabase
     .from('role_permissions')
     .select('permission')
@@ -35,6 +36,7 @@ const fetchUserPermissions = async (userId: string | undefined): Promise<AppPerm
   return uniquePermissions as AppPermission[];
 };
 
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -42,6 +44,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   hasPermission: (permission: AppPermission) => boolean;
   isAdmin: boolean;
+  roles: string[];
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -51,6 +54,7 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   hasPermission: () => false,
   isAdmin: false,
+  roles: [],
 });
 
 export const useAuth = () => {
@@ -67,18 +71,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [authLoading, setAuthLoading] = useState(true);
   const queryClient = useQueryClient();
 
-  const { data: permissions, isLoading: permissionsLoading } = useQuery({
-    queryKey: ['user-permissions', user?.id],
-    queryFn: () => fetchUserPermissions(user?.id),
+  const { data: roles, isLoading: rolesLoading } = useQuery({
+    queryKey: ['user-roles', user?.id],
+    queryFn: () => fetchUserRoles(user?.id),
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // 5 минут
+  });
+
+  const { data: permissions, isLoading: permissionsLoading } = useQuery({
+    queryKey: ['user-permissions', roles],
+    queryFn: () => fetchPermissionsForRoles(roles),
+    enabled: !!roles && roles.length > 0,
+    staleTime: 5 * 60 * 1000,
   });
 
   const hasPermission = (permission: AppPermission) => {
     return permissions?.includes(permission) ?? false;
   };
 
-  const isAdmin = hasPermission(AppPermission.VIEW_ADMIN_PANEL);
+  const isAdmin = roles?.includes('admin') ?? false;
 
   const signOut = async () => {
     try {
@@ -119,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setAuthLoading(false);
 
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-            queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+            queryClient.invalidateQueries({ queryKey: ['user-roles'] });
           }
           if (event === 'SIGNED_OUT') {
             queryClient.clear();
@@ -136,10 +147,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [queryClient]);
   
-  const loading = authLoading || (!!user && permissionsLoading);
+  const loading = authLoading || (!!user && (rolesLoading || permissionsLoading));
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut, hasPermission, isAdmin }}>
+    <AuthContext.Provider value={{ user, session, loading, signOut, hasPermission, isAdmin, roles: roles || [] }}>
       {children}
     </AuthContext.Provider>
   );

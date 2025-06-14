@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { RecentTrip } from '@/types';
+import type { Trip, TripStatus } from '@/types';
 
 // Простой кэш для оптимизированного сервиса
 const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
@@ -103,11 +103,11 @@ class OptimizedSupabaseService {
   }
 
   // Оптимизированный запрос рейсов
-  async getTripsOptimized(limit = 100, offset = 0): Promise<RecentTrip[]> {
+  async getTripsOptimized(limit = 100, offset = 0): Promise<Trip[]> {
     const cacheKey = `trips-optimized-${limit}-${offset}`;
     
     return this.dedupRequest(cacheKey, async () => {
-      const cached = getCachedData<RecentTrip[]>(cacheKey);
+      const cached = getCachedData<Trip[]>(cacheKey);
       if (cached) return cached;
 
       try {
@@ -121,6 +121,10 @@ class OptimizedSupabaseService {
             point_a,
             point_b,
             contractor_id,
+            driver_id,
+            vehicle_id,
+            route_id,
+            cargo_type_id,
             driver_name,
             driver_phone,
             driver_license,
@@ -133,21 +137,27 @@ class OptimizedSupabaseService {
             cargo_volume,
             cargo_value,
             comments,
-            created_at
+            documents,
+            created_at,
+            updated_at
           `)
           .order('created_at', { ascending: false })
           .range(offset, offset + limit - 1);
 
         if (error) throw error;
 
-        const transformedData: RecentTrip[] = data?.map(trip => ({
+        const transformedData: Trip[] = data?.map(trip => ({
           id: trip.id,
-          status: trip.status,
+          status: trip.status as TripStatus,
           departureDate: new Date(trip.departure_date),
           arrivalDate: trip.arrival_date ? new Date(trip.arrival_date) : undefined,
           pointA: trip.point_a,
           pointB: trip.point_b,
           contractorId: trip.contractor_id,
+          driverId: trip.driver_id,
+          vehicleId: trip.vehicle_id,
+          routeId: trip.route_id,
+          cargoTypeId: trip.cargo_type_id,
           driver: {
             name: trip.driver_name,
             phone: trip.driver_phone,
@@ -166,7 +176,10 @@ class OptimizedSupabaseService {
             value: trip.cargo_value
           },
           comments: trip.comments,
-          createdAt: new Date(trip.created_at)
+          documents: (Array.isArray(trip.documents) ? trip.documents : []) as string[],
+          createdAt: new Date(trip.created_at),
+          updatedAt: new Date(trip.updated_at),
+          changeLog: []
         })) || [];
 
         setCachedData(cacheKey, transformedData, 2 * 60 * 100);

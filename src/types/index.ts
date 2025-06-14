@@ -1,3 +1,4 @@
+
 export interface Contractor {
   id: string;
   companyName: string;
@@ -47,7 +48,7 @@ export interface Vehicle {
 }
 
 export interface CargoType {
-  id: string;
+  id:string;
   name: string;
   description?: string;
   defaultWeight?: number;
@@ -69,41 +70,6 @@ export interface Route {
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface RecentTripDriver {
-  name: string;
-  phone: string;
-  license?: string;
-}
-
-export interface RecentTripVehicle {
-  brand: string;
-  model: string;
-  licensePlate: string;
-  capacity?: number;
-}
-
-export interface RecentTripCargo {
-  description: string;
-  weight: number;
-  volume: number;
-  value?: number;
-}
-
-export interface RecentTrip {
-  id: string;
-  status: TripStatus;
-  departureDate: Date;
-  arrivalDate?: Date;
-  pointA: string;
-  pointB: string;
-  contractorId: string;
-  driver: RecentTripDriver;
-  vehicle: RecentTripVehicle;
-  cargo: RecentTripCargo;
-  comments?: string;
-  createdAt: Date;
 }
 
 export interface Trip {

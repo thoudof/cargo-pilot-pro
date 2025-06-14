@@ -15,6 +15,7 @@ import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, Shield 
 import { Link, useLocation } from 'react-router-dom';
 import { usePermissions } from '@/hooks/usePermissions';
 import { AppPermission } from '@/types';
+import { useAuth } from "@/components/Auth/AuthProvider";
 
 const allMenuItems = [
   { title: "Главная", url: "/", icon: Home, permission: null },
@@ -30,7 +31,10 @@ const allMenuItems = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const { hasPermission, isLoading } = usePermissions();
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
+  const { loading: authLoading } = useAuth();
+
+  const isLoading = authLoading || permissionsLoading;
   
   const menuItems = allMenuItems.filter(item => !item.permission || hasPermission(item.permission));
 

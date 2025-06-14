@@ -72,9 +72,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(session?.user ?? null);
           setLoading(false);
 
-          // При входе, обновлении токена или пользователя - инвалидируем кэш прав
+          // При входе, обновлении токена или пользователя - удаляем кэш прав для принудительной перезагрузки
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-            queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+            queryClient.removeQueries({ queryKey: ['user-permissions'] });
           }
           // При выходе - очищаем весь кэш
           if (event === 'SIGNED_OUT') {

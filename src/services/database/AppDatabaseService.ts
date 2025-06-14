@@ -1,7 +1,7 @@
 import { supabaseService } from '@/services/supabaseService';
 import type { DatabaseProvider, AuthUser } from './DatabaseProvider';
-import type { SignInWithPasswordCredentials, SignUpWithPasswordCredentials, AuthResponse, AuthError as SupabaseAuthErrorType } from '@supabase/supabase-js'; // Renamed AuthError to avoid conflict
-import { AuthError } from '@supabase/supabase-js'; // Import AuthError class for instantiation
+import type { SignInWithPasswordCredentials, SignUpWithPasswordCredentials, AuthResponse, User as SupabaseUser, Session as SupabaseSession } from '@supabase/supabase-js';
+import { AuthError } from '@supabase/supabase-js';
 import type { Contractor, Driver, Vehicle, Route, CargoType, Trip } from '@/types';
 import type { TripExpense } from '@/types/expenses';
 
@@ -13,16 +13,27 @@ class AppDatabaseService implements DatabaseProvider {
       return { data: { user: null, session: null }, error };
     }
 
-    // Assuming supabaseService.signIn returns:
-    // { user: User; session: Session; weakPassword?: WeakPassword; } | { user: null; session: null; weakPassword?: null; }
-    const result = await supabaseService.signIn(credentials.email, credentials.password);
+    try {
+      // supabaseService.signIn now returns { user, session } or throws an error
+      const data = await supabaseService.signIn(credentials.email, credentials.password);
 
-    if (result.user && result.session) {
-      return { data: { user: result.user, session: result.session }, error: null };
-    } else {
-      // Construct an AuthError if supabaseService doesn't provide one in the expected format
-      const error = new AuthError(result.message || 'Sign-in failed. Please check your credentials.');
-      error.status = result.status || 401; 
+      if (data.user && data.session) {
+        return { data: { user: data.user as SupabaseUser, session: data.session as SupabaseSession }, error: null };
+      } else {
+        // This case should ideally not be reached if supabaseService.signIn throws on any issue
+        // or guarantees user/session on success.
+        const error = new AuthError('Sign-in failed due to an unexpected issue.');
+        error.status = 500;
+        return { data: { user: null, session: null }, error };
+      }
+    } catch (e: any) {
+      let error: AuthError;
+      if (e instanceof AuthError) {
+        error = e;
+      } else {
+        error = new AuthError(e.message || 'An unknown sign-in error occurred.');
+        error.status = e.status || 500;
+      }
       return { data: { user: null, session: null }, error };
     }
   }
@@ -36,14 +47,27 @@ class AppDatabaseService implements DatabaseProvider {
 
     const optionsData = credentials.options?.data || ('data' in credentials ? credentials.data : undefined);
 
-    // Assuming supabaseService.signUp returns a similar structure to signIn
-    const result = await supabaseService.signUp(credentials.email, credentials.password, optionsData as { [key: string]: any } | undefined);
-
-    if (result.user && result.session) {
-      return { data: { user: result.user, session: result.session }, error: null };
-    } else {
-      const error = new AuthError(result.message || 'Sign-up failed. The user might already exist or the details are invalid.');
-      error.status = result.status || 400;
+    try {
+      // supabaseService.signUp now returns { user, session } or throws an error
+      const data = await supabaseService.signUp(credentials.email, credentials.password, optionsData as { [key: string]: any } | undefined);
+      
+      if (data.user && data.session) {
+        return { data: { user: data.user as SupabaseUser, session: data.session as SupabaseSession }, error: null };
+      } else {
+        // This case should ideally not be reached if supabaseService.signUp throws on any issue
+        // or guarantees user/session on success.
+        const error = new AuthError('Sign-up failed due to an unexpected issue.');
+        error.status = 500;
+        return { data: { user: null, session: null }, error };
+      }
+    } catch (e: any) {
+      let error: AuthError;
+      if (e instanceof AuthError) {
+        error = e;
+      } else {
+        error = new AuthError(e.message || 'An unknown sign-up error occurred.');
+        error.status = e.status || 500;
+      }
       return { data: { user: null, session: null }, error };
     }
   }

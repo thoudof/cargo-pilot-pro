@@ -1,11 +1,12 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppPermission } from '@/types';
 
-const fetchUserRoles = async (userId: string | undefined): Promise<string[]> => {
+type AppRole = "admin" | "dispatcher" | "driver";
+
+const fetchUserRoles = async (userId: string | undefined): Promise<AppRole[]> => {
   if (!userId) return [];
   const { data, error } = await supabase
     .from('user_roles')
@@ -16,10 +17,10 @@ const fetchUserRoles = async (userId: string | undefined): Promise<string[]> => 
     console.error('Error fetching user roles:', error);
     return [];
   }
-  return data.map(r => r.role as string);
+  return data.map(r => r.role as AppRole);
 };
 
-const fetchPermissionsForRoles = async (roles: string[] | undefined): Promise<AppPermission[]> => {
+const fetchPermissionsForRoles = async (roles: AppRole[] | undefined): Promise<AppPermission[]> => {
   if (!roles || roles.length === 0) return [];
   
   const { data: permissions, error: permissionsError } = await supabase
@@ -44,7 +45,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   hasPermission: (permission: AppPermission) => boolean;
   isAdmin: boolean;
-  roles: string[];
+  roles: AppRole[];
 }
 
 const AuthContext = createContext<AuthContextType>({

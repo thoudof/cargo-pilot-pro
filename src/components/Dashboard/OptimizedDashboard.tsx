@@ -33,7 +33,7 @@ export const OptimizedDashboard: React.FC = () => {
         <ConnectionStatus 
           quality={connectionQuality}
           loading={isLoading}
-          error={error ? error.message : null}
+          error={error ? (error as Error).message : null}
           onRetry={refetch}
         />
         <div className="flex items-center justify-center h-64">
@@ -58,7 +58,7 @@ export const OptimizedDashboard: React.FC = () => {
       <ConnectionStatus 
         quality={connectionQuality}
         loading={isLoading}
-        error={error ? error.message : null}
+        error={error ? (error as Error).message : null}
         onRetry={refetch}
       />
       

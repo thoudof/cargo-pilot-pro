@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { connectionOptimizer } from '@/services/connectionOptimizer';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
-import type { Trip } from '@/types';
+import type { Trip, RecentTrip } from '@/types';
 
 interface DashboardStats {
   activeTrips: number;
@@ -32,7 +32,7 @@ interface DashboardStats {
 
 interface DashboardData {
   stats: DashboardStats;
-  recentTrips?: Trip[]; // Заменяем any[] на Trip[]
+  recentTrips?: RecentTrip[];
 }
 
 export const useOptimizedDashboard = () => {
@@ -43,7 +43,7 @@ export const useOptimizedDashboard = () => {
 };
 
 export const useOptimizedTrips = (limit = 100) => {
-  return useQuery<Trip[]>({
+  return useQuery<RecentTrip[]>({
     queryKey: [`trips-${limit}`],
     queryFn: () => optimizedSupabaseService.getTripsOptimized(limit),
   });

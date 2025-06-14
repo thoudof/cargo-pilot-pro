@@ -1,5 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
+import type { RecentTrip } from '@/types';
 
 // Простой кэш для оптимизированного сервиса
 const cache = new Map<string, { data: any; timestamp: number; ttl: number }>();
@@ -103,11 +103,11 @@ class OptimizedSupabaseService {
   }
 
   // Оптимизированный запрос рейсов
-  async getTripsOptimized(limit = 100, offset = 0) {
+  async getTripsOptimized(limit = 100, offset = 0): Promise<RecentTrip[]> {
     const cacheKey = `trips-optimized-${limit}-${offset}`;
     
     return this.dedupRequest(cacheKey, async () => {
-      const cached = getCachedData(cacheKey);
+      const cached = getCachedData<RecentTrip[]>(cacheKey);
       if (cached) return cached;
 
       try {
@@ -140,7 +140,7 @@ class OptimizedSupabaseService {
 
         if (error) throw error;
 
-        const transformedData = data?.map(trip => ({
+        const transformedData: RecentTrip[] = data?.map(trip => ({
           id: trip.id,
           status: trip.status,
           departureDate: new Date(trip.departure_date),
@@ -169,7 +169,7 @@ class OptimizedSupabaseService {
           createdAt: new Date(trip.created_at)
         })) || [];
 
-        setCachedData(cacheKey, transformedData, 2 * 60 * 1000);
+        setCachedData(cacheKey, transformedData, 2 * 60 * 100);
         return transformedData;
       } catch (error) {
         console.error('Failed to get trips optimized:', error);

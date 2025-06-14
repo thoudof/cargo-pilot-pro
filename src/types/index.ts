@@ -71,6 +71,41 @@ export interface Route {
   updatedAt: Date;
 }
 
+export interface RecentTripDriver {
+  name: string;
+  phone: string;
+  license?: string;
+}
+
+export interface RecentTripVehicle {
+  brand: string;
+  model: string;
+  licensePlate: string;
+  capacity?: number;
+}
+
+export interface RecentTripCargo {
+  description: string;
+  weight: number;
+  volume: number;
+  value?: number;
+}
+
+export interface RecentTrip {
+  id: string;
+  status: TripStatus;
+  departureDate: Date;
+  arrivalDate?: Date;
+  pointA: string;
+  pointB: string;
+  contractorId: string;
+  driver: RecentTripDriver;
+  vehicle: RecentTripVehicle;
+  cargo: RecentTripCargo;
+  comments?: string;
+  createdAt: Date;
+}
+
 export interface Trip {
   id: string;
   status: TripStatus;

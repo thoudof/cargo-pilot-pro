@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, Filter, TrendingUp, TrendingDown, Clock, DollarSign, Calculator, Target, FileExport } from 'lucide-react';
+import { Search, Download, Filter, TrendingUp, TrendingDown, Clock, DollarSign, Calculator, Target, FileText } from 'lucide-react';
 import { useDataCache } from '@/hooks/useDataCache';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
 import { Trip, TripStatus } from '@/types';
@@ -441,7 +441,7 @@ export const TripsReportTable: React.FC = () => {
           <CardTitle className="flex items-center justify-between">
             <span>Детальная таблица рейсов</span>
             <Button variant="outline" size="sm" onClick={handleExport}>
-              <FileExport className="h-4 w-4 mr-2" />
+              <FileText className="h-4 w-4 mr-2" />
               Экспорт
             </Button>
           </CardTitle>

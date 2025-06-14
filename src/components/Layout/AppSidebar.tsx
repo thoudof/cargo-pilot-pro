@@ -1,3 +1,4 @@
+
 import {
   Sidebar,
   SidebarContent,
@@ -8,6 +9,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
 import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, Shield } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
@@ -28,7 +30,7 @@ const allMenuItems = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const { hasPermission } = usePermissions();
+  const { hasPermission, isLoading } = usePermissions();
   
   const menuItems = allMenuItems.filter(item => !item.permission || hasPermission(item.permission));
 
@@ -48,16 +50,22 @@ export function AppSidebar() {
           <SidebarGroupLabel>Приложение</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={location.pathname === item.url}>
-                    <Link to={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {isLoading ? (
+                Array.from({ length: 9 }).map((_, index) => (
+                  <SidebarMenuSkeleton key={index} showIcon />
+                ))
+              ) : (
+                menuItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                      <Link to={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))
+              )}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -87,10 +87,15 @@ export class PostgreSQLService implements DatabaseProvider {
     const sql = this.ensureConnected();
     console.log('PostgreSQLService: Fetching contractors...');
     try {
-      // Предполагается, что таблица называется "contractors" и имеет соответствующие колонки.
-      // Обратите внимание на кавычки для имен колонок, если они содержат заглавные буквы или спецсимволы.
       const contractors = await sql<Contractor[]>`
-        SELECT id, "companyName", inn, address, "createdAt", "updatedAt" 
+        SELECT 
+          id, 
+          company_name AS "companyName", 
+          inn, 
+          address, 
+          notes,
+          created_at AS "createdAt", 
+          updated_at AS "updatedAt"
         FROM contractors
         ORDER BY "companyName" ASC
       `;
@@ -110,25 +115,21 @@ export class PostgreSQLService implements DatabaseProvider {
         // Обновление существующего контрагента
         const [updatedContractor] = await sql<Contractor[]>`
           UPDATE contractors
-          SET "companyName" = ${contractor.companyName}, 
+          SET company_name = ${contractor.companyName}, 
               inn = ${contractor.inn}, 
               address = ${contractor.address}, 
-              "updatedAt" = NOW()
+              notes = ${contractor.notes || null},
+              updated_at = NOW()
           WHERE id = ${contractor.id}
-          RETURNING id, "companyName", inn, address, "createdAt", "updatedAt"
+          RETURNING id, company_name AS "companyName", inn, address, notes, created_at AS "createdAt", updated_at AS "updatedAt"
         `;
         if (!updatedContractor) throw new Error('Contractor not found for update or update failed.');
         console.log('PostgreSQLService: Contractor updated:', updatedContractor);
         return updatedContractor;
       } else {
         // Создание нового контрагента
-        const [newContractor] = await sql<Contractor[]>`
-          INSERT INTO contractors ("companyName", inn, address, "createdAt", "updatedAt")
-          VALUES (${contractor.companyName}, ${contractor.inn}, ${contractor.address}, NOW(), NOW())
-          RETURNING id, "companyName", inn, address, "createdAt", "updatedAt"
-        `;
-        console.log('PostgreSQLService: Contractor created:', newContractor);
-        return newContractor;
+        console.warn('PostgreSQLService: saveContractor (insert) not fully implemented due to missing user_id context.');
+        throw new Error('saveContractor (insert) not implemented for PostgreSQL. Missing user context.');
       }
     } catch (error) {
       console.error('PostgreSQLService: Error saving contractor:', error);
@@ -164,7 +165,12 @@ export class PostgreSQLService implements DatabaseProvider {
     try {
       // Предполагается, что колонки в таблице drivers соответствуют типу Driver
       const drivers = await sql<Driver[]>`
-        SELECT id, name, phone, license, experience_years, passport_data, notes, "createdAt", "updatedAt"
+        SELECT 
+          id, name, phone, license, notes,
+          experience_years AS "experienceYears", 
+          passport_data AS "passportData", 
+          created_at AS "createdAt", 
+          updated_at AS "updatedAt"
         FROM drivers
         ORDER BY name ASC
       `;
@@ -210,15 +216,16 @@ export class PostgreSQLService implements DatabaseProvider {
     const sql = this.ensureConnected();
     console.log('PostgreSQLService: Fetching vehicles...');
     try {
-      // Примечание: Используем алиасы для приведения snake_case колонок к camelCase, как в типах приложения
       const vehicles = await sql<Vehicle[]>`
         SELECT 
-          id, brand, model, license_plate AS "licensePlate", 
-          year, capacity, vin, registration_certificate AS "registrationCertificate",
+          id, brand, model, year, capacity, vin, notes,
+          license_plate AS "licensePlate", 
+          registration_certificate AS "registrationCertificate",
           insurance_policy AS "insurancePolicy", 
           technical_inspection_expiry AS "technicalInspectionExpiry",
           insurance_expiry AS "insuranceExpiry",
-          notes, "createdAt", "updatedAt"
+          created_at AS "createdAt", 
+          updated_at AS "updatedAt"
         FROM vehicles
         ORDER BY brand ASC, model ASC
       `;
@@ -260,9 +267,13 @@ export class PostgreSQLService implements DatabaseProvider {
     try {
       const routes = await sql<Route[]>`
         SELECT 
-          id, name, point_a AS "pointA", point_b AS "pointB", 
-          distance_km AS "distanceKm", estimated_duration_hours AS "estimatedDurationHours", 
-          notes, "createdAt", "updatedAt"
+          id, name, notes,
+          point_a AS "pointA", 
+          point_b AS "pointB", 
+          distance_km AS "distanceKm", 
+          estimated_duration_hours AS "estimatedDurationHours", 
+          created_at AS "createdAt", 
+          updated_at AS "updatedAt"
         FROM routes
         ORDER BY name ASC
       `;
@@ -304,9 +315,12 @@ export class PostgreSQLService implements DatabaseProvider {
     try {
       const cargoTypes = await sql<CargoType[]>`
         SELECT 
-          id, name, description, default_weight AS "defaultWeight",
-          default_volume AS "defaultVolume", hazardous, temperature_controlled AS "temperatureControlled",
-          fragile, "createdAt", "updatedAt"
+          id, name, description, hazardous, fragile,
+          default_weight AS "defaultWeight",
+          default_volume AS "defaultVolume", 
+          temperature_controlled AS "temperatureControlled",
+          created_at AS "createdAt", 
+          updated_at AS "updatedAt"
         FROM cargo_types
         ORDER BY name ASC
       `;
@@ -343,19 +357,67 @@ export class PostgreSQLService implements DatabaseProvider {
 
   // --- Trips ---
   async getTrips(): Promise<Trip[]> {
-    this.ensureConnected();
-    console.warn('PostgreSQLService: getTrips not fully implemented.');
-    return Promise.resolve([]);
+    const sql = this.ensureConnected();
+    console.log('PostgreSQLService: Fetching trips...');
+    try {
+      const trips = await sql<Trip[]>`
+        SELECT
+          id, status, documents, comments,
+          departure_date AS "departureDate",
+          arrival_date AS "arrivalDate",
+          point_a AS "pointA",
+          point_b AS "pointB",
+          contractor_id AS "contractorId",
+          driver_id AS "driverId",
+          vehicle_id AS "vehicleId",
+          route_id AS "routeId",
+          cargo_type_id AS "cargoTypeId",
+          cargo_description AS "cargoDescription",
+          cargo_weight AS "cargoWeight",
+          cargo_volume AS "cargoVolume",
+          cargo_value AS "cargoValue",
+          driver_name AS "driverName",
+          driver_phone AS "driverPhone",
+          driver_license AS "driverLicense",
+          vehicle_brand AS "vehicleBrand",
+          vehicle_model AS "vehicleModel",
+          vehicle_license_plate AS "vehicleLicensePlate",
+          vehicle_capacity AS "vehicleCapacity",
+          created_at AS "createdAt",
+          updated_at AS "updatedAt",
+          user_id AS "userId"
+        FROM trips
+        ORDER BY "departureDate" DESC
+      `;
+      console.log(`PostgreSQLService: Fetched ${trips.length} trips.`);
+      return trips;
+    } catch (error) {
+      console.error('PostgreSQLService: Error fetching trips:', error);
+      throw new Error(`Failed to fetch trips: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   async saveTrip(trip: Partial<Trip>): Promise<Trip> {
     this.ensureConnected();
-    console.warn('PostgreSQLService: saveTrip not fully implemented.');
-    throw new Error('saveTrip not implemented');
+    console.warn('PostgreSQLService: saveTrip not fully implemented due to missing user_id context.');
+    throw new Error('saveTrip not implemented for PostgreSQL. Missing user context.');
   }
   async deleteTrip(id: string): Promise<void> {
-    this.ensureConnected();
-    console.warn('PostgreSQLService: deleteTrip not fully implemented.');
-    return Promise.resolve();
+    const sql = this.ensureConnected();
+    console.log('PostgreSQLService: Deleting trip with id:', id);
+    try {
+      const result = await sql`
+        DELETE FROM trips
+        WHERE id = ${id}
+      `;
+      if (result.count === 0) {
+        console.warn('PostgreSQLService: Trip not found for deletion or delete failed.');
+      } else {
+        console.log('PostgreSQLService: Trip deleted successfully.');
+      }
+    } catch (error) {
+      console.error('PostgreSQLService: Error deleting trip:', error);
+      throw new Error(`Failed to delete trip: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   // --- TripExpenses ---

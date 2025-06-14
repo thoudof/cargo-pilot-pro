@@ -159,20 +159,50 @@ export class PostgreSQLService implements DatabaseProvider {
 
   // --- Drivers ---
   async getDrivers(): Promise<Driver[]> {
-    this.ensureConnected();
-    console.warn('PostgreSQLService: getDrivers not fully implemented with actual DB interaction.');
-    return Promise.resolve([]); // Заглушка
+    const sql = this.ensureConnected();
+    console.log('PostgreSQLService: Fetching drivers...');
+    try {
+      // Предполагается, что колонки в таблице drivers соответствуют типу Driver
+      const drivers = await sql<Driver[]>`
+        SELECT id, name, phone, license, experience_years, passport_data, notes, "createdAt", "updatedAt"
+        FROM drivers
+        ORDER BY name ASC
+      `;
+      console.log(`PostgreSQLService: Fetched ${drivers.length} drivers.`);
+      return drivers;
+    } catch (error) {
+      console.error('PostgreSQLService: Error fetching drivers:', error);
+      throw new Error(`Failed to fetch drivers: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
+
   async saveDriver(driver: Partial<Driver> & { name: string; phone: string; }): Promise<Driver> {
     this.ensureConnected();
-    console.warn('PostgreSQLService: saveDriver not fully implemented with actual DB interaction.');
-    // @ts-ignore // TODO: Реализовать и убрать ignore
-    throw new Error('saveDriver not implemented for PostgreSQL');
+    // ВАЖНО: Текущая реализация неполная.
+    // Таблица "drivers" требует обязательное поле "user_id", но при прямом подключении к PG
+    // у нас нет контекста пользователя. Необходимо решить, как получать user_id.
+    console.warn('PostgreSQLService: saveDriver not fully implemented due to missing user_id context.');
+    // @ts-ignore // TODO: Реализовать после решения проблемы с user_id
+    throw new Error('saveDriver not implemented for PostgreSQL. Missing user context.');
   }
+
   async deleteDriver(id: string): Promise<void> {
-    this.ensureConnected();
-    console.warn('PostgreSQLService: deleteDriver not fully implemented with actual DB interaction.');
-    return Promise.resolve();
+    const sql = this.ensureConnected();
+    console.log('PostgreSQLService: Deleting driver with id:', id);
+    try {
+      const result = await sql`
+        DELETE FROM drivers 
+        WHERE id = ${id}
+      `;
+      if (result.count === 0) {
+        console.warn('PostgreSQLService: Driver not found for deletion or delete failed.');
+      } else {
+        console.log('PostgreSQLService: Driver deleted successfully.');
+      }
+    } catch (error) {
+      console.error('PostgreSQLService: Error deleting driver:', error);
+      throw new Error(`Failed to delete driver: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   // --- Vehicles ---

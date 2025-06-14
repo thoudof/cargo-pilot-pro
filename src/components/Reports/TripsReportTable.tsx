@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useDataCache } from '@/hooks/useDataCache';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
@@ -9,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { escapeCsvCell } from '@/utils/reportsUtils';
 import { TripsReportSummaryStats } from './TripsReportSummaryStats';
 import { TripsReportFilters } from './TripsReportFilters';
+import { supabase } from '@/integrations/supabase/client';
 
 export const TripsReportTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,11 +46,23 @@ export const TripsReportTable: React.FC = () => {
   const { data: expensesData = {} } = useDataCache<Record<string, number>>(
     'trips-expenses',
     async () => {
-      if (trips.length === 0) return {};
+      if (!trips || trips.length === 0) return {};
       const tripIds = trips.map(trip => trip.id);
-      return await optimizedSupabaseService.getTripExpensesBatch(tripIds);
+      const { data, error } = await supabase.rpc('get_expenses_for_trips', { trip_ids: tripIds });
+
+      if (error) {
+        console.error('Error fetching trip expenses:', error);
+        toast({
+          title: "Ошибка при загрузке расходов",
+          description: error.message,
+          variant: "destructive",
+        });
+        return {};
+      }
+      
+      return data || {};
     },
-    { ttl: 2 * 60 * 1000 }
+    { ttl: 2 * 60 * 1000, dependencies: [trips] }
   );
 
   const processedTrips = useMemo((): TripWithExpenses[] => {

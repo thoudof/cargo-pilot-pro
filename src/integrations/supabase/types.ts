@@ -609,6 +609,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_expenses_for_trips: {
+        Args: { trip_ids: string[] }
+        Returns: Json
+      }
       get_trip_total_expenses: {
         Args: { trip_uuid: string }
         Returns: number

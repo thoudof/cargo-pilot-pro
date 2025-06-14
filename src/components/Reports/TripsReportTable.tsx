@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,12 +5,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, Filter, TrendingUp, TrendingDown, Clock, DollarSign, Calculator, Target } from 'lucide-react';
+import { Search, Download, Filter, TrendingUp, TrendingDown, Clock, DollarSign, Calculator, Target, FileExport } from 'lucide-react';
 import { useDataCache } from '@/hooks/useDataCache';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
 import { Trip, TripStatus } from '@/types';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { useToast } from '@/hooks/use-toast';
 
 interface TripWithExpenses extends Trip {
   totalExpenses: number;
@@ -34,11 +34,21 @@ const statusColors = {
   [TripStatus.CANCELLED]: 'bg-red-500'
 };
 
+// Вспомогательная функция для экранирования данных для CSV
+const escapeCsvCell = (cellData: any): string => {
+  const stringData = String(cellData === null || cellData === undefined ? '' : cellData);
+  if (stringData.includes(',') || stringData.includes('"') || stringData.includes('\n')) {
+    return `"${stringData.replace(/"/g, '""')}"`;
+  }
+  return stringData;
+};
+
 export const TripsReportTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortField, setSortField] = useState<string>('departureDate');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const { toast } = useToast();
 
   const { data: trips = [], loading } = useDataCache<Trip[]>(
     'trips-report',
@@ -237,6 +247,67 @@ export const TripsReportTable: React.FC = () => {
     }
   };
 
+  const handleExport = () => {
+    if (filteredAndSortedTrips.length === 0) {
+      toast({
+        title: "Нет данных для экспорта",
+        description: "Пожалуйста, измените фильтры или дождитесь появления данных.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const headers = [
+      "№", "Маршрут", "Описание груза", "Дата отправления", "Водитель Имя", 
+      "Водитель Телефон", "ТС Марка", "ТС Модель", "ТС Госномер", "Контрагент", 
+      "Вес (кг)", "Объем (м³)", "Доход (₽)", "Расходы (₽)", 
+      "Факт. прибыль (₽)", "Потенц. прибыль (₽)", "Статус"
+    ];
+
+    const csvRows = [
+      headers.join(','),
+      ...filteredAndSortedTrips.map((trip, index) => {
+        const row = [
+          index + 1,
+          `${trip.pointA} → ${trip.pointB}`,
+          trip.cargo?.description || '',
+          format(new Date(trip.departureDate), 'dd.MM.yyyy', { locale: ru }),
+          trip.driver.name,
+          trip.driver.phone,
+          trip.vehicle.brand,
+          trip.vehicle.model,
+          trip.vehicle.licensePlate,
+          contractors[trip.contractorId] || 'Неизвестный',
+          trip.cargo?.weight || 0,
+          trip.cargo?.volume || 0,
+          trip.cargo?.value || 0,
+          trip.totalExpenses,
+          trip.isProfitActual ? trip.actualProfit : '',
+          !trip.isProfitActual ? trip.potentialProfit : '',
+          statusLabels[trip.status]
+        ];
+        return row.map(escapeCsvCell).join(',');
+      })
+    ];
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' }); // \uFEFF for BOM for Excel
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `trips_report_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Экспорт успешно завершен",
+      description: "Данные по рейсам выгружены в CSV файл.",
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -369,8 +440,8 @@ export const TripsReportTable: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span>Детальная таблица рейсов</span>
-            <Button variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <FileExport className="h-4 w-4 mr-2" />
               Экспорт
             </Button>
           </CardTitle>

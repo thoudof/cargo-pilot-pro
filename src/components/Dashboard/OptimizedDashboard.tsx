@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useOptimizedDashboard } from '@/hooks/useOptimizedDashboard';
 import { ConnectionStatus } from '@/components/ConnectionStatus';
@@ -5,9 +6,11 @@ import { DashboardStats } from './DashboardStats';
 import { DashboardCharts } from './DashboardCharts';
 import { RecentTripsSection } from './RecentTripsSection';
 import { formatCurrency, formatWeight } from '@/lib/formatters';
+import { useConnectionQuality } from '@/hooks/useConnectionQuality';
 
 export const OptimizedDashboard: React.FC = () => {
-  const { data, loading, error, connectionQuality, retry } = useOptimizedDashboard();
+  const { data, isLoading, error, refetch } = useOptimizedDashboard();
+  const connectionQuality = useConnectionQuality();
 
   const chartConfig = {
     trips: {
@@ -24,14 +27,14 @@ export const OptimizedDashboard: React.FC = () => {
     },
   };
 
-  if (loading && !data) {
+  if (isLoading) {
     return (
       <div className="space-y-6">
         <ConnectionStatus 
           quality={connectionQuality}
-          loading={loading}
-          error={error}
-          onRetry={retry}
+          loading={isLoading}
+          error={error ? error.message : null}
+          onRetry={refetch}
         />
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
@@ -54,9 +57,9 @@ export const OptimizedDashboard: React.FC = () => {
     <div className="space-y-6">
       <ConnectionStatus 
         quality={connectionQuality}
-        loading={loading}
-        error={error}
-        onRetry={retry}
+        loading={isLoading}
+        error={error ? error.message : null}
+        onRetry={refetch}
       />
       
       {data?.stats && <DashboardStats stats={data.stats} />}

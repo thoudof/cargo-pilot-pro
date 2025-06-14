@@ -1,7 +1,7 @@
+import { useQuery } from '@tanstack/react-query';
 import { connectionOptimizer } from '@/services/connectionOptimizer';
-import { useOptimizedData } from './useOptimizedData';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
-import type { Trip } from '@/types'; // Предполагаем, что Trip экспортируется из @/types
+import type { Trip } from '@/types';
 
 interface DashboardStats {
   activeTrips: number;
@@ -36,21 +36,15 @@ interface DashboardData {
 }
 
 export const useOptimizedDashboard = () => {
-  return useOptimizedData<DashboardData>(
-    () => connectionOptimizer.preloadCriticalData(),
-    {
-      enableRetry: true,
-      cacheKey: 'dashboard-data'
-    }
-  );
+  return useQuery<DashboardData>({
+    queryKey: ['dashboard-data'],
+    queryFn: () => connectionOptimizer.preloadCriticalData(),
+  });
 };
 
 export const useOptimizedTrips = (limit = 100) => {
-  return useOptimizedData(
-    () => optimizedSupabaseService.getTripsOptimized(limit),
-    {
-      enableRetry: true,
-      cacheKey: `trips-${limit}`
-    }
-  );
+  return useQuery<Trip[]>({
+    queryKey: [`trips-${limit}`],
+    queryFn: () => optimizedSupabaseService.getTripsOptimized(limit),
+  });
 };

@@ -207,53 +207,138 @@ export class PostgreSQLService implements DatabaseProvider {
 
   // --- Vehicles ---
   async getVehicles(): Promise<Vehicle[]> {
-    this.ensureConnected();
-    console.warn('PostgreSQLService: getVehicles not fully implemented.');
-    return Promise.resolve([]);
+    const sql = this.ensureConnected();
+    console.log('PostgreSQLService: Fetching vehicles...');
+    try {
+      // Примечание: Используем алиасы для приведения snake_case колонок к camelCase, как в типах приложения
+      const vehicles = await sql<Vehicle[]>`
+        SELECT 
+          id, brand, model, license_plate AS "licensePlate", 
+          year, capacity, vin, registration_certificate AS "registrationCertificate",
+          insurance_policy AS "insurancePolicy", 
+          technical_inspection_expiry AS "technicalInspectionExpiry",
+          insurance_expiry AS "insuranceExpiry",
+          notes, "createdAt", "updatedAt"
+        FROM vehicles
+        ORDER BY brand ASC, model ASC
+      `;
+      console.log(`PostgreSQLService: Fetched ${vehicles.length} vehicles.`);
+      return vehicles;
+    } catch (error) {
+      console.error('PostgreSQLService: Error fetching vehicles:', error);
+      throw new Error(`Failed to fetch vehicles: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   async saveVehicle(vehicle: Partial<Vehicle> & { brand: string; model: string; licensePlate: string; }): Promise<Vehicle> {
     this.ensureConnected();
-    console.warn('PostgreSQLService: saveVehicle not fully implemented.');
-    throw new Error('saveVehicle not implemented');
+    console.warn('PostgreSQLService: saveVehicle not fully implemented due to missing user_id context.');
+    throw new Error('saveVehicle not implemented for PostgreSQL. Missing user context.');
   }
   async deleteVehicle(id: string): Promise<void> {
-    this.ensureConnected();
-    console.warn('PostgreSQLService: deleteVehicle not fully implemented.');
-    return Promise.resolve();
+    const sql = this.ensureConnected();
+    console.log('PostgreSQLService: Deleting vehicle with id:', id);
+    try {
+      const result = await sql`
+        DELETE FROM vehicles 
+        WHERE id = ${id}
+      `;
+      if (result.count === 0) {
+        console.warn('PostgreSQLService: Vehicle not found for deletion or delete failed.');
+      } else {
+        console.log('PostgreSQLService: Vehicle deleted successfully.');
+      }
+    } catch (error) {
+      console.error('PostgreSQLService: Error deleting vehicle:', error);
+      throw new Error(`Failed to delete vehicle: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   // --- Routes ---
   async getRoutes(): Promise<Route[]> {
-    this.ensureConnected();
-    console.warn('PostgreSQLService: getRoutes not fully implemented.');
-    return Promise.resolve([]);
+    const sql = this.ensureConnected();
+    console.log('PostgreSQLService: Fetching routes...');
+    try {
+      const routes = await sql<Route[]>`
+        SELECT 
+          id, name, point_a AS "pointA", point_b AS "pointB", 
+          distance_km AS "distanceKm", estimated_duration_hours AS "estimatedDurationHours", 
+          notes, "createdAt", "updatedAt"
+        FROM routes
+        ORDER BY name ASC
+      `;
+      console.log(`PostgreSQLService: Fetched ${routes.length} routes.`);
+      return routes;
+    } catch (error) {
+      console.error('PostgreSQLService: Error fetching routes:', error);
+      throw new Error(`Failed to fetch routes: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   async saveRoute(route: Partial<Route> & { name: string; pointA: string; pointB: string; }): Promise<Route> {
     this.ensureConnected();
-    console.warn('PostgreSQLService: saveRoute not fully implemented.');
-    throw new Error('saveRoute not implemented');
+    console.warn('PostgreSQLService: saveRoute not fully implemented due to missing user_id context.');
+    throw new Error('saveRoute not implemented for PostgreSQL. Missing user context.');
   }
   async deleteRoute(id: string): Promise<void> {
-    this.ensureConnected();
-    console.warn('PostgreSQLService: deleteRoute not fully implemented.');
-    return Promise.resolve();
+    const sql = this.ensureConnected();
+    console.log('PostgreSQLService: Deleting route with id:', id);
+    try {
+      const result = await sql`
+        DELETE FROM routes 
+        WHERE id = ${id}
+      `;
+      if (result.count === 0) {
+        console.warn('PostgreSQLService: Route not found for deletion or delete failed.');
+      } else {
+        console.log('PostgreSQLService: Route deleted successfully.');
+      }
+    } catch (error) {
+      console.error('PostgreSQLService: Error deleting route:', error);
+      throw new Error(`Failed to delete route: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   // --- CargoTypes ---
   async getCargoTypes(): Promise<CargoType[]> {
-    this.ensureConnected();
-    console.warn('PostgreSQLService: getCargoTypes not fully implemented.');
-    return Promise.resolve([]);
+    const sql = this.ensureConnected();
+    console.log('PostgreSQLService: Fetching cargo types...');
+    try {
+      const cargoTypes = await sql<CargoType[]>`
+        SELECT 
+          id, name, description, default_weight AS "defaultWeight",
+          default_volume AS "defaultVolume", hazardous, temperature_controlled AS "temperatureControlled",
+          fragile, "createdAt", "updatedAt"
+        FROM cargo_types
+        ORDER BY name ASC
+      `;
+      console.log(`PostgreSQLService: Fetched ${cargoTypes.length} cargo types.`);
+      return cargoTypes;
+    } catch (error) {
+      console.error('PostgreSQLService: Error fetching cargo types:', error);
+      throw new Error(`Failed to fetch cargo types: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   async saveCargoType(cargoType: Partial<CargoType> & { name: string; }): Promise<CargoType> {
     this.ensureConnected();
-    console.warn('PostgreSQLService: saveCargoType not fully implemented.');
-    throw new Error('saveCargoType not implemented');
+    console.warn('PostgreSQLService: saveCargoType not fully implemented due to missing user_id context.');
+    throw new Error('saveCargoType not implemented for PostgreSQL. Missing user context.');
   }
   async deleteCargoType(id: string): Promise<void> {
-    this.ensureConnected();
-    console.warn('PostgreSQLService: deleteCargoType not fully implemented.');
-    return Promise.resolve();
+    const sql = this.ensureConnected();
+    console.log('PostgreSQLService: Deleting cargo type with id:', id);
+    try {
+      const result = await sql`
+        DELETE FROM cargo_types 
+        WHERE id = ${id}
+      `;
+      if (result.count === 0) {
+        console.warn('PostgreSQLService: Cargo type not found for deletion or delete failed.');
+      } else {
+        console.log('PostgreSQLService: Cargo type deleted successfully.');
+      }
+    } catch (error) {
+      console.error('PostgreSQLService: Error deleting cargo type:', error);
+      throw new Error(`Failed to delete cargo type: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   // --- Trips ---

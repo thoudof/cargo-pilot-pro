@@ -28,9 +28,34 @@ export class PostgresCargoTypesHandler {
     }
   }
   async saveCargoType(cargoType: Partial<CargoType> & { name: string; }): Promise<CargoType> {
-    this.getDB();
-    console.warn('PostgreSQLService: saveCargoType not fully implemented due to missing user_id context.');
-    throw new Error('saveCargoType not implemented for PostgreSQL. Missing user context.');
+    const sql = this.getDB();
+    console.log('PostgreSQLService: Saving cargo type:', cargoType.id ? 'update' : 'insert', cargoType);
+    try {
+      if (cargoType.id) {
+        const [updatedCargoType] = await sql<CargoType[]>`
+          UPDATE cargo_types
+          SET name = ${cargoType.name},
+              description = ${cargoType.description || null},
+              default_weight = ${cargoType.defaultWeight || null},
+              default_volume = ${cargoType.defaultVolume || null},
+              hazardous = ${cargoType.hazardous || false},
+              temperature_controlled = ${cargoType.temperatureControlled || false},
+              fragile = ${cargoType.fragile || false},
+              updated_at = NOW()
+          WHERE id = ${cargoType.id}
+          RETURNING id, name, description, default_weight AS "defaultWeight", default_volume AS "defaultVolume", hazardous, temperature_controlled AS "temperatureControlled", fragile, created_at AS "createdAt", updated_at AS "updatedAt"
+        `;
+        if (!updatedCargoType) throw new Error('Cargo type not found for update or update failed.');
+        console.log('PostgreSQLService: Cargo type updated:', updatedCargoType);
+        return updatedCargoType;
+      } else {
+        console.warn('PostgreSQLService: saveCargoType (insert) not fully implemented due to missing user_id context.');
+        throw new Error('saveCargoType (insert) not implemented for PostgreSQL. Missing user context.');
+      }
+    } catch (error) {
+      console.error('PostgreSQLService: Error saving cargo type:', error);
+      throw new Error(`Failed to save cargo type: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   async deleteCargoType(id: string): Promise<void> {
     const sql = this.getDB();

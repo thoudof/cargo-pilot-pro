@@ -28,10 +28,33 @@ export class PostgresDriversHandler {
   }
 
   async saveDriver(driver: Partial<Driver> & { name: string; phone: string; }): Promise<Driver> {
-    this.getDB();
-    console.warn('PostgreSQLService: saveDriver not fully implemented due to missing user_id context.');
-    // @ts-ignore
-    throw new Error('saveDriver not implemented for PostgreSQL. Missing user context.');
+    const sql = this.getDB();
+    console.log('PostgreSQLService: Saving driver:', driver.id ? 'update' : 'insert', driver);
+    try {
+      if (driver.id) {
+        const [updatedDriver] = await sql<Driver[]>`
+          UPDATE drivers
+          SET name = ${driver.name},
+              phone = ${driver.phone},
+              license = ${driver.license || null},
+              passport_data = ${driver.passportData || null},
+              experience_years = ${driver.experienceYears || null},
+              notes = ${driver.notes || null},
+              updated_at = NOW()
+          WHERE id = ${driver.id}
+          RETURNING id, name, phone, license, passport_data AS "passportData", experience_years AS "experienceYears", notes, created_at AS "createdAt", updated_at AS "updatedAt"
+        `;
+        if (!updatedDriver) throw new Error('Driver not found for update or update failed.');
+        console.log('PostgreSQLService: Driver updated:', updatedDriver);
+        return updatedDriver;
+      } else {
+        console.warn('PostgreSQLService: saveDriver (insert) not fully implemented due to missing user_id context.');
+        throw new Error('saveDriver (insert) not implemented for PostgreSQL. Missing user context.');
+      }
+    } catch (error) {
+      console.error('PostgreSQLService: Error saving driver:', error);
+      throw new Error(`Failed to save driver: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   async deleteDriver(id: string): Promise<void> {

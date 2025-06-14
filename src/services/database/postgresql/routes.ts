@@ -29,9 +29,33 @@ export class PostgresRoutesHandler {
     }
   }
   async saveRoute(route: Partial<Route> & { name: string; pointA: string; pointB: string; }): Promise<Route> {
-    this.getDB();
-    console.warn('PostgreSQLService: saveRoute not fully implemented due to missing user_id context.');
-    throw new Error('saveRoute not implemented for PostgreSQL. Missing user context.');
+    const sql = this.getDB();
+    console.log('PostgreSQLService: Saving route:', route.id ? 'update' : 'insert', route);
+    try {
+      if (route.id) {
+        const [updatedRoute] = await sql<Route[]>`
+          UPDATE routes
+          SET name = ${route.name},
+              point_a = ${route.pointA},
+              point_b = ${route.pointB},
+              distance_km = ${route.distanceKm || null},
+              estimated_duration_hours = ${route.estimatedDurationHours || null},
+              notes = ${route.notes || null},
+              updated_at = NOW()
+          WHERE id = ${route.id}
+          RETURNING id, name, point_a AS "pointA", point_b AS "pointB", distance_km AS "distanceKm", estimated_duration_hours AS "estimatedDurationHours", notes, created_at AS "createdAt", updated_at AS "updatedAt"
+        `;
+        if (!updatedRoute) throw new Error('Route not found for update or update failed.');
+        console.log('PostgreSQLService: Route updated:', updatedRoute);
+        return updatedRoute;
+      } else {
+        console.warn('PostgreSQLService: saveRoute (insert) not fully implemented due to missing user_id context.');
+        throw new Error('saveRoute (insert) not implemented for PostgreSQL. Missing user context.');
+      }
+    } catch (error) {
+      console.error('PostgreSQLService: Error saving route:', error);
+      throw new Error(`Failed to save route: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   async deleteRoute(id: string): Promise<void> {
     const sql = this.getDB();

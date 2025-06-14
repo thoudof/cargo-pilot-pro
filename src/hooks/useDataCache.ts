@@ -14,7 +14,7 @@ interface CacheEntry<T> {
 const cache = new Map<string, CacheEntry<any>>();
 
 export const useDataCache = <T>(
-  key: string,
+  key: string | null,
   fetchFn: () => Promise<T>,
   options: CacheOptions = {}
 ) => {
@@ -25,6 +25,12 @@ export const useDataCache = <T>(
   const { ttl = 5 * 60 * 1000 } = options;
 
   const fetchData = useCallback(async () => {
+    if (!key) {
+      setLoading(false);
+      setData(undefined);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -61,11 +67,13 @@ export const useDataCache = <T>(
   }, [fetchData]);
 
   const refetch = useCallback(() => {
+    if (!key) return Promise.resolve();
     cache.delete(key);
     return fetchData();
   }, [key, fetchData]);
 
   const invalidate = useCallback(() => {
+    if (!key) return;
     cache.delete(key);
   }, [key]);
 

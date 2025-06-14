@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { useDataCache } from '@/hooks/useDataCache';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
@@ -66,7 +65,7 @@ export const TripsReportTable: React.FC = () => {
   }, [trips, toast]);
 
   const { data: expensesData = {} } = useDataCache<Record<string, number>>(
-    'trips-expenses',
+    trips && trips.length > 0 ? 'trips-expenses' : null,
     fetchExpenses,
     { ttl: 2 * 60 * 1000 }
   );

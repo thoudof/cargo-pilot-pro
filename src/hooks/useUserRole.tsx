@@ -1,42 +1,14 @@
 
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/Auth/AuthProvider';
-import { supabase } from '@/integrations/supabase/client';
+import { usePermissions } from './usePermissions';
+import { AppPermission } from '@/types';
 
 export const useUserRole = () => {
-  const { user, loading: authLoading } = useAuth();
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const { loading: authLoading } = useAuth();
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
 
-  useEffect(() => {
-    if (authLoading || !user) {
-      setIsAdmin(false);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    
-    const checkRole = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
-        
-        setIsAdmin(!!data && !error);
-      } catch (error) {
-        console.error('Error checking user role:', error);
-        setIsAdmin(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkRole();
-  }, [user, authLoading]);
+  const isAdmin = hasPermission(AppPermission.VIEW_ADMIN_PANEL);
+  const loading = authLoading || permissionsLoading;
 
   return { isAdmin, loading };
 };

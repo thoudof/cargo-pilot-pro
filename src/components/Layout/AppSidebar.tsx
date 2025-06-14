@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -10,54 +9,28 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3 } from 'lucide-react';
+import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, Shield } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { usePermissions } from '@/hooks/usePermissions';
+import { AppPermission } from '@/types';
 
-const menuItems = [
-  {
-    title: "Главная",
-    url: "/",
-    icon: Home,
-  },
-  {
-    title: "Рейсы",
-    url: "/trips",
-    icon: Truck,
-  },
-  {
-    title: "Отчеты",
-    url: "/reports",
-    icon: BarChart3,
-  },
-  {
-    title: "Контрагенты",
-    url: "/contractors",
-    icon: Building2,
-  },
-  {
-    title: "Водители",
-    url: "/drivers",
-    icon: Users,
-  },
-  {
-    title: "Транспорт",
-    url: "/vehicles",
-    icon: Car,
-  },
-  {
-    title: "Маршруты",
-    url: "/routes",
-    icon: MapPin,
-  },
-  {
-    title: "Типы грузов",
-    url: "/cargo-types",
-    icon: Package,
-  },
+const allMenuItems = [
+  { title: "Главная", url: "/", icon: Home, permission: null },
+  { title: "Рейсы", url: "/trips", icon: Truck, permission: AppPermission.VIEW_TRIPS },
+  { title: "Отчеты", url: "/reports", icon: BarChart3, permission: AppPermission.VIEW_REPORTS },
+  { title: "Контрагенты", url: "/contractors", icon: Building2, permission: AppPermission.VIEW_CONTRACTORS },
+  { title: "Водители", url: "/drivers", icon: Users, permission: AppPermission.VIEW_DRIVERS },
+  { title: "Транспорт", url: "/vehicles", icon: Car, permission: AppPermission.VIEW_VEHICLES },
+  { title: "Маршруты", url: "/routes", icon: MapPin, permission: AppPermission.VIEW_ROUTES },
+  { title: "Типы грузов", url: "/cargo-types", icon: Package, permission: AppPermission.VIEW_CARGO_TYPES },
+  { title: "Админ панель", url: "/admin", icon: Shield, permission: AppPermission.VIEW_ADMIN_PANEL },
 ];
 
 export function AppSidebar() {
   const location = useLocation();
+  const { hasPermission } = usePermissions();
+  
+  const menuItems = allMenuItems.filter(item => !item.permission || hasPermission(item.permission));
 
   return (
     <Sidebar>

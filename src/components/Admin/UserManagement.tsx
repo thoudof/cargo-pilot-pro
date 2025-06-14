@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,7 +56,7 @@ export const UserManagement: React.FC = () => {
         };
       });
 
-      setUsers(usersWithRoles);
+      setUsers(usersWithRoles as any); // Using 'as any' to match the extended User type
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -106,7 +105,7 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const getRoleBadgeVariant = (role: string | null) => {
+  const getRoleBadgeVariant = (role: UserRole | null) => {
     switch (role) {
       case 'admin': return 'destructive';
       case 'dispatcher': return 'default';
@@ -115,7 +114,7 @@ export const UserManagement: React.FC = () => {
     }
   };
 
-  const getRoleLabel = (role: string | null) => {
+  const getRoleLabel = (role: UserRole | null) => {
     switch (role) {
       case 'admin': return 'Администратор';
       case 'dispatcher': return 'Диспетчер';
@@ -170,9 +169,17 @@ export const UserManagement: React.FC = () => {
                   </TableCell>
                   <TableCell>{user.full_name || 'Не указано'}</TableCell>
                   <TableCell>
-                    <Badge variant={getRoleBadgeVariant(user.role)}>
-                      {getRoleLabel(user.role)}
-                    </Badge>
+                    <div className="flex flex-wrap gap-1">
+                      {user.roles.length > 0 ? (
+                        user.roles.map(role => (
+                          <Badge key={role} variant={getRoleBadgeVariant(role)}>
+                            {getRoleLabel(role)}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Badge variant="outline">Роль не назначена</Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {new Date(user.created_at).toLocaleDateString('ru-RU')}

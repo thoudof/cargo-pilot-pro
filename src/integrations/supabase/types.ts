@@ -293,6 +293,27 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission?: Database["public"]["Enums"]["app_permission"]
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
       routes: {
         Row: {
           created_at: string
@@ -596,6 +617,13 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
       }
+      has_permission: {
+        Args: {
+          _user_id: string
+          _permission: Database["public"]["Enums"]["app_permission"]
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _user_id: string
@@ -605,6 +633,24 @@ export type Database = {
       }
     }
     Enums: {
+      app_permission:
+        | "view_trips"
+        | "edit_trips"
+        | "view_contractors"
+        | "edit_contractors"
+        | "view_drivers"
+        | "edit_drivers"
+        | "view_vehicles"
+        | "edit_vehicles"
+        | "view_routes"
+        | "edit_routes"
+        | "view_cargo_types"
+        | "edit_cargo_types"
+        | "view_reports"
+        | "view_admin_panel"
+        | "view_finances"
+        | "view_statistics"
+        | "manage_users"
       app_role: "admin" | "dispatcher" | "driver"
     }
     CompositeTypes: {
@@ -721,6 +767,25 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_permission: [
+        "view_trips",
+        "edit_trips",
+        "view_contractors",
+        "edit_contractors",
+        "view_drivers",
+        "edit_drivers",
+        "view_vehicles",
+        "edit_vehicles",
+        "view_routes",
+        "edit_routes",
+        "view_cargo_types",
+        "edit_cargo_types",
+        "view_reports",
+        "view_admin_panel",
+        "view_finances",
+        "view_statistics",
+        "manage_users",
+      ],
       app_role: ["admin", "dispatcher", "driver"],
     },
   },

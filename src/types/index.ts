@@ -1,4 +1,3 @@
-
 export interface Contractor {
   id: string;
   companyName: string;
@@ -128,22 +127,27 @@ export interface User {
   id: string;
   username: string;
   fullName: string;
-  role: UserRole;
-  permissions: Permission[];
+  // role и permissions убраны, так как теперь мы используем хук usePermissions
   createdAt: Date;
 }
 
-export enum UserRole {
-  OWNER = 'owner',
-  DISPATCHER = 'dispatcher',
-  DRIVER = 'driver'
-}
+// Устаревшие enums UserRole и Permission удалены
 
-export enum Permission {
+export enum AppPermission {
   VIEW_TRIPS = 'view_trips',
   EDIT_TRIPS = 'edit_trips',
   VIEW_CONTRACTORS = 'view_contractors',
   EDIT_CONTRACTORS = 'edit_contractors',
+  VIEW_DRIVERS = 'view_drivers',
+  EDIT_DRIVERS = 'edit_drivers',
+  VIEW_VEHICLES = 'view_vehicles',
+  EDIT_VEHICLES = 'edit_vehicles',
+  VIEW_ROUTES = 'view_routes',
+  EDIT_ROUTES = 'edit_routes',
+  VIEW_CARGO_TYPES = 'view_cargo_types',
+  EDIT_CARGO_TYPES = 'edit_cargo_types',
+  VIEW_REPORTS = 'view_reports',
+  VIEW_ADMIN_PANEL = 'view_admin_panel',
   VIEW_FINANCES = 'view_finances',
   VIEW_STATISTICS = 'view_statistics',
   MANAGE_USERS = 'manage_users'

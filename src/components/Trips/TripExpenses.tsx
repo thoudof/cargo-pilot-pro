@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog } from '@/components/ui/dialog';
 import { TripExpense, ExpenseType } from '@/types/expenses';
-import { supabaseService } from '@/services/supabaseService';
+import { appDbService } from '@/services/database/AppDatabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { TripExpenseForm } from './TripExpenseForm';
@@ -29,7 +28,7 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
 
   const loadExpenses = useCallback(async () => {
     try {
-      const data = await supabaseService.getTripExpenses(tripId);
+      const data = await appDbService.getTripExpenses(tripId);
       setExpenses(data);
     } catch (error) {
       console.error('Failed to load expenses:', error);
@@ -75,13 +74,13 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
       };
 
       if (editingExpense) {
-        await supabaseService.updateTripExpense(editingExpense.id, expenseData);
+        await appDbService.updateTripExpense(editingExpense.id, expenseData);
         toast({
           title: 'Расход обновлен',
           description: 'Расход успешно обновлен'
         });
       } else {
-        await supabaseService.createTripExpense(expenseData);
+        await appDbService.createTripExpense(expenseData);
         toast({
           title: 'Расход добавлен',
           description: 'Расход успешно добавлен'
@@ -118,7 +117,7 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
     }
 
     try {
-      await supabaseService.deleteTripExpense(expense.id);
+      await appDbService.deleteTripExpense(expense.id);
       toast({
         title: 'Расход удален',
         description: 'Расход успешно удален'
@@ -140,7 +139,7 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
   }, [resetForm]);
 
   const totalExpenses = useMemo(() => 
-    expenses.reduce((sum, expense) => sum + expense.amount, 0), 
+    expenses.reduce((sum, expenseItem) => sum + expenseItem.amount, 0), 
     [expenses]
   );
 

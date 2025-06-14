@@ -1,10 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Receipt, DollarSign } from 'lucide-react';
 import { TripExpense, expenseTypeLabels } from '@/types/expenses';
-import { supabaseService } from '@/services/supabaseService';
+import { appDbService } from '@/services/database/AppDatabaseService';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -22,7 +21,7 @@ export const TripExpensesSummary: React.FC<TripExpensesSummaryProps> = ({ tripId
 
   const loadExpenses = async () => {
     try {
-      const data = await supabaseService.getTripExpenses(tripId);
+      const data = await appDbService.getTripExpenses(tripId);
       setExpenses(data);
     } catch (error) {
       console.error('Failed to load expenses:', error);

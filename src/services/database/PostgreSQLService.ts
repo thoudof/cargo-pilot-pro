@@ -87,37 +87,37 @@ export class PostgreSQLService implements DatabaseProvider {
 
   // --- Contractors ---
   getContractors = (): Promise<Contractor[]> => this.contractorsHandler.getContractors();
-  saveContractor = (contractor: Partial<Contractor> & { companyName: string; inn: string; address: string; }): Promise<Contractor> => this.contractorsHandler.saveContractor(contractor);
+  saveContractor = (contractor: Partial<Contractor> & { id?: string; companyName: string; inn: string; address: string; }, userId: string): Promise<Contractor> => this.contractorsHandler.saveContractor(contractor, userId);
   deleteContractor = (id: string): Promise<void> => this.contractorsHandler.deleteContractor(id);
 
   // --- Drivers ---
   getDrivers = (): Promise<Driver[]> => this.driversHandler.getDrivers();
-  saveDriver = (driver: Partial<Driver> & { name: string; phone: string; }): Promise<Driver> => this.driversHandler.saveDriver(driver);
+  saveDriver = (driver: Partial<Driver> & { id?: string; name: string; phone: string; }, userId: string): Promise<Driver> => this.driversHandler.saveDriver(driver, userId);
   deleteDriver = (id: string): Promise<void> => this.driversHandler.deleteDriver(id);
 
   // --- Vehicles ---
   getVehicles = (): Promise<Vehicle[]> => this.vehiclesHandler.getVehicles();
-  saveVehicle = (vehicle: Partial<Vehicle> & { brand: string; model: string; licensePlate: string; }): Promise<Vehicle> => this.vehiclesHandler.saveVehicle(vehicle);
+  saveVehicle = (vehicle: Partial<Vehicle> & { id?: string; brand: string; model: string; licensePlate: string; }, userId: string): Promise<Vehicle> => this.vehiclesHandler.saveVehicle(vehicle, userId);
   deleteVehicle = (id: string): Promise<void> => this.vehiclesHandler.deleteVehicle(id);
 
   // --- Routes ---
   getRoutes = (): Promise<Route[]> => this.routesHandler.getRoutes();
-  saveRoute = (route: Partial<Route> & { name: string; pointA: string; pointB: string; }): Promise<Route> => this.routesHandler.saveRoute(route);
+  saveRoute = (route: Partial<Route> & { id?: string; name: string; pointA: string; pointB: string; }, userId: string): Promise<Route> => this.routesHandler.saveRoute(route, userId);
   deleteRoute = (id: string): Promise<void> => this.routesHandler.deleteRoute(id);
 
   // --- CargoTypes ---
   getCargoTypes = (): Promise<CargoType[]> => this.cargoTypesHandler.getCargoTypes();
-  saveCargoType = (cargoType: Partial<CargoType> & { name: string; }): Promise<CargoType> => this.cargoTypesHandler.saveCargoType(cargoType);
+  saveCargoType = (cargoType: Partial<CargoType> & { id?: string; name: string; }, userId: string): Promise<CargoType> => this.cargoTypesHandler.saveCargoType(cargoType, userId);
   deleteCargoType = (id: string): Promise<void> => this.cargoTypesHandler.deleteCargoType(id);
 
   // --- Trips ---
   getTrips = (): Promise<Trip[]> => this.tripsHandler.getTrips();
-  saveTrip = (trip: Partial<Trip>): Promise<Trip> => this.tripsHandler.saveTrip(trip);
+  saveTrip = (trip: Partial<Trip> & { id?: string; }, userId: string): Promise<Trip> => this.tripsHandler.saveTrip(trip, userId);
   deleteTrip = (id: string): Promise<void> => this.tripsHandler.deleteTrip(id);
 
   // --- TripExpenses ---
   getTripExpenses = (tripId: string): Promise<TripExpense[]> => this.expensesHandler.getTripExpenses(tripId);
-  createTripExpense = (expense: Omit<TripExpense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & { tripId: string }): Promise<TripExpense> => this.expensesHandler.createTripExpense(expense);
+  createTripExpense = (expense: Omit<TripExpense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & { tripId: string }, userId: string): Promise<TripExpense> => this.expensesHandler.createTripExpense(expense, userId);
   updateTripExpense = (id: string, expense: Partial<Omit<TripExpense, 'id'|'createdAt'|'updatedAt'|'userId'|'tripId'>>): Promise<TripExpense> => this.expensesHandler.updateTripExpense(id, expense);
   deleteTripExpense = (id: string): Promise<void> => this.expensesHandler.deleteTripExpense(id);
 
@@ -125,3 +125,4 @@ export class PostgreSQLService implements DatabaseProvider {
   getDashboardStats = (): Promise<any> => this.statsHandler.getDashboardStats();
   getAdvancedStats = (filters?: any): Promise<any> => this.statsHandler.getAdvancedStats(filters);
 }
+

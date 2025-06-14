@@ -1,4 +1,3 @@
-
 import type postgres from 'postgres';
 import type { Vehicle } from '@/types';
 
@@ -29,7 +28,7 @@ export class PostgresVehiclesHandler {
       throw new Error(`Failed to fetch vehicles: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  async saveVehicle(vehicle: Partial<Vehicle> & { brand: string; model: string; licensePlate: string; }): Promise<Vehicle> {
+  async saveVehicle(vehicle: Partial<Vehicle> & { brand: string; model: string; licensePlate: string; }, userId: string): Promise<Vehicle> {
     const sql = this.getDB();
     console.log('PostgreSQLService: Saving vehicle:', vehicle.id ? 'update' : 'insert', vehicle);
     try {
@@ -55,8 +54,28 @@ export class PostgresVehiclesHandler {
         console.log('PostgreSQLService: Vehicle updated:', updatedVehicle);
         return updatedVehicle;
       } else {
-        console.warn('PostgreSQLService: saveVehicle (insert) not fully implemented due to missing user_id context.');
-        throw new Error('saveVehicle (insert) not implemented for PostgreSQL. Missing user context.');
+        if (!userId) {
+          throw new Error('User ID is required to create a new vehicle.');
+        }
+        const [newVehicle] = await sql<Vehicle[]>`
+          INSERT INTO vehicles (
+            brand, model, license_plate, capacity, year, vin, 
+            registration_certificate, insurance_policy, insurance_expiry, 
+            technical_inspection_expiry, notes, user_id
+          )
+          VALUES (
+            ${vehicle.brand}, ${vehicle.model}, ${vehicle.licensePlate}, 
+            ${vehicle.capacity || null}, ${vehicle.year || null}, ${vehicle.vin || null},
+            ${vehicle.registrationCertificate || null}, ${vehicle.insurancePolicy || null}, 
+            ${vehicle.insuranceExpiry ? new Date(vehicle.insuranceExpiry) : null},
+            ${vehicle.technicalInspectionExpiry ? new Date(vehicle.technicalInspectionExpiry) : null},
+            ${vehicle.notes || null}, ${userId}
+          )
+          RETURNING id, brand, model, license_plate AS "licensePlate", capacity, year, vin, registration_certificate AS "registrationCertificate", insurance_policy AS "insurancePolicy", insurance_expiry AS "insuranceExpiry", technical_inspection_expiry AS "technicalInspectionExpiry", notes, created_at AS "createdAt", updated_at AS "updatedAt"
+        `;
+        if (!newVehicle) throw new Error('Vehicle creation failed.');
+        console.log('PostgreSQLService: Vehicle created:', newVehicle);
+        return newVehicle;
       }
     } catch (error) {
       console.error('PostgreSQLService: Error saving vehicle:', error);

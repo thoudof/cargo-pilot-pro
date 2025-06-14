@@ -1,17 +1,51 @@
-
 import { supabaseService } from '@/services/supabaseService';
 import type { DatabaseProvider, AuthUser } from './DatabaseProvider';
-import type { SignInWithPasswordCredentials, SignUpWithPasswordCredentials, AuthResponse } from '@supabase/supabase-js';
+import type { SignInWithPasswordCredentials, SignUpWithPasswordCredentials, AuthResponse, AuthError as SupabaseAuthErrorType } from '@supabase/supabase-js'; // Renamed AuthError to avoid conflict
+import { AuthError } from '@supabase/supabase-js'; // Import AuthError class for instantiation
 import type { Contractor, Driver, Vehicle, Route, CargoType, Trip } from '@/types';
 import type { TripExpense } from '@/types/expenses';
 
 class AppDatabaseService implements DatabaseProvider {
   async signIn(credentials: SignInWithPasswordCredentials): Promise<AuthResponse> {
-    return supabaseService.signIn(credentials.email, credentials.password);
+    if (!('email' in credentials) || !credentials.email) {
+      const error = new AuthError('Email is required for this sign-in method.');
+      error.status = 400;
+      return { data: { user: null, session: null }, error };
+    }
+
+    // Assuming supabaseService.signIn returns:
+    // { user: User; session: Session; weakPassword?: WeakPassword; } | { user: null; session: null; weakPassword?: null; }
+    const result = await supabaseService.signIn(credentials.email, credentials.password);
+
+    if (result.user && result.session) {
+      return { data: { user: result.user, session: result.session }, error: null };
+    } else {
+      // Construct an AuthError if supabaseService doesn't provide one in the expected format
+      const error = new AuthError(result.message || 'Sign-in failed. Please check your credentials.');
+      error.status = result.status || 401; 
+      return { data: { user: null, session: null }, error };
+    }
   }
 
   async signUp(credentials: SignUpWithPasswordCredentials & { data?: object }): Promise<AuthResponse> {
-    return supabaseService.signUp(credentials.email, credentials.password, credentials.data);
+    if (!('email' in credentials) || !credentials.email) {
+      const error = new AuthError('Email is required for this sign-up method.');
+      error.status = 400;
+      return { data: { user: null, session: null }, error };
+    }
+
+    const optionsData = credentials.options?.data || ('data' in credentials ? credentials.data : undefined);
+
+    // Assuming supabaseService.signUp returns a similar structure to signIn
+    const result = await supabaseService.signUp(credentials.email, credentials.password, optionsData as { [key: string]: any } | undefined);
+
+    if (result.user && result.session) {
+      return { data: { user: result.user, session: result.session }, error: null };
+    } else {
+      const error = new AuthError(result.message || 'Sign-up failed. The user might already exist or the details are invalid.');
+      error.status = result.status || 400;
+      return { data: { user: null, session: null }, error };
+    }
   }
 
   async getCurrentUser(): Promise<AuthUser | null> {
@@ -87,9 +121,7 @@ class AppDatabaseService implements DatabaseProvider {
   }
 
   async saveTrip(trip: Partial<Trip> & { id?: string }): Promise<Trip> {
-    // supabaseService.saveTrip expects 'any', this might need adjustment
-    // based on the actual structure it expects for saving.
-    return supabaseService.saveTrip(trip as any); 
+    return supabaseService.saveTrip(trip as any);
   }
 
   async deleteTrip(id: string): Promise<void> {
@@ -101,12 +133,10 @@ class AppDatabaseService implements DatabaseProvider {
   }
 
   async createTripExpense(expense: Omit<TripExpense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & { tripId: string }): Promise<TripExpense> {
-    // supabaseService.createTripExpense expects 'any'
     return supabaseService.createTripExpense(expense as any);
   }
 
   async updateTripExpense(id: string, expense: Partial<Omit<TripExpense, 'id'|'createdAt'|'updatedAt'|'userId'|'tripId'>>): Promise<TripExpense> {
-    // supabaseService.updateTripExpense expects 'any' for the expense data
     return supabaseService.updateTripExpense(id, expense as any);
   }
 

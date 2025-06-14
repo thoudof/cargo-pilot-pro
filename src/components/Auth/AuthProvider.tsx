@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
   user: User | null;
@@ -29,10 +30,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut();
+      queryClient.clear(); // Очищаем кэш при выходе
     } catch (error) {
       console.error('Sign out error:', error);
     }
@@ -68,6 +71,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
+
+          // При входе, обновлении токена или пользователя - инвалидируем кэш прав
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+            queryClient.invalidateQueries({ queryKey: ['user-permissions'] });
+          }
+          // При выходе - очищаем весь кэш
+          if (event === 'SIGNED_OUT') {
+            queryClient.clear();
+          }
         }
       }
     );
@@ -78,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [queryClient]);
 
   return (
     <AuthContext.Provider value={{ user, session, loading, signOut }}>

@@ -1,8 +1,11 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button'; // Импортируем Button
+import { Calendar, PlusCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom'; // Импортируем useNavigate
 
 interface RecentTripsSectionProps {
   stats: {
@@ -16,6 +19,7 @@ interface RecentTripsSectionProps {
 export const RecentTripsSection: React.FC<RecentTripsSectionProps> = ({ stats }) => {
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const navigate = useNavigate(); // Инициализируем useNavigate
 
   const handleShowAllClick = () => {
     toast({
@@ -25,6 +29,10 @@ export const RecentTripsSection: React.FC<RecentTripsSectionProps> = ({ stats })
     console.log("Показать все рейсы - функциональность будет добавлена.");
   };
 
+  const handleCreateNewTrip = () => {
+    navigate('/trips'); // Перенаправляем на страницу рейсов
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between p-3 sm:p-6">
@@ -32,7 +40,7 @@ export const RecentTripsSection: React.FC<RecentTripsSectionProps> = ({ stats })
           <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
           <span>Последние рейсы</span>
         </CardTitle>
-        <button 
+        <button
           className="text-xs sm:text-sm text-primary hover:underline"
           onClick={handleShowAllClick}
         >
@@ -41,9 +49,15 @@ export const RecentTripsSection: React.FC<RecentTripsSectionProps> = ({ stats })
       </CardHeader>
       <CardContent className="p-3 sm:p-6 pt-0">
         {stats.totalTrips === 0 ? (
-          <p className="text-xs sm:text-sm text-muted-foreground">
-            У вас пока нет рейсов
-          </p>
+          <div className="text-center py-4">
+            <p className="text-xs sm:text-sm text-muted-foreground mb-3">
+              У вас пока нет рейсов.
+            </p>
+            <Button size="sm" onClick={handleCreateNewTrip}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Создать первый рейс
+            </Button>
+          </div>
         ) : (
           <div className="space-y-2">
             <div className="text-xs sm:text-sm">
@@ -59,3 +73,4 @@ export const RecentTripsSection: React.FC<RecentTripsSectionProps> = ({ stats })
     </Card>
   );
 };
+

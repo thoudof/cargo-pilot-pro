@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, FileText } from 'lucide-react';
 import { TripStatus } from '@/types';
+import { TripWithExpenses } from '@/types/reports'; // Added for props
+import { TripsReportDetailedTable } from './TripsReportDetailedTable'; // Ensure this import exists
 
 interface TripsReportFiltersProps {
   searchTerm: string;
@@ -13,6 +15,10 @@ interface TripsReportFiltersProps {
   statusFilter: string;
   onStatusFilterChange: (status: string) => void;
   onExport: () => void;
+  // Added props to pass to TripsReportDetailedTable
+  trips: TripWithExpenses[];
+  contractors: Record<string, string>;
+  onSort: (field: string) => void;
 }
 
 export const TripsReportFilters: React.FC<TripsReportFiltersProps> = ({
@@ -21,6 +27,10 @@ export const TripsReportFilters: React.FC<TripsReportFiltersProps> = ({
   statusFilter,
   onStatusFilterChange,
   onExport,
+  // Destructure new props
+  trips,
+  contractors,
+  onSort,
 }) => {
   return (
     <Card>
@@ -57,8 +67,14 @@ export const TripsReportFilters: React.FC<TripsReportFiltersProps> = ({
             </SelectContent>
           </Select>
         </div>
+        <TripsReportDetailedTable
+          trips={trips}
+          contractors={contractors}
+          onSort={onSort}
+          searchTerm={searchTerm}
+          statusFilter={statusFilter}
+        />
       </CardContent>
     </Card>
   );
 };
-

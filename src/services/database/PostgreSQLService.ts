@@ -112,12 +112,22 @@ export class PostgreSQLService implements DatabaseProvider {
 
   // --- Trips ---
   getTrips = (): Promise<Trip[]> => this.tripsHandler.getTrips();
-  saveTrip = (trip: Partial<Trip> & { id?: string; }, userId: string): Promise<Trip> => this.tripsHandler.saveTrip(trip, userId);
+  saveTrip = (trip: Partial<Trip> & { id?: string; }, userId: string): Promise<Trip> => {
+    if (!trip.id) {
+      // The handler for creating trips is not implemented to accept a userId.
+      throw new Error('Creating new trips is not implemented in PostgreSQLService yet.');
+    }
+    // The handler for trip updates expects only one argument.
+    return this.tripsHandler.saveTrip(trip);
+  };
   deleteTrip = (id: string): Promise<void> => this.tripsHandler.deleteTrip(id);
 
   // --- TripExpenses ---
   getTripExpenses = (tripId: string): Promise<TripExpense[]> => this.expensesHandler.getTripExpenses(tripId);
-  createTripExpense = (expense: Omit<TripExpense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & { tripId: string }, userId: string): Promise<TripExpense> => this.expensesHandler.createTripExpense(expense, userId);
+  createTripExpense = (expense: Omit<TripExpense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & { tripId: string }, userId: string): Promise<TripExpense> => {
+    // The handler for creating expenses doesn't accept a userId.
+    throw new Error('Creating trip expenses is not implemented in PostgreSQLService yet.');
+  };
   updateTripExpense = (id: string, expense: Partial<Omit<TripExpense, 'id'|'createdAt'|'updatedAt'|'userId'|'tripId'>>): Promise<TripExpense> => this.expensesHandler.updateTripExpense(id, expense);
   deleteTripExpense = (id: string): Promise<void> => this.expensesHandler.deleteTripExpense(id);
 
@@ -125,4 +135,3 @@ export class PostgreSQLService implements DatabaseProvider {
   getDashboardStats = (): Promise<any> => this.statsHandler.getDashboardStats();
   getAdvancedStats = (filters?: any): Promise<any> => this.statsHandler.getAdvancedStats(filters);
 }
-

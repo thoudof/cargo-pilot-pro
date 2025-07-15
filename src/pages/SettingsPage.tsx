@@ -10,9 +10,11 @@ import { useAuth } from '@/components/Auth/AuthProvider';
 import { supabaseService } from '@/services/supabaseService';
 import { activityLogger } from '@/services/activityLogger';
 import { useToast } from '@/hooks/use-toast';
-import { User, Bell, Shield, Database, Download, Trash2, Key, Smartphone, Settings } from 'lucide-react';
+import { User, Bell, Shield, Database, Download, Trash2, Key, Smartphone, Settings, Palette } from 'lucide-react';
 import { ChangePasswordDialog } from '@/components/Settings/ChangePasswordDialog';
 import { TwoFactorSetupDialog } from '@/components/Settings/TwoFactorSetupDialog';
+import { ThemeToggle } from '@/components/Theme/ThemeToggle';
+import { useTheme } from '@/components/Theme/ThemeProvider';
 
 interface UserProfile {
   full_name: string;
@@ -28,7 +30,6 @@ interface NotificationSettings {
 }
 
 interface AppSettings {
-  theme: 'light' | 'dark' | 'system';
   language: 'ru' | 'en';
   autoSync: boolean;
   compactView: boolean;
@@ -37,6 +38,7 @@ interface AppSettings {
 export const SettingsPage: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const [twoFactorOpen, setTwoFactorOpen] = useState(false);
@@ -52,7 +54,6 @@ export const SettingsPage: React.FC = () => {
     systemAlerts: true
   });
   const [appSettings, setAppSettings] = useState<AppSettings>({
-    theme: 'system',
     language: 'ru',
     autoSync: true,
     compactView: false
@@ -143,11 +144,6 @@ export const SettingsPage: React.FC = () => {
     const updatedSettings = { ...appSettings, [key]: value };
     setAppSettings(updatedSettings);
     localStorage.setItem('app_settings', JSON.stringify(updatedSettings));
-    
-    // Применяем тему сразу
-    if (key === 'theme') {
-      applyTheme(value);
-    }
 
     toast({
       title: 'Настройки приложения обновлены',
@@ -155,15 +151,6 @@ export const SettingsPage: React.FC = () => {
     });
   };
 
-  const applyTheme = (theme: 'light' | 'dark' | 'system') => {
-    const root = document.documentElement;
-    if (theme === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.toggle('dark', prefersDark);
-    } else {
-      root.classList.toggle('dark', theme === 'dark');
-    }
-  };
 
   const getNotificationLabel = (key: keyof NotificationSettings): string => {
     const labels = {
@@ -177,7 +164,6 @@ export const SettingsPage: React.FC = () => {
 
   const getAppSettingLabel = (key: keyof AppSettings): string => {
     const labels = {
-      theme: 'Тема',
       language: 'Язык',
       autoSync: 'Автосинхронизация',
       compactView: 'Компактный вид'
@@ -348,18 +334,10 @@ export const SettingsPage: React.FC = () => {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <Label>Тема</Label>
-              <p className="text-sm text-gray-500">Выберите тему оформления</p>
+              <Label>Тема оформления</Label>
+              <p className="text-sm text-muted-foreground">Выберите тему оформления приложения</p>
             </div>
-            <select
-              value={appSettings.theme}
-              onChange={(e) => handleAppSettingUpdate('theme', e.target.value)}
-              className="border rounded px-3 py-1"
-            >
-              <option value="light">Светлая</option>
-              <option value="dark">Темная</option>
-              <option value="system">Системная</option>
-            </select>
+            <ThemeToggle />
           </div>
 
           <Separator />

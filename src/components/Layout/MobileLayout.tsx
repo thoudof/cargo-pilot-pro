@@ -8,6 +8,7 @@ import { LogOut, Menu } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { AppNavigation } from '@/components/Navigation/AppNavigation';
+import { ThemeToggle } from '@/components/Theme/ThemeToggle';
 import { activityLogger } from '@/services/activityLogger';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -134,6 +135,10 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                 className="h-10 w-auto object-contain"
               />
             </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
           </div>
         </div>
       </header>

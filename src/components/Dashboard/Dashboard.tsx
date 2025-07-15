@@ -1,13 +1,33 @@
 
-import React from 'react';
+import React, { memo } from 'react';
 import { DashboardStats } from './DashboardStats';
 import { FinancialMetrics } from './FinancialMetrics';
 import { DashboardCharts } from './DashboardCharts';
 import { RecentTripsSection } from './RecentTripsSection';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { useErrorBoundary } from '@/hooks/useErrorBoundary';
 
-const Dashboard: React.FC = () => {
+const Dashboard: React.FC = memo(() => {
   const { data: stats, loading, error } = useDashboardData();
+  const { error: runtimeError, resetError } = useErrorBoundary();
+
+  // Показываем runtime ошибки если есть
+  if (runtimeError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <p className="text-red-500 mb-2">Произошла ошибка</p>
+          <p className="text-sm text-gray-500 mb-4">{runtimeError.message}</p>
+          <button 
+            onClick={resetError} 
+            className="px-4 py-2 bg-primary text-white rounded"
+          >
+            Повторить
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('ru-RU', {
@@ -81,7 +101,9 @@ const Dashboard: React.FC = () => {
       <RecentTripsSection stats={stats} />
     </div>
   );
-};
+});
+
+Dashboard.displayName = 'Dashboard';
 
 export { Dashboard };
 export default Dashboard;

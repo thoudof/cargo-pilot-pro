@@ -32,10 +32,17 @@ export const useDashboardData = () => {
 
   useEffect(() => {
     if (authLoading || !user) {
+      setLoading(false); // Важно: сбрасываем loading если нет пользователя
       return;
     }
 
     let mounted = true;
+    
+    // Проверяем, нужно ли загружать данные повторно
+    if (data !== defaultStats && !loading) {
+      return; // Данные уже загружены
+    }
+
     setLoading(true);
     setError(null);
 
@@ -61,12 +68,14 @@ export const useDashboardData = () => {
       }
     };
 
-    fetchData();
+    // Добавляем небольшую задержку для предотвращения множественных запросов
+    const timeoutId = setTimeout(fetchData, 100);
 
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
     };
-  }, [user, authLoading]);
+  }, [user?.id, authLoading]); // Используем user.id вместо всего объекта user
 
   return { data, loading, error };
 };

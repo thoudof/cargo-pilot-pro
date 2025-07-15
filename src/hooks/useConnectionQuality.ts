@@ -7,6 +7,8 @@ export const useConnectionQuality = () => {
 
   useEffect(() => {
     let mounted = true;
+    let intervalId: NodeJS.Timeout | null = null;
+    
     const check = async () => {
       try {
         const quality = await connectionOptimizer.checkConnectionQuality();
@@ -21,12 +23,19 @@ export const useConnectionQuality = () => {
       }
     };
     
+    // Проверяем сразу
     check();
-    const intervalId = setInterval(check, 30000); // Check every 30 seconds
+    
+    // Устанавливаем интервал только если компонент еще смонтирован
+    if (mounted) {
+      intervalId = setInterval(check, 60000); // Увеличиваем интервал до 1 минуты
+    }
 
     return () => { 
       mounted = false; 
-      clearInterval(intervalId);
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
     };
   }, []);
 

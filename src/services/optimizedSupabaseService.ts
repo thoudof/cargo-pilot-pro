@@ -182,7 +182,7 @@ class OptimizedSupabaseService {
           changeLog: []
         })) || [];
 
-        setCachedData(cacheKey, transformedData, 2 * 60 * 100);
+        setCachedData(cacheKey, transformedData, 2 * 60 * 1000); // Исправлена ошибка: было 100 вместо 1000
         return transformedData;
       } catch (error) {
         console.error('Failed to get trips optimized:', error);

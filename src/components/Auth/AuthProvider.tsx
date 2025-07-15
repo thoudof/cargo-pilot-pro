@@ -125,16 +125,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, !!session);
         if (mounted) {
           setSession(session);
           setUser(session?.user ?? null);
-          setAuthLoading(false);
+          
+          // Убираем loading только после установки пользователя
+          if (!authLoading || event === 'INITIAL_SESSION') {
+            setAuthLoading(false);
+          }
 
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
             queryClient.invalidateQueries({ queryKey: ['user-roles'] });
           }
           if (event === 'SIGNED_OUT') {
             queryClient.clear();
+            setAuthLoading(false); // Важно: сбрасываем loading при выходе
           }
         }
       }
@@ -146,7 +152,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       mounted = false;
       subscription.unsubscribe();
     };
-  }, [queryClient]);
+  }, [queryClient]); // Убираем authLoading из зависимостей
   
   const loading = authLoading || (!!user && (rolesLoading || permissionsLoading));
 

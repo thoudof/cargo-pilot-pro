@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Users, Activity, BarChart3, TrendingUp, Server } from 'lucide-react';
+import { Shield, Users, Activity, BarChart3, TrendingUp, Server, FileText } from 'lucide-react';
 import { UserManagement } from './UserManagement';
 import { ActivityLogs } from './ActivityLogs';
 import { SystemStats } from './SystemStats';
@@ -10,6 +10,7 @@ import { AdvancedStats } from './AdvancedStats';
 import { AdminRoute } from './AdminRoute';
 import { SystemMonitoring } from './SystemMonitoring';
 import { Analytics } from './Analytics';
+import { DocumentTemplatesManager } from './DocumentTemplatesManager';
 
 export const AdminPanel: React.FC = () => {
   return (
@@ -27,7 +28,7 @@ export const AdminPanel: React.FC = () => {
 
         <Tabs defaultValue="users" className="space-y-4 lg:space-y-6">
           <div className="overflow-x-auto">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-5 min-w-max">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 min-w-max">
               <TabsTrigger value="users" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm px-2 lg:px-4">
                 <Users className="h-3 w-3 lg:h-4 lg:w-4" />
                 <span className="hidden sm:inline">Пользователи</span>
@@ -53,6 +54,11 @@ export const AdminPanel: React.FC = () => {
                 <span className="hidden sm:inline">Система</span>
                 <span className="sm:hidden">Сист.</span>
               </TabsTrigger>
+              <TabsTrigger value="documents" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm px-2 lg:px-4">
+                <FileText className="h-3 w-3 lg:h-4 lg:w-4" />
+                <span className="hidden sm:inline">Документы</span>
+                <span className="sm:hidden">Док.</span>
+              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -74,6 +80,10 @@ export const AdminPanel: React.FC = () => {
 
           <TabsContent value="system">
             <SystemMonitoring />
+          </TabsContent>
+
+          <TabsContent value="documents">
+            <DocumentTemplatesManager />
           </TabsContent>
         </Tabs>
       </div>

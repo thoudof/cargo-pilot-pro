@@ -71,6 +71,8 @@ export interface Route {
   updatedAt: Date;
 }
 
+export * from './documents';
+
 export interface Trip {
   id: string;
   status: TripStatus;

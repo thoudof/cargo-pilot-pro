@@ -22,6 +22,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { DocumentType, documentTypeLabels, DocumentTemplate } from '@/types/documents';
+import { DocumentsOverview } from './DocumentsOverview';
 
 export const DocumentTemplatesManager: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -190,178 +191,190 @@ export const DocumentTemplatesManager: React.FC = () => {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        {/* Статистика документов */}
+        <DocumentsOverview />
+        
+        {/* Управление шаблонами */}
+        <Card>
+          <CardContent className="flex items-center justify-center h-32">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <span className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Шаблоны документов ({templates.length})
-          </span>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Добавить шаблон
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-md">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingTemplate ? 'Редактировать шаблон' : 'Создать шаблон'}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="template-name">Название шаблона</Label>
-                  <Input
-                    id="template-name"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder="Введите название шаблона"
-                  />
-                </div>
+    <div className="space-y-6">
+      {/* Статистика документов */}
+      <DocumentsOverview />
+      
+      {/* Управление шаблонами */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Шаблоны документов ({templates.length})
+            </span>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Добавить шаблон
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>
+                    {editingTemplate ? 'Редактировать шаблон' : 'Создать шаблон'}
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="template-name">Название шаблона</Label>
+                    <Input
+                      id="template-name"
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Введите название шаблона"
+                    />
+                  </div>
 
-                <div>
-                  <Label htmlFor="template-type">Тип документа</Label>
-                  <Select 
-                    value={formData.documentType} 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, documentType: value as DocumentType }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(documentTypeLabels).map(([value, label]) => (
-                        <SelectItem key={value} value={value}>
-                          {label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                  <div>
+                    <Label htmlFor="template-type">Тип документа</Label>
+                    <Select 
+                      value={formData.documentType} 
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, documentType: value as DocumentType }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(documentTypeLabels).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="is-required"
-                    checked={formData.isRequired}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isRequired: checked }))}
-                  />
-                  <Label htmlFor="is-required">Обязательный документ</Label>
-                </div>
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="is-required"
+                      checked={formData.isRequired}
+                      onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isRequired: checked }))}
+                    />
+                    <Label htmlFor="is-required">Обязательный документ</Label>
+                  </div>
 
-                <div>
-                  <Label htmlFor="template-description">Описание (опционально)</Label>
-                  <Textarea
-                    id="template-description"
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Введите описание шаблона"
-                    rows={3}
-                  />
-                </div>
+                  <div>
+                    <Label htmlFor="template-description">Описание (опционально)</Label>
+                    <Textarea
+                      id="template-description"
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Введите описание шаблона"
+                      rows={3}
+                    />
+                  </div>
 
-                <div className="flex gap-2">
-                  <Button 
-                    onClick={handleSave} 
-                    disabled={saveTemplateMutation.isPending}
-                    className="flex-1"
-                  >
-                    {saveTemplateMutation.isPending ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Сохранение...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-4 w-4 mr-2" />
-                        Сохранить
-                      </>
-                    )}
-                  </Button>
-                  <Button variant="outline" onClick={() => {
-                    setIsCreateDialogOpen(false);
-                    setEditingTemplate(null);
-                    resetForm();
-                  }}>
-                    Отмена
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleSave} 
+                      disabled={saveTemplateMutation.isPending}
+                      className="flex-1"
+                    >
+                      {saveTemplateMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Сохранение...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Сохранить
+                        </>
+                      )}
+                    </Button>
+                    <Button variant="outline" onClick={() => {
+                      setIsCreateDialogOpen(false);
+                      setEditingTemplate(null);
+                      resetForm();
+                    }}>
+                      Отмена
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {templates.length === 0 ? (
-          <div className="text-center py-8">
-            <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-            <p className="text-muted-foreground">Шаблоны документов не созданы</p>
-            <p className="text-sm text-muted-foreground">
-              Создайте шаблоны для обязательных документов рейсов
-            </p>
-          </div>
-        ) : (
-          <ScrollArea className="h-96">
-            <div className="space-y-3">
-              {templates.map((template) => (
-                <div key={template.id} className="border rounded-lg p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-medium">{template.name}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="outline">
-                          {documentTypeLabels[template.documentType]}
-                        </Badge>
-                        {template.isRequired && (
-                          <Badge variant="secondary">
-                            <AlertCircle className="h-3 w-3 mr-1" />
-                            Обязательный
+              </DialogContent>
+            </Dialog>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {templates.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">Шаблоны документов не созданы</p>
+              <p className="text-sm text-muted-foreground">
+                Создайте шаблоны для обязательных документов рейсов
+              </p>
+            </div>
+          ) : (
+            <ScrollArea className="h-96">
+              <div className="space-y-3">
+                {templates.map((template) => (
+                  <div key={template.id} className="border rounded-lg p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{template.name}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline">
+                            {documentTypeLabels[template.documentType]}
                           </Badge>
-                        )}
+                          {template.isRequired && (
+                            <Badge variant="secondary">
+                              <AlertCircle className="h-3 w-3 mr-1" />
+                              Обязательный
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            handleEdit(template);
+                            setIsCreateDialogOpen(true);
+                          }}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => deleteTemplateMutation.mutate(template.id)}
+                          disabled={deleteTemplateMutation.isPending}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          handleEdit(template);
-                          setIsCreateDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => deleteTemplateMutation.mutate(template.id)}
-                        disabled={deleteTemplateMutation.isPending}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    
+                    {template.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {template.description}
+                      </p>
+                    )}
                   </div>
-                  
-                  {template.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {template.description}
-                    </p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </ScrollArea>
-        )}
-      </CardContent>
-    </Card>
+                ))}
+              </div>
+            </ScrollArea>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };

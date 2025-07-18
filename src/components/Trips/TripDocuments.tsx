@@ -17,7 +17,8 @@ import {
   Plus, 
   AlertCircle,
   CheckCircle,
-  ExternalLink
+  ExternalLink,
+  Eye
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -220,6 +221,59 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
     }
   };
 
+  const handlePreview = (document: TripDocument) => {
+    if (document.fileUrl && document.fileUrl !== '#') {
+      // Проверяем тип файла
+      const fileExtension = document.fileUrl.split('.').pop()?.toLowerCase();
+      const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+      const pdfExtension = 'pdf';
+
+      if (imageExtensions.includes(fileExtension || '') || fileExtension === pdfExtension) {
+        // Открываем в новом окне для предварительного просмотра
+        const previewWindow = window.open('', '_blank');
+        if (previewWindow) {
+          previewWindow.document.write(`
+            <html>
+              <head>
+                <title>Предварительный просмотр: ${document.documentName}</title>
+                <style>
+                  body { margin: 0; padding: 20px; font-family: system-ui; background: #f5f5f5; }
+                  .container { max-width: 100%; text-align: center; }
+                  img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                  iframe { width: 100%; height: calc(100vh - 100px); border: none; border-radius: 8px; }
+                  .header { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                  .download-btn { background: #2563eb; color: white; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; text-decoration: none; display: inline-block; }
+                </style>
+              </head>
+              <body>
+                <div class="container">
+                  <div class="header">
+                    <h2>${document.documentName}</h2>
+                    <a href="${document.fileUrl}" class="download-btn" target="_blank">Скачать файл</a>
+                  </div>
+                  ${fileExtension === pdfExtension 
+                    ? `<iframe src="${document.fileUrl}"></iframe>`
+                    : `<img src="${document.fileUrl}" alt="${document.documentName}" />`
+                  }
+                </div>
+              </body>
+            </html>
+          `);
+          previewWindow.document.close();
+        }
+      } else {
+        // Для других типов файлов просто скачиваем
+        window.open(document.fileUrl, '_blank');
+      }
+    } else {
+      toast({
+        title: "Файл недоступен",
+        description: "Файл еще не загружен в систему хранения",
+        variant: "destructive"
+      });
+    }
+  };
+
   const getDocumentStatusBadge = (doc: RequiredDocument) => {
     if (doc.isUploaded) {
       return (
@@ -403,13 +457,24 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
                       </div>
                       <div className="flex gap-1">
                         {document.fileUrl && document.fileUrl !== '#' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDownload(document)}
-                          >
-                            <Download className="h-4 w-4" />
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handlePreview(document)}
+                              title="Предварительный просмотр"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleDownload(document)}
+                              title="Скачать файл"
+                            >
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          </>
                         )}
                         <Button
                           size="sm"

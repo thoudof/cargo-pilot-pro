@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Users, Activity, BarChart3, TrendingUp, Server, FileText } from 'lucide-react';
+import { Shield, Users, Activity, BarChart3, TrendingUp, Server, FileText, Settings } from 'lucide-react';
 import { UserManagement } from './UserManagement';
 import { ActivityLogs } from './ActivityLogs';
 import { SystemStats } from './SystemStats';
@@ -11,6 +11,7 @@ import { AdminRoute } from './AdminRoute';
 import { SystemMonitoring } from './SystemMonitoring';
 import { Analytics } from './Analytics';
 import { DocumentTemplatesManager } from './DocumentTemplatesManager';
+import { UserPermissionsManager } from './UserPermissionsManager';
 
 export const AdminPanel: React.FC = () => {
   return (
@@ -28,11 +29,16 @@ export const AdminPanel: React.FC = () => {
 
         <Tabs defaultValue="users" className="space-y-4 lg:space-y-6">
           <div className="overflow-x-auto">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 lg:grid-cols-6 min-w-max">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 lg:grid-cols-7 min-w-max">
               <TabsTrigger value="users" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm px-2 lg:px-4">
                 <Users className="h-3 w-3 lg:h-4 lg:w-4" />
                 <span className="hidden sm:inline">Пользователи</span>
                 <span className="sm:hidden">Польз.</span>
+              </TabsTrigger>
+              <TabsTrigger value="permissions" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm px-2 lg:px-4">
+                <Shield className="h-3 w-3 lg:h-4 lg:w-4" />
+                <span className="hidden sm:inline">Права</span>
+                <span className="sm:hidden">Права</span>
               </TabsTrigger>
               <TabsTrigger value="logs" className="flex items-center gap-1 lg:gap-2 text-xs lg:text-sm px-2 lg:px-4">
                 <Activity className="h-3 w-3 lg:h-4 lg:w-4" />
@@ -64,6 +70,10 @@ export const AdminPanel: React.FC = () => {
 
           <TabsContent value="users">
             <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="permissions">
+            <UserPermissionsManager />
           </TabsContent>
 
           <TabsContent value="logs">

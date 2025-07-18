@@ -166,6 +166,39 @@ export type Database = {
         }
         Relationships: []
       }
+      document_templates: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_type: Database["public"]["Enums"]["document_type"]
+          id: string
+          is_required: boolean | null
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_type: Database["public"]["Enums"]["document_type"]
+          id?: string
+          is_required?: boolean | null
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_type?: Database["public"]["Enums"]["document_type"]
+          id?: string
+          is_required?: boolean | null
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       drivers: {
         Row: {
           created_at: string
@@ -357,6 +390,68 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      trip_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_name: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_path: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          is_required: boolean | null
+          mime_type: string | null
+          trip_id: string
+          updated_at: string
+          upload_date: string
+          uploaded_by: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_name: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_path?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_required?: boolean | null
+          mime_type?: string | null
+          trip_id: string
+          updated_at?: string
+          upload_date?: string
+          uploaded_by: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_name?: string
+          document_type?: Database["public"]["Enums"]["document_type"]
+          file_path?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_required?: boolean | null
+          mime_type?: string | null
+          trip_id?: string
+          updated_at?: string
+          upload_date?: string
+          uploaded_by?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_trip_documents_trip_id"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trip_expenses: {
         Row: {
@@ -618,6 +713,15 @@ export type Database = {
         Args: { trip_ids: string[] }
         Returns: Json
       }
+      get_required_documents_for_trip: {
+        Args: { trip_uuid: string }
+        Returns: {
+          template_id: string
+          template_name: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          is_uploaded: boolean
+        }[]
+      }
       get_trip_total_expenses: {
         Args: { trip_uuid: string }
         Returns: number
@@ -661,6 +765,17 @@ export type Database = {
         | "view_statistics"
         | "manage_users"
       app_role: "admin" | "dispatcher" | "driver"
+      document_type:
+        | "act"
+        | "invoice"
+        | "receipt"
+        | "contract"
+        | "transport_waybill"
+        | "customs_declaration"
+        | "insurance"
+        | "certificate"
+        | "permit"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -808,6 +923,18 @@ export const Constants = {
         "manage_users",
       ],
       app_role: ["admin", "dispatcher", "driver"],
+      document_type: [
+        "act",
+        "invoice",
+        "receipt",
+        "contract",
+        "transport_waybill",
+        "customs_declaration",
+        "insurance",
+        "certificate",
+        "permit",
+        "other",
+      ],
     },
   },
 } as const

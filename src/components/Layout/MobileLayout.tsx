@@ -115,9 +115,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header с логотипом и кнопкой меню */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 sticky top-0 z-40">
+      <header className="bg-card border-b border-border px-4 py-3 sticky top-0 z-40">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
             <Button 
@@ -144,9 +144,9 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       </header>
 
       {/* Заголовок страницы */}
-      <div className="bg-white border-b border-gray-100 px-4 py-2">
+      <div className="bg-card border-b border-border px-4 py-2">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-lg font-medium text-gray-900">
+          <h1 className="text-lg font-medium text-foreground">
             {pageTitle}
           </h1>
         </div>
@@ -154,7 +154,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
 
       {/* Desktop Sidebar для планшетов и больших экранов */}
       <div className="hidden lg:flex flex-1">
-        <aside className="w-64 xl:w-72 bg-white border-r border-gray-200 flex flex-col">
+        <aside className="w-64 xl:w-72 bg-card border-r border-border flex flex-col">
           <ScrollArea className="flex-1">
             <div className="p-4 xl:p-6">
               <div className="flex items-center gap-3 mb-6">
@@ -169,7 +169,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                   <p className="font-semibold text-sm xl:text-base truncate">
                     {userName}
                   </p>
-                  <p className="text-xs xl:text-sm text-gray-500 truncate break-all">{user?.email}</p>
+                  <p className="text-xs xl:text-sm text-muted-foreground truncate break-all">{user?.email}</p>
                 </div>
               </div>
               
@@ -208,7 +208,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           
           <ScrollArea className="flex-1">
             <div className="p-6 space-y-6">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
                 <Avatar className="h-10 w-10 flex-shrink-0">
                   <AvatarImage 
                     src={user?.user_metadata?.avatar_url || ""} 
@@ -220,7 +220,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
                   <p className="font-semibold text-sm truncate">
                     {userName}
                   </p>
-                  <p className="text-xs text-gray-500 truncate break-all">{user?.email}</p>
+                  <p className="text-xs text-muted-foreground truncate break-all">{user?.email}</p>
                 </div>
               </div>
               
@@ -249,7 +249,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
       </main>
 
       {/* Bottom Navigation - только для мобильных */}
-      <footer className="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 py-1 px-2 safe-area-inset">
+      <footer className="lg:hidden fixed bottom-0 left-0 w-full bg-card border-t border-border py-1 px-2 safe-area-inset">
         <AppNavigation variant="bottom" />
       </footer>
     </div>

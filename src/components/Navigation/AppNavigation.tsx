@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3 } from 'lucide-react';
+import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, FileText } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -29,6 +29,12 @@ const navigation = [
     name: 'Отчеты',
     href: '/reports',
     icon: BarChart3,
+    current: false,
+  },
+  {
+    name: 'Документы',
+    href: '/documents',
+    icon: FileText,
     current: false,
   },
   {

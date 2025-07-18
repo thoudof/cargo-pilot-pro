@@ -15,6 +15,7 @@ import { CargoTypesPage } from "./CargoTypesPage";
 import { SettingsPage } from "./SettingsPage";
 import AdminPage from "./AdminPage";
 import { ReportsPage } from './ReportsPage';
+import { DocumentsPage } from './DocumentsPage';
 import { AdminRoute } from "@/components/Admin/AdminRoute";
 
 const Index = () => {
@@ -49,6 +50,7 @@ const Index = () => {
         <Route path="/" element={<Dashboard />} />
         <Route path="/trips" element={<TripsPage />} />
         <Route path="/reports" element={<ReportsPage />} />
+        <Route path="/documents" element={<DocumentsPage />} />
         <Route path="/contractors" element={<ContractorsPage />} />
         <Route path="/drivers" element={<DriversPage />} />
         <Route path="/vehicles" element={<VehiclesPage />} />

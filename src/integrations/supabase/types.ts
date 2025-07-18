@@ -764,6 +764,16 @@ export type Database = {
         | "view_finances"
         | "view_statistics"
         | "manage_users"
+        | "view_documents"
+        | "edit_documents"
+        | "manage_document_templates"
+        | "delete_documents"
+        | "view_expenses"
+        | "edit_expenses"
+        | "delete_expenses"
+        | "manage_system"
+        | "view_analytics"
+        | "export_data"
       app_role: "admin" | "dispatcher" | "driver"
       document_type:
         | "act"
@@ -921,6 +931,16 @@ export const Constants = {
         "view_finances",
         "view_statistics",
         "manage_users",
+        "view_documents",
+        "edit_documents",
+        "manage_document_templates",
+        "delete_documents",
+        "view_expenses",
+        "edit_expenses",
+        "delete_expenses",
+        "manage_system",
+        "view_analytics",
+        "export_data",
       ],
       app_role: ["admin", "dispatcher", "driver"],
       document_type: [

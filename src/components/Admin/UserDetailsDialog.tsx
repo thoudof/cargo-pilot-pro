@@ -1,16 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { User, Calendar, Activity, Settings } from 'lucide-react';
+import { User, Calendar, Activity } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -18,15 +15,14 @@ type UserRole = Database['public']['Enums']['app_role'];
 
 interface UserProfile {
   id: string;
-  username: string | null;
   full_name: string | null;
-  role: string | null;
+  phone: string | null;
   created_at: string;
   updated_at: string;
 }
 
 interface UserDetailsDialogProps {
-  user: UserProfile;
+  user: UserProfile & { role?: string };
   onUserUpdated: () => void;
   children: React.ReactNode;
 }
@@ -39,15 +35,12 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    username: user.username || '',
     full_name: user.full_name || '',
+    phone: user.phone || '',
     role: user.role || 'dispatcher'
   });
   const [userStats, setUserStats] = useState({
     totalTrips: 0,
-    totalContractors: 0,
-    totalDrivers: 0,
-    totalVehicles: 0,
     lastLogin: null as string | null,
     activityCount: 0
   });
@@ -61,32 +54,23 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
   const fetchUserStats = async () => {
     try {
-      const [
-        { count: tripsCount },
-        { count: contractorsCount },
-        { count: driversCount },
-        { count: vehiclesCount },
-        { count: activityCount },
-        { data: lastActivity }
-      ] = await Promise.all([
-        supabase.from('trips').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('contractors').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('drivers').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('vehicles').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('activity_logs').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('activity_logs')
-          .select('created_at')
-          .eq('user_id', user.id)
-          .eq('action', 'login')
-          .order('created_at', { ascending: false })
-          .limit(1)
-      ]);
+      // Получаем количество активности пользователя
+      const { count: activityCount } = await supabase
+        .from('activity_logs')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      // Получаем последний вход
+      const { data: lastActivity } = await supabase
+        .from('activity_logs')
+        .select('created_at')
+        .eq('user_id', user.id)
+        .eq('action', 'login')
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       setUserStats({
-        totalTrips: tripsCount || 0,
-        totalContractors: contractorsCount || 0,
-        totalDrivers: driversCount || 0,
-        totalVehicles: vehiclesCount || 0,
+        totalTrips: 0, // Trips don't have user_id in this schema
         lastLogin: lastActivity?.[0]?.created_at || null,
         activityCount: activityCount || 0
       });
@@ -102,9 +86,8 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          username: formData.username,
           full_name: formData.full_name,
-          role: formData.role
+          phone: formData.phone
         })
         .eq('id', user.id);
 
@@ -173,19 +156,19 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           <TabsContent value="general" className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Email/Логин</Label>
-                <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
                 <Label htmlFor="full_name">Полное имя</Label>
                 <Input
                   id="full_name"
                   value={formData.full_name}
                   onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Телефон</Label>
+                <Input
+                  id="phone"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />
               </div>
             </div>
@@ -230,41 +213,6 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           </TabsContent>
 
           <TabsContent value="stats" className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Рейсы</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{userStats.totalTrips}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Контрагенты</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{userStats.totalContractors}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Водители</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{userStats.totalDrivers}</div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm">Транспорт</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{userStats.totalVehicles}</div>
-                </CardContent>
-              </Card>
-            </div>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card>
                 <CardHeader className="pb-2">

@@ -34,10 +34,10 @@ export const TripsReportTable: React.FC = () => {
         .from('contractors')
         .select('id, company_name');
       if (error) throw error;
-      return data.reduce((acc, c) => {
+      return (data || []).reduce((acc: Record<string, string>, c: any) => {
         acc[c.id] = c.company_name;
         return acc;
-      }, {} as Record<string, string>);
+      }, {});
     },
     { ttl: 5 * 60 * 1000 }
   );
@@ -45,7 +45,12 @@ export const TripsReportTable: React.FC = () => {
   const fetchExpenses = useCallback(async (): Promise<Record<string, number>> => {
     if (!trips || trips.length === 0) return {};
     const tripIds = trips.map(trip => trip.id);
-    const { data, error } = await supabase.rpc('get_expenses_for_trips', { trip_ids: tripIds });
+    
+    // Fetch expenses directly instead of using non-existent RPC
+    const { data, error } = await supabase
+      .from('trip_expenses')
+      .select('trip_id, amount')
+      .in('trip_id', tripIds);
 
     if (error) {
       console.error('Error fetching trip expenses:', error);
@@ -57,11 +62,16 @@ export const TripsReportTable: React.FC = () => {
       return {};
     }
     
-    if (typeof data === 'object' && data !== null && !Array.isArray(data)) {
-      return data as Record<string, number>;
-    }
+    // Aggregate expenses by trip_id
+    const expensesMap: Record<string, number> = {};
+    data?.forEach(expense => {
+      if (!expensesMap[expense.trip_id]) {
+        expensesMap[expense.trip_id] = 0;
+      }
+      expensesMap[expense.trip_id] += expense.amount;
+    });
     
-    return {};
+    return expensesMap;
   }, [trips, toast]);
 
   const { data: expensesData = {} } = useDataCache<Record<string, number>>(

@@ -85,7 +85,7 @@ class OptimizedSupabaseService {
 
         if (error) throw error;
 
-        const expensesMap = data?.reduce((acc, expense) => {
+        const expensesMap = data?.reduce((acc: Record<string, number>, expense: any) => {
           if (!acc[expense.trip_id]) {
             acc[expense.trip_id] = 0;
           }
@@ -146,7 +146,7 @@ class OptimizedSupabaseService {
 
         if (error) throw error;
 
-        const transformedData: Trip[] = data?.map(trip => ({
+        const transformedData: Trip[] = (data || []).map((trip: any) => ({
           id: trip.id,
           status: trip.status as TripStatus,
           departureDate: new Date(trip.departure_date),
@@ -180,9 +180,9 @@ class OptimizedSupabaseService {
           createdAt: new Date(trip.created_at),
           updatedAt: new Date(trip.updated_at),
           changeLog: []
-        })) || [];
+        }));
 
-        setCachedData(cacheKey, transformedData, 2 * 60 * 1000); // Исправлена ошибка: было 100 вместо 1000
+        setCachedData(cacheKey, transformedData, 2 * 60 * 1000);
         return transformedData;
       } catch (error) {
         console.error('Failed to get trips optimized:', error);
@@ -203,39 +203,41 @@ class OptimizedSupabaseService {
         const user = await supabase.auth.getUser();
         if (!user.data.user) throw new Error('User not authenticated');
 
-        const [
-          { data: trips, error: tripsError },
-          { data: contractors, error: contractorsError },
-          { data: drivers, error: driversError },
-          { data: vehicles, error: vehiclesError },
-          { data: expenses, error: expensesError }
-        ] = await Promise.all([
-          supabase.from('trips').select('id, status, cargo_value, cargo_weight, cargo_volume, created_at').eq('user_id', user.data.user.id),
-          supabase.from('contractors').select('id').eq('user_id', user.data.user.id),
-          supabase.from('drivers').select('id').eq('user_id', user.data.user.id),
-          supabase.from('vehicles').select('id').eq('user_id', user.data.user.id),
-          supabase.from('trip_expenses').select('amount, expense_date').eq('user_id', user.data.user.id)
+        // Use correct column names for trip_expenses: date instead of expense_date
+        const [tripsResult, contractorsResult, driversResult, vehiclesResult, expensesResult] = await Promise.all([
+          supabase.from('trips').select('id, status, cargo_value, cargo_weight, cargo_volume, created_at'),
+          supabase.from('contractors').select('id'),
+          supabase.from('drivers').select('id'),
+          supabase.from('vehicles').select('id'),
+          supabase.from('trip_expenses').select('amount, date')
         ]);
 
-        if (tripsError || contractorsError || driversError || vehiclesError || expensesError) {
+        const trips = tripsResult.data || [];
+        const contractors = contractorsResult.data || [];
+        const drivers = driversResult.data || [];
+        const vehicles = vehiclesResult.data || [];
+        const expenses = expensesResult.data || [];
+
+        if (tripsResult.error || contractorsResult.error || driversResult.error || vehiclesResult.error || expensesResult.error) {
           throw new Error('Failed to fetch dashboard data');
         }
 
-        const activeTrips = trips?.filter(t => t.status === 'in_progress').length || 0;
-        const totalTrips = trips?.length || 0;
-        const completedTrips = trips?.filter(t => t.status === 'completed').length || 0;
-        const plannedTrips = trips?.filter(t => t.status === 'planned').length || 0;
-        const cancelledTrips = trips?.filter(t => t.status === 'cancelled').length || 0;
+        const activeTrips = trips.filter((t: any) => t.status === 'in_progress').length;
+        const totalTrips = trips.length;
+        const completedTrips = trips.filter((t: any) => t.status === 'completed').length;
+        const plannedTrips = trips.filter((t: any) => t.status === 'planned').length;
+        const cancelledTrips = trips.filter((t: any) => t.status === 'cancelled').length;
 
-        const totalCargoValue = trips?.reduce((sum, t) => sum + (t.cargo_value || 0), 0) || 0;
-        const completedCargoValue = trips?.filter(t => t.status === 'completed')
-          .reduce((sum, t) => sum + (t.cargo_value || 0), 0) || 0;
+        const totalCargoValue = trips.reduce((sum: number, t: any) => sum + (t.cargo_value || 0), 0);
+        const completedCargoValue = trips
+          .filter((t: any) => t.status === 'completed')
+          .reduce((sum: number, t: any) => sum + (t.cargo_value || 0), 0);
         
-        const totalWeight = trips?.reduce((sum, t) => sum + (t.cargo_weight || 0), 0) || 0;
-        const totalVolume = trips?.reduce((sum, t) => sum + (t.cargo_volume || 0), 0) || 0;
-        const totalExpenses = expenses?.reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
+        const totalWeight = trips.reduce((sum: number, t: any) => sum + (t.cargo_weight || 0), 0);
+        const totalVolume = trips.reduce((sum: number, t: any) => sum + (t.cargo_volume || 0), 0);
+        const totalExpenses = expenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
-        const monthlyStats = this.generateMonthlyStatsOptimized(trips || [], expenses || []);
+        const monthlyStats = this.generateMonthlyStatsOptimized(trips, expenses);
 
         const result: DashboardStats = {
           activeTrips,
@@ -243,9 +245,9 @@ class OptimizedSupabaseService {
           completedTrips,
           plannedTrips,
           cancelledTrips,
-          contractors: contractors?.length || 0,
-          drivers: drivers?.length || 0,
-          vehicles: vehicles?.length || 0,
+          contractors: contractors.length,
+          drivers: drivers.length,
+          vehicles: vehicles.length,
           totalCargoValue,
           completedCargoValue,
           totalWeight,
@@ -285,7 +287,8 @@ class OptimizedSupabaseService {
     });
 
     expenses.forEach(expense => {
-      const date = new Date(expense.expense_date);
+      // Use 'date' column instead of 'expense_date'
+      const date = new Date(expense.date);
       const key = `${date.getFullYear()}-${date.getMonth()}`;
       if (!expensesByMonth.has(key)) {
         expensesByMonth.set(key, []);
@@ -304,9 +307,9 @@ class OptimizedSupabaseService {
       stats.push({
         month: monthName,
         trips: monthTrips.length,
-        revenue: monthTrips.reduce((sum, t) => sum + (t.cargo_value || 0), 0),
-        weight: Math.round(monthTrips.reduce((sum, t) => sum + (t.cargo_weight || 0), 0) / 1000),
-        expenses: monthExpenses.reduce((sum, e) => sum + (e.amount || 0), 0)
+        revenue: monthTrips.reduce((sum: number, t: any) => sum + (t.cargo_value || 0), 0),
+        weight: Math.round(monthTrips.reduce((sum: number, t: any) => sum + (t.cargo_weight || 0), 0) / 1000),
+        expenses: monthExpenses.reduce((sum: number, e: any) => sum + (e.amount || 0), 0)
       });
     }
 

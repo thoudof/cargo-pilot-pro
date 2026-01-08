@@ -634,7 +634,11 @@ class SupabaseService {
     try {
       console.log('Getting advanced stats with filters:', filters);
       
-      // Строим запрос с фильтрами
+      // Get date range from filters
+      const startDate = filters.dateRange?.from?.toISOString();
+      const endDate = filters.dateRange?.to?.toISOString();
+      
+      // Build trips query with filters
       let tripsQuery = supabase
         .from('trips')
         .select(`
@@ -642,73 +646,173 @@ class SupabaseService {
           trip_expenses(*)
         `);
 
-      // Применяем фильтры по датам
-      if (filters.startDate) {
-        tripsQuery = tripsQuery.gte('departure_date', filters.startDate);
+      if (startDate) {
+        tripsQuery = tripsQuery.gte('departure_date', startDate);
       }
-      if (filters.endDate) {
-        tripsQuery = tripsQuery.lte('departure_date', filters.endDate);
+      if (endDate) {
+        tripsQuery = tripsQuery.lte('departure_date', endDate);
       }
-      if (filters.status) {
+      if (filters.status && filters.status !== 'all') {
         tripsQuery = tripsQuery.eq('status', filters.status);
       }
 
-      const { data: trips, error: tripsError } = await tripsQuery;
+      const [
+        { data: trips, error: tripsError },
+        { data: contractors },
+        { data: drivers },
+        { data: vehicles }
+      ] = await Promise.all([
+        tripsQuery,
+        supabase.from('contractors').select('id'),
+        supabase.from('drivers').select('id'),
+        supabase.from('vehicles').select('id')
+      ]);
+      
       if (tripsError) throw tripsError;
 
-      // Аналитика по маршрутам
-      const routeStats: Record<string, { count: number; revenue: number; avgRevenue: number }> = {};
+      // Calculate stats by status
+      const activeTrips = trips?.filter(t => t.status === 'in_progress').length || 0;
+      const completedTrips = trips?.filter(t => t.status === 'completed').length || 0;
+      const plannedTrips = trips?.filter(t => t.status === 'planned').length || 0;
+      const cancelledTrips = trips?.filter(t => t.status === 'cancelled').length || 0;
+      const totalTrips = trips?.length || 0;
+
+      // Calculate cargo values
+      const totalCargoValue = trips?.reduce((sum, t) => sum + (t.cargo_value || 0), 0) || 0;
+      const completedCargoValue = trips?.filter(t => t.status === 'completed')
+        .reduce((sum, t) => sum + (t.cargo_value || 0), 0) || 0;
+      const totalWeight = trips?.reduce((sum, t) => sum + (t.cargo_weight || 0), 0) || 0;
+      const totalVolume = trips?.reduce((sum, t) => sum + (t.cargo_volume || 0), 0) || 0;
+      const averageCargoValue = totalTrips > 0 ? totalCargoValue / totalTrips : 0;
+      const completionRate = totalTrips > 0 ? (completedTrips / totalTrips) * 100 : 0;
+
+      // Calculate expenses
+      const allExpenses = trips?.flatMap(t => t.trip_expenses || []) || [];
+      const totalExpenses = allExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+      const completedTripsExpenses = trips?.filter(t => t.status === 'completed')
+        .flatMap(t => t.trip_expenses || [])
+        .reduce((sum, e) => sum + (e.amount || 0), 0) || 0;
+      
+      const expensesByType: Record<string, number> = {};
+      allExpenses.forEach(e => {
+        const category = e.category || 'Прочее';
+        expensesByType[category] = (expensesByType[category] || 0) + (e.amount || 0);
+      });
+
+      const profit = totalCargoValue - totalExpenses;
+      const profitMargin = totalCargoValue > 0 ? (profit / totalCargoValue) * 100 : 0;
+      const averageExpensePerTrip = totalTrips > 0 ? totalExpenses / totalTrips : 0;
+
+      // Top routes
+      const routeStats: Record<string, { count: number; revenue: number }> = {};
       trips?.forEach(trip => {
         const route = `${trip.point_a} → ${trip.point_b}`;
         if (!routeStats[route]) {
-          routeStats[route] = { count: 0, revenue: 0, avgRevenue: 0 };
+          routeStats[route] = { count: 0, revenue: 0 };
         }
         routeStats[route].count++;
         routeStats[route].revenue += trip.cargo_value || 0;
       });
 
-      // Вычисляем средний доход по маршрутам
-      Object.keys(routeStats).forEach(route => {
-        routeStats[route].avgRevenue = routeStats[route].revenue / routeStats[route].count;
-      });
-
-      // Аналитика по водителям
-      const driverStats: Record<string, { trips: number; revenue: number }> = {};
-      trips?.forEach(trip => {
-        const driverName = trip.driver_name || 'Неизвестный';
-        if (!driverStats[driverName]) {
-          driverStats[driverName] = { trips: 0, revenue: 0 };
-        }
-        driverStats[driverName].trips++;
-        driverStats[driverName].revenue += trip.cargo_value || 0;
-      });
-
-      // Аналитика по статусам
-      const statusStats = trips?.reduce((acc: Record<string, number>, trip) => {
-        acc[trip.status] = (acc[trip.status] || 0) + 1;
-        return acc;
-      }, {}) || {};
-
-      // Топ маршруты
       const topRoutes = Object.entries(routeStats)
         .sort(([, a], [, b]) => b.revenue - a.revenue)
-        .slice(0, 5)
-        .map(([route, stats]) => ({ route, ...stats }));
+        .slice(0, 10)
+        .map(([route, stats]) => ({ route, count: stats.count, revenue: stats.revenue }));
 
-      // Топ водители
-      const topDrivers = Object.entries(driverStats)
-        .sort(([, a], [, b]) => b.revenue - a.revenue)
-        .slice(0, 5)
-        .map(([name, stats]) => ({ name, ...stats }));
+      // Driver performance
+      const driverStatsMap: Record<string, { id: string; name: string; trips: number; revenue: number; expenses: number }> = {};
+      trips?.forEach(trip => {
+        const driverId = trip.driver_id || 'unknown';
+        const driverName = trip.driver_name || 'Неизвестный';
+        if (!driverStatsMap[driverId]) {
+          driverStatsMap[driverId] = { id: driverId, name: driverName, trips: 0, revenue: 0, expenses: 0 };
+        }
+        driverStatsMap[driverId].trips++;
+        driverStatsMap[driverId].revenue += trip.cargo_value || 0;
+        driverStatsMap[driverId].expenses += (trip.trip_expenses || []).reduce((s: number, e: any) => s + (e.amount || 0), 0);
+      });
+
+      const driverPerformance = Object.values(driverStatsMap)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10)
+        .map(d => ({
+          driverId: d.id,
+          driverName: d.name,
+          tripsCount: d.trips,
+          totalRevenue: d.revenue,
+          totalExpenses: d.expenses
+        }));
+
+      // Vehicle utilization
+      const vehicleStatsMap: Record<string, { id: string; name: string; trips: number; revenue: number }> = {};
+      trips?.forEach(trip => {
+        const vehicleId = trip.vehicle_id || 'unknown';
+        const vehicleName = `${trip.vehicle_brand || ''} ${trip.vehicle_model || ''}`.trim() || 'Неизвестный';
+        if (!vehicleStatsMap[vehicleId]) {
+          vehicleStatsMap[vehicleId] = { id: vehicleId, name: vehicleName, trips: 0, revenue: 0 };
+        }
+        vehicleStatsMap[vehicleId].trips++;
+        vehicleStatsMap[vehicleId].revenue += trip.cargo_value || 0;
+      });
+
+      const vehicleUtilization = Object.values(vehicleStatsMap)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10)
+        .map(v => ({
+          vehicleId: v.id,
+          vehicleName: v.name,
+          tripsCount: v.trips,
+          totalKm: 0,
+          totalRevenue: v.revenue
+        }));
+
+      // Monthly stats (last 6 months)
+      const monthlyStats: Array<{ month: string; trips: number; revenue: number; weight: number; expenses: number }> = [];
+      const now = new Date();
+      for (let i = 5; i >= 0; i--) {
+        const monthDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+        const monthName = monthDate.toLocaleDateString('ru-RU', { month: 'short', year: 'numeric' });
+        
+        const monthTrips = trips?.filter(t => {
+          const tripDate = new Date(t.departure_date);
+          return tripDate >= monthDate && tripDate <= monthEnd;
+        }) || [];
+
+        monthlyStats.push({
+          month: monthName,
+          trips: monthTrips.length,
+          revenue: monthTrips.reduce((s, t) => s + (t.cargo_value || 0), 0),
+          weight: monthTrips.reduce((s, t) => s + (t.cargo_weight || 0), 0),
+          expenses: monthTrips.flatMap(t => t.trip_expenses || []).reduce((s, e) => s + (e.amount || 0), 0)
+        });
+      }
 
       return {
-        routeStats,
-        driverStats,
-        statusStats,
+        activeTrips,
+        totalTrips,
+        completedTrips,
+        plannedTrips,
+        cancelledTrips,
+        contractors: contractors?.length || 0,
+        drivers: drivers?.length || 0,
+        vehicles: vehicles?.length || 0,
+        totalCargoValue,
+        completedCargoValue,
+        totalWeight,
+        totalVolume,
+        averageCargoValue,
+        completionRate,
+        totalExpenses,
+        completedTripsExpenses,
+        expensesByType,
+        profit,
+        profitMargin,
+        averageExpensePerTrip,
+        monthlyStats,
         topRoutes,
-        topDrivers,
-        totalTrips: trips?.length || 0,
-        totalRevenue: trips?.reduce((sum: number, t: any) => sum + (t.cargo_value || 0), 0) || 0
+        driverPerformance,
+        vehicleUtilization
       };
     } catch (error) {
       console.error('Error in getAdvancedStats:', error);

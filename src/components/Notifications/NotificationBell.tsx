@@ -13,10 +13,8 @@ interface Notification {
   title: string;
   message: string;
   type: string;
-  is_read: boolean;
+  read: boolean;
   created_at: string;
-  related_entity_id?: string;
-  related_entity_type?: string;
 }
 
 export const NotificationBell: React.FC = () => {
@@ -43,7 +41,7 @@ export const NotificationBell: React.FC = () => {
       
       if (mountedRef.current) {
         setNotifications(data || []);
-        setUnreadCount(data?.filter(n => !n.is_read).length || 0);
+        setUnreadCount(data?.filter(n => !n.read).length || 0);
       }
     } catch (error) {
       console.error('Failed to load notifications:', error);
@@ -103,13 +101,13 @@ export const NotificationBell: React.FC = () => {
       mountedRef.current = false;
       cleanupChannel();
     };
-  }, []); // Пустые зависимости, выполняется только при монтировании/размонтировании
+  }, []);
 
   const markAsRead = async (notificationId: string) => {
     try {
       const { error } = await supabase
         .from('notifications')
-        .update({ is_read: true, updated_at: new Date().toISOString() })
+        .update({ read: true })
         .eq('id', notificationId);
 
       if (error) throw error;
@@ -128,8 +126,8 @@ export const NotificationBell: React.FC = () => {
     try {
       const { error } = await supabase
         .from('notifications')
-        .update({ is_read: true, updated_at: new Date().toISOString() })
-        .eq('is_read', false);
+        .update({ read: true })
+        .eq('read', false);
 
       if (error) throw error;
       await loadNotifications();
@@ -146,6 +144,12 @@ export const NotificationBell: React.FC = () => {
       });
     }
   };
+
+  // Преобразуем notifications для NotificationList
+  const notificationsForList = notifications.map(n => ({
+    ...n,
+    is_read: n.read
+  }));
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -180,7 +184,7 @@ export const NotificationBell: React.FC = () => {
           </div>
         </div>
         <NotificationList
-          notifications={notifications}
+          notifications={notificationsForList}
           loading={loading}
           onMarkAsRead={markAsRead}
           onRefresh={loadNotifications}

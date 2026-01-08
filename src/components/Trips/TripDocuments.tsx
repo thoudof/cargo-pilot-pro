@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   FileText, 
@@ -15,15 +14,11 @@ import {
   Download, 
   Trash2, 
   Plus, 
-  AlertCircle,
-  CheckCircle,
-  ExternalLink,
   Eye
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { DocumentType, documentTypeLabels, TripDocument, RequiredDocument } from '@/types/documents';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -31,12 +26,33 @@ interface TripDocumentsProps {
   tripId: string;
 }
 
+type DocumentType = 'waybill' | 'invoice' | 'act' | 'contract' | 'power_of_attorney' | 'other';
+
+const documentTypeLabels: Record<DocumentType, string> = {
+  waybill: 'Путевой лист',
+  invoice: 'Счёт-фактура',
+  act: 'Акт',
+  contract: 'Договор',
+  power_of_attorney: 'Доверенность',
+  other: 'Другое'
+};
+
+interface TripDocument {
+  id: string;
+  trip_id: string;
+  document_type: DocumentType;
+  file_name: string;
+  file_url: string | null;
+  file_size: number | null;
+  uploaded_by: string | null;
+  created_at: string;
+}
+
 export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [documentType, setDocumentType] = useState<DocumentType>(DocumentType.OTHER);
+  const [documentType, setDocumentType] = useState<DocumentType>('other');
   const [documentName, setDocumentName] = useState('');
-  const [description, setDescription] = useState('');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -51,40 +67,7 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return (data || []).map(doc => ({
-        id: doc.id,
-        tripId: doc.trip_id,
-        documentType: doc.document_type as DocumentType,
-        documentName: doc.document_name,
-        filePath: doc.file_path,
-        fileUrl: doc.file_url,
-        fileSize: doc.file_size,
-        mimeType: doc.mime_type,
-        description: doc.description,
-        isRequired: doc.is_required,
-        uploadDate: doc.upload_date,
-        uploadedBy: doc.uploaded_by,
-        createdAt: doc.created_at,
-        updatedAt: doc.updated_at,
-        userId: doc.user_id
-      })) as TripDocument[];
-    }
-  });
-
-  // Загрузка обязательных документов
-  const { data: requiredDocuments = [], isLoading: requiredLoading } = useQuery({
-    queryKey: ['required-documents', tripId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .rpc('get_required_documents_for_trip', { trip_uuid: tripId });
-
-      if (error) throw error;
-      return (data || []).map(doc => ({
-        templateId: doc.template_id,
-        templateName: doc.template_name,
-        documentType: doc.document_type as DocumentType,
-        isUploaded: doc.is_uploaded
-      })) as RequiredDocument[];
+      return (data || []) as TripDocument[];
     }
   });
 
@@ -92,23 +75,21 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
   const uploadDocumentMutation = useMutation({
     mutationFn: async (documentData: {
       documentType: DocumentType;
-      documentName: string;
-      description?: string;
-      fileData?: { path: string; url: string; size: number; mimeType: string };
+      fileName: string;
+      fileUrl?: string;
+      fileSize?: number;
     }) => {
+      const { data: userData } = await supabase.auth.getUser();
+      
       const { data, error } = await supabase
         .from('trip_documents')
         .insert({
           trip_id: tripId,
           document_type: documentData.documentType,
-          document_name: documentData.documentName,
-          description: documentData.description,
-          file_path: documentData.fileData?.path,
-          file_url: documentData.fileData?.url,
-          file_size: documentData.fileData?.size,
-          mime_type: documentData.fileData?.mimeType,
-          uploaded_by: (await supabase.auth.getUser()).data.user?.id,
-          user_id: (await supabase.auth.getUser()).data.user?.id
+          file_name: documentData.fileName,
+          file_url: documentData.fileUrl || null,
+          file_size: documentData.fileSize || null,
+          uploaded_by: userData.user?.id || null,
         })
         .select()
         .single();
@@ -118,7 +99,6 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trip-documents', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['required-documents', tripId] });
       setIsUploadDialogOpen(false);
       resetForm();
       toast({
@@ -147,7 +127,6 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['trip-documents', tripId] });
-      queryClient.invalidateQueries({ queryKey: ['required-documents', tripId] });
       toast({
         title: "Документ удален",
         description: "Документ успешно удален"
@@ -182,36 +161,22 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
       return;
     }
 
-    let fileData;
-    if (selectedFile) {
-      // Здесь можно добавить загрузку в Supabase Storage или Nextcloud
-      // Пока добавляем документ без файла
-      fileData = {
-        path: `documents/${tripId}/${selectedFile.name}`,
-        url: '#', // URL будет добавлен после интеграции с хранилищем
-        size: selectedFile.size,
-        mimeType: selectedFile.type
-      };
-    }
-
     uploadDocumentMutation.mutate({
       documentType,
-      documentName,
-      description,
-      fileData
+      fileName: documentName,
+      fileSize: selectedFile?.size,
     });
   };
 
   const resetForm = () => {
     setSelectedFile(null);
     setDocumentName('');
-    setDescription('');
-    setDocumentType(DocumentType.OTHER);
+    setDocumentType('other');
   };
 
   const handleDownload = (document: TripDocument) => {
-    if (document.fileUrl && document.fileUrl !== '#') {
-      window.open(document.fileUrl, '_blank');
+    if (document.file_url) {
+      window.open(document.file_url, '_blank');
     } else {
       toast({
         title: "Файл недоступен",
@@ -222,20 +187,18 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
   };
 
   const handlePreview = (document: TripDocument) => {
-    if (document.fileUrl && document.fileUrl !== '#') {
-      // Проверяем тип файла
-      const fileExtension = document.fileUrl.split('.').pop()?.toLowerCase();
+    if (document.file_url) {
+      const fileExtension = document.file_url.split('.').pop()?.toLowerCase();
       const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
       const pdfExtension = 'pdf';
 
       if (imageExtensions.includes(fileExtension || '') || fileExtension === pdfExtension) {
-        // Открываем в новом окне для предварительного просмотра
         const previewWindow = window.open('', '_blank');
         if (previewWindow) {
           previewWindow.document.write(`
             <html>
               <head>
-                <title>Предварительный просмотр: ${document.documentName}</title>
+                <title>Предварительный просмотр: ${document.file_name}</title>
                 <style>
                   body { margin: 0; padding: 20px; font-family: system-ui; background: #f5f5f5; }
                   .container { max-width: 100%; text-align: center; }
@@ -248,12 +211,12 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
               <body>
                 <div class="container">
                   <div class="header">
-                    <h2>${document.documentName}</h2>
-                    <a href="${document.fileUrl}" class="download-btn" target="_blank">Скачать файл</a>
+                    <h2>${document.file_name}</h2>
+                    <a href="${document.file_url}" class="download-btn" target="_blank">Скачать файл</a>
                   </div>
                   ${fileExtension === pdfExtension 
-                    ? `<iframe src="${document.fileUrl}"></iframe>`
-                    : `<img src="${document.fileUrl}" alt="${document.documentName}" />`
+                    ? `<iframe src="${document.file_url}"></iframe>`
+                    : `<img src="${document.file_url}" alt="${document.file_name}" />`
                   }
                 </div>
               </body>
@@ -262,8 +225,7 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
           previewWindow.document.close();
         }
       } else {
-        // Для других типов файлов просто скачиваем
-        window.open(document.fileUrl, '_blank');
+        window.open(document.file_url, '_blank');
       }
     } else {
       toast({
@@ -274,24 +236,7 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
     }
   };
 
-  const getDocumentStatusBadge = (doc: RequiredDocument) => {
-    if (doc.isUploaded) {
-      return (
-        <Badge variant="default" className="bg-green-500">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Загружен
-        </Badge>
-      );
-    }
-    return (
-      <Badge variant="destructive">
-        <AlertCircle className="h-3 w-3 mr-1" />
-        Требуется
-      </Badge>
-    );
-  };
-
-  if (documentsLoading || requiredLoading) {
+  if (documentsLoading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center h-32">
@@ -303,33 +248,6 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
 
   return (
     <div className="space-y-6">
-      {/* Обязательные документы */}
-      {requiredDocuments.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Обязательные документы
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {requiredDocuments.map((doc) => (
-                <div key={doc.templateId} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <span className="font-medium">{doc.templateName}</span>
-                    <p className="text-sm text-muted-foreground">
-                      {documentTypeLabels[doc.documentType]}
-                    </p>
-                  </div>
-                  {getDocumentStatusBadge(doc)}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Все документы */}
       <Card>
         <CardHeader>
@@ -391,17 +309,6 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
                     )}
                   </div>
 
-                  <div>
-                    <Label htmlFor="description">Описание (опционально)</Label>
-                    <Textarea
-                      id="description"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Введите описание документа"
-                      rows={3}
-                    />
-                  </div>
-
                   <div className="flex gap-2">
                     <Button 
                       onClick={handleUpload} 
@@ -445,63 +352,55 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
                   <div key={document.id} className="border rounded-lg p-4">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <h4 className="font-medium">{document.documentName}</h4>
+                        <h4 className="font-medium">{document.file_name}</h4>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="outline">
-                            {documentTypeLabels[document.documentType]}
+                            {documentTypeLabels[document.document_type]}
                           </Badge>
-                          {document.isRequired && (
-                            <Badge variant="secondary">Обязательный</Badge>
-                          )}
                         </div>
                       </div>
                       <div className="flex gap-1">
-                        {document.fileUrl && document.fileUrl !== '#' && (
+                        {document.file_url && (
                           <>
                             <Button
+                              variant="ghost"
                               size="sm"
-                              variant="outline"
                               onClick={() => handlePreview(document)}
                               title="Предварительный просмотр"
                             >
                               <Eye className="h-4 w-4" />
                             </Button>
                             <Button
+                              variant="ghost"
                               size="sm"
-                              variant="outline"
                               onClick={() => handleDownload(document)}
-                              title="Скачать файл"
+                              title="Скачать"
                             >
                               <Download className="h-4 w-4" />
                             </Button>
                           </>
                         )}
                         <Button
+                          variant="ghost"
                           size="sm"
-                          variant="outline"
                           onClick={() => deleteDocumentMutation.mutate(document.id)}
                           disabled={deleteDocumentMutation.isPending}
+                          className="text-destructive hover:text-destructive"
+                          title="Удалить"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
-                    
-                    {document.description && (
-                      <p className="text-sm text-muted-foreground mb-2">
-                        {document.description}
-                      </p>
-                    )}
-                    
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>
-                        Загружен: {format(new Date(document.uploadDate), 'dd.MM.yyyy HH:mm', { locale: ru })}
-                      </span>
-                      {document.fileSize && (
-                        <span>
-                          {(document.fileSize / 1024 / 1024).toFixed(2)} MB
+                    <div className="text-sm text-muted-foreground">
+                      {document.file_size && (
+                        <span className="mr-4">
+                          Размер: {(document.file_size / 1024 / 1024).toFixed(2)} MB
                         </span>
                       )}
+                      <span>
+                        Загружен: {format(new Date(document.created_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
+                      </span>
                     </div>
                   </div>
                 ))}

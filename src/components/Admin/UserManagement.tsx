@@ -13,9 +13,8 @@ type UserRole = Database['public']['Enums']['app_role'];
 
 interface User {
   id: string;
-  username: string | null;
   full_name: string | null;
-  role: string | null;
+  phone: string | null;
   created_at: string;
   updated_at: string;
   roles: UserRole[];
@@ -51,12 +50,11 @@ export const UserManagement: React.FC = () => {
         const roles = userRoles?.filter(ur => ur.user_id === profile.id).map(ur => ur.role) || [];
         return {
           ...profile,
-          username: profile.username || profile.id,
           roles
         };
       });
 
-      setUsers(usersWithRoles as any); // Using 'as any' to match the extended User type
+      setUsers(usersWithRoles as User[]);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -151,8 +149,8 @@ export const UserManagement: React.FC = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>ID</TableHead>
-                <TableHead>Email/Логин</TableHead>
                 <TableHead>Имя</TableHead>
+                <TableHead>Телефон</TableHead>
                 <TableHead>Роль</TableHead>
                 <TableHead>Дата регистрации</TableHead>
                 <TableHead className="text-right">Действия</TableHead>
@@ -165,9 +163,9 @@ export const UserManagement: React.FC = () => {
                     {user.id.substring(0, 8)}...
                   </TableCell>
                   <TableCell className="font-medium">
-                    {user.username || 'Не указан'}
+                    {user.full_name || 'Не указано'}
                   </TableCell>
-                  <TableCell>{user.full_name || 'Не указано'}</TableCell>
+                  <TableCell>{user.phone || 'Не указан'}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {user.roles.length > 0 ? (
@@ -186,7 +184,7 @@ export const UserManagement: React.FC = () => {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center gap-2 justify-end">
-                      <UserDetailsDialog user={user} onUserUpdated={fetchUsers}>
+                      <UserDetailsDialog user={user as any} onUserUpdated={fetchUsers}>
                         <Button variant="outline" size="sm">
                           <Edit className="h-4 w-4" />
                         </Button>

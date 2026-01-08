@@ -1,5 +1,51 @@
 import { supabase } from '@/integrations/supabase/client';
-import { DocumentType, TripDocument, DocumentTemplate, RequiredDocument } from '@/types/documents';
+
+export enum DocumentType {
+  WAYBILL = 'waybill',
+  INVOICE = 'invoice',
+  ACT = 'act',
+  CONTRACT = 'contract',
+  POWER_OF_ATTORNEY = 'power_of_attorney',
+  OTHER = 'other'
+}
+
+export const documentTypeLabels: Record<DocumentType, string> = {
+  [DocumentType.WAYBILL]: 'Путевой лист',
+  [DocumentType.INVOICE]: 'Счёт-фактура',
+  [DocumentType.ACT]: 'Акт',
+  [DocumentType.CONTRACT]: 'Договор',
+  [DocumentType.POWER_OF_ATTORNEY]: 'Доверенность',
+  [DocumentType.OTHER]: 'Другое'
+};
+
+export interface TripDocument {
+  id: string;
+  tripId: string;
+  documentType: DocumentType;
+  fileName: string;
+  fileUrl: string | null;
+  fileSize: number | null;
+  uploadedBy: string | null;
+  createdAt: string;
+}
+
+export interface DocumentTemplate {
+  id: string;
+  name: string;
+  documentType: DocumentType;
+  content: string | null;
+  isActive: boolean;
+  createdBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RequiredDocument {
+  templateId: string;
+  templateName: string;
+  documentType: DocumentType;
+  isUploaded: boolean;
+}
 
 class DocumentService {
   // Получение документов рейса
@@ -16,33 +62,11 @@ class DocumentService {
       id: doc.id,
       tripId: doc.trip_id,
       documentType: doc.document_type as DocumentType,
-      documentName: doc.document_name,
-      filePath: doc.file_path,
+      fileName: doc.file_name,
       fileUrl: doc.file_url,
       fileSize: doc.file_size,
-      mimeType: doc.mime_type,
-      description: doc.description,
-      isRequired: doc.is_required,
-      uploadDate: doc.upload_date,
       uploadedBy: doc.uploaded_by,
-      createdAt: doc.created_at,
-      updatedAt: doc.updated_at,
-      userId: doc.user_id
-    }));
-  }
-
-  // Получение обязательных документов для рейса
-  async getRequiredDocuments(tripId: string): Promise<RequiredDocument[]> {
-    const { data, error } = await supabase
-      .rpc('get_required_documents_for_trip', { trip_uuid: tripId });
-
-    if (error) throw error;
-
-    return (data || []).map(doc => ({
-      templateId: doc.template_id,
-      templateName: doc.template_name,
-      documentType: doc.document_type as DocumentType,
-      isUploaded: doc.is_uploaded
+      createdAt: doc.created_at
     }));
   }
 
@@ -50,13 +74,9 @@ class DocumentService {
   async createDocument(data: {
     tripId: string;
     documentType: DocumentType;
-    documentName: string;
-    description?: string;
-    filePath?: string;
+    fileName: string;
     fileUrl?: string;
     fileSize?: number;
-    mimeType?: string;
-    isRequired?: boolean;
   }): Promise<TripDocument> {
     const user = await supabase.auth.getUser();
     if (!user.data.user) throw new Error('Пользователь не авторизован');
@@ -66,15 +86,10 @@ class DocumentService {
       .insert({
         trip_id: data.tripId,
         document_type: data.documentType,
-        document_name: data.documentName,
-        description: data.description,
-        file_path: data.filePath,
-        file_url: data.fileUrl,
-        file_size: data.fileSize,
-        mime_type: data.mimeType,
-        is_required: data.isRequired || false,
-        uploaded_by: user.data.user.id,
-        user_id: user.data.user.id
+        file_name: data.fileName,
+        file_url: data.fileUrl || null,
+        file_size: data.fileSize || null,
+        uploaded_by: user.data.user.id
       })
       .select()
       .single();
@@ -85,18 +100,11 @@ class DocumentService {
       id: result.id,
       tripId: result.trip_id,
       documentType: result.document_type as DocumentType,
-      documentName: result.document_name,
-      filePath: result.file_path,
+      fileName: result.file_name,
       fileUrl: result.file_url,
       fileSize: result.file_size,
-      mimeType: result.mime_type,
-      description: result.description,
-      isRequired: result.is_required,
-      uploadDate: result.upload_date,
       uploadedBy: result.uploaded_by,
-      createdAt: result.created_at,
-      updatedAt: result.updated_at,
-      userId: result.user_id
+      createdAt: result.created_at
     };
   }
 
@@ -123,9 +131,9 @@ class DocumentService {
       id: template.id,
       name: template.name,
       documentType: template.document_type as DocumentType,
-      isRequired: template.is_required,
-      description: template.description,
-      userId: template.user_id,
+      content: template.content,
+      isActive: template.is_active,
+      createdBy: template.created_by,
       createdAt: template.created_at,
       updatedAt: template.updated_at
     }));
@@ -135,8 +143,8 @@ class DocumentService {
   async createDocumentTemplate(data: {
     name: string;
     documentType: DocumentType;
-    isRequired: boolean;
-    description?: string;
+    content?: string;
+    isActive?: boolean;
   }): Promise<DocumentTemplate> {
     const user = await supabase.auth.getUser();
     if (!user.data.user) throw new Error('Пользователь не авторизован');
@@ -146,9 +154,9 @@ class DocumentService {
       .insert({
         name: data.name,
         document_type: data.documentType,
-        is_required: data.isRequired,
-        description: data.description,
-        user_id: user.data.user.id
+        content: data.content || null,
+        is_active: data.isActive ?? true,
+        created_by: user.data.user.id
       })
       .select()
       .single();
@@ -159,9 +167,9 @@ class DocumentService {
       id: result.id,
       name: result.name,
       documentType: result.document_type as DocumentType,
-      isRequired: result.is_required,
-      description: result.description,
-      userId: result.user_id,
+      content: result.content,
+      isActive: result.is_active,
+      createdBy: result.created_by,
       createdAt: result.created_at,
       updatedAt: result.updated_at
     };
@@ -171,17 +179,16 @@ class DocumentService {
   async updateDocumentTemplate(id: string, data: {
     name: string;
     documentType: DocumentType;
-    isRequired: boolean;
-    description?: string;
+    content?: string;
+    isActive?: boolean;
   }): Promise<DocumentTemplate> {
     const { data: result, error } = await supabase
       .from('document_templates')
       .update({
         name: data.name,
         document_type: data.documentType,
-        is_required: data.isRequired,
-        description: data.description,
-        updated_at: new Date().toISOString()
+        content: data.content,
+        is_active: data.isActive
       })
       .eq('id', id)
       .select()
@@ -193,9 +200,9 @@ class DocumentService {
       id: result.id,
       name: result.name,
       documentType: result.document_type as DocumentType,
-      isRequired: result.is_required,
-      description: result.description,
-      userId: result.user_id,
+      content: result.content,
+      isActive: result.is_active,
+      createdBy: result.created_by,
       createdAt: result.created_at,
       updatedAt: result.updated_at
     };
@@ -209,34 +216,6 @@ class DocumentService {
       .eq('id', id);
 
     if (error) throw error;
-  }
-
-  // Проверка статуса документов рейса
-  async getTripDocumentStatus(tripId: string): Promise<{
-    totalRequired: number;
-    uploaded: number;
-    missing: string[];
-  }> {
-    const requiredDocs = await this.getRequiredDocuments(tripId);
-    const totalRequired = requiredDocs.length;
-    const uploaded = requiredDocs.filter(doc => doc.isUploaded).length;
-    const missing = requiredDocs
-      .filter(doc => !doc.isUploaded)
-      .map(doc => doc.templateName);
-
-    return {
-      totalRequired,
-      uploaded,
-      missing
-    };
-  }
-
-  // Интеграция с Nextcloud (заглушка для будущей реализации)
-  async uploadToNextcloud(file: File, path: string): Promise<string> {
-    // TODO: Реализовать загрузку в Nextcloud
-    // Пока возвращаем заглушку
-    console.log('Загрузка в Nextcloud:', file.name, path);
-    return `https://nextcloud.example.com/remote.php/dav/files/user/${path}/${file.name}`;
   }
 
   // Интеграция с Supabase Storage

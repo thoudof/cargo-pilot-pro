@@ -6,44 +6,46 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Trash2, Plus, Shield, User, Calendar } from 'lucide-react';
+import { Trash2, Plus, Shield, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 interface UserWithPermissions {
   id: string;
-  username: string;
-  full_name: string;
-  role: string;
+  full_name: string | null;
   user_roles: Array<{ role: string }>;
   user_permissions: Array<{
     id: string;
     permission: string;
-    granted_at: string;
-    expires_at?: string;
+    created_at: string;
   }>;
 }
 
-const PERMISSION_LABELS = {
+const PERMISSION_LABELS: Record<string, string> = {
   view_trips: 'Просмотр рейсов',
   edit_trips: 'Редактирование рейсов',
+  delete_trips: 'Удаление рейсов',
   view_contractors: 'Просмотр контрагентов',
   edit_contractors: 'Редактирование контрагентов',
+  delete_contractors: 'Удаление контрагентов',
   view_drivers: 'Просмотр водителей',
   edit_drivers: 'Редактирование водителей',
+  delete_drivers: 'Удаление водителей',
   view_vehicles: 'Просмотр транспорта',
   edit_vehicles: 'Редактирование транспорта',
+  delete_vehicles: 'Удаление транспорта',
   view_routes: 'Просмотр маршрутов',
   edit_routes: 'Редактирование маршрутов',
+  delete_routes: 'Удаление маршрутов',
   view_cargo_types: 'Просмотр типов грузов',
   edit_cargo_types: 'Редактирование типов грузов',
+  delete_cargo_types: 'Удаление типов грузов',
   view_documents: 'Просмотр документов',
   edit_documents: 'Редактирование документов',
-  manage_document_templates: 'Управление шаблонами документов',
   delete_documents: 'Удаление документов',
+  manage_document_templates: 'Управление шаблонами документов',
   view_expenses: 'Просмотр расходов',
   edit_expenses: 'Редактирование расходов',
   delete_expenses: 'Удаление расходов',
@@ -60,7 +62,6 @@ const PERMISSION_LABELS = {
 export const UserPermissionsManager: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<string>('');
   const [selectedPermission, setSelectedPermission] = useState<string>('');
-  const [expiresAt, setExpiresAt] = useState<string>('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -68,19 +69,14 @@ export const UserPermissionsManager: React.FC = () => {
   const { data: users, isLoading } = useQuery({
     queryKey: ['users-with-permissions'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const { data: profiles, error } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          username,
-          full_name,
-          role
-        `);
+        .select('id, full_name');
 
       if (error) throw error;
 
       // Получаем роли пользователей отдельно
-      const userIds = data.map(u => u.id);
+      const userIds = profiles.map(u => u.id);
       const { data: userRoles } = await supabase
         .from('user_roles')
         .select('user_id, role')
@@ -89,11 +85,11 @@ export const UserPermissionsManager: React.FC = () => {
       // Получаем права пользователей отдельно
       const { data: userPermissions } = await supabase
         .from('user_permissions')
-        .select('id, user_id, permission, granted_at, expires_at')
+        .select('id, user_id, permission, created_at')
         .in('user_id', userIds);
 
       // Объединяем данные
-      return data.map(user => ({
+      return profiles.map(user => ({
         ...user,
         user_roles: (userRoles || []).filter(ur => ur.user_id === user.id),
         user_permissions: (userPermissions || []).filter(up => up.user_id === user.id)
@@ -103,14 +99,12 @@ export const UserPermissionsManager: React.FC = () => {
 
   // Мутация для добавления права
   const addPermissionMutation = useMutation({
-    mutationFn: async (data: { userId: string; permission: string; expiresAt?: string }) => {
+    mutationFn: async (data: { userId: string; permission: string }) => {
       const { error } = await supabase
         .from('user_permissions')
         .insert({
           user_id: data.userId,
           permission: data.permission as any,
-          expires_at: data.expiresAt || null,
-          granted_by: (await supabase.auth.getUser()).data.user?.id,
         });
 
       if (error) throw error;
@@ -121,7 +115,6 @@ export const UserPermissionsManager: React.FC = () => {
       setIsDialogOpen(false);
       setSelectedUser('');
       setSelectedPermission('');
-      setExpiresAt('');
     },
     onError: (error) => {
       toast.error(`Ошибка при добавлении права: ${error.message}`);
@@ -156,12 +149,10 @@ export const UserPermissionsManager: React.FC = () => {
     addPermissionMutation.mutate({
       userId: selectedUser,
       permission: selectedPermission,
-      expiresAt: expiresAt || undefined,
     });
   };
 
   const getRolePermissions = (userRoles: Array<{ role: string }>) => {
-    // Здесь можно добавить логику для получения прав по ролям
     const rolePermissions: string[] = [];
     userRoles.forEach(ur => {
       switch (ur.role) {
@@ -178,11 +169,19 @@ export const UserPermissionsManager: React.FC = () => {
           );
           break;
         case 'driver':
-          rolePermissions.push('view_trips', 'view_documents', 'edit_documents', 'view_expenses');
+          rolePermissions.push('view_trips', 'view_documents', 'view_expenses', 'view_routes');
           break;
       }
     });
     return [...new Set(rolePermissions)];
+  };
+
+  const getRoleBadge = (userRoles: Array<{ role: string }>) => {
+    const roles = userRoles.map(ur => ur.role);
+    if (roles.includes('admin')) return <Badge variant="destructive">Админ</Badge>;
+    if (roles.includes('dispatcher')) return <Badge variant="default">Диспетчер</Badge>;
+    if (roles.includes('driver')) return <Badge variant="secondary">Водитель</Badge>;
+    return <Badge variant="outline">Без роли</Badge>;
   };
 
   if (isLoading) {
@@ -225,7 +224,7 @@ export const UserPermissionsManager: React.FC = () => {
                   <SelectContent>
                     {users?.map((user) => (
                       <SelectItem key={user.id} value={user.id}>
-                        {user.full_name || user.username} ({user.role})
+                        {user.full_name || 'Без имени'}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -248,15 +247,6 @@ export const UserPermissionsManager: React.FC = () => {
                 </Select>
               </div>
 
-              <div>
-                <Label>Срок действия (необязательно)</Label>
-                <Input
-                  type="datetime-local"
-                  value={expiresAt}
-                  onChange={(e) => setExpiresAt(e.target.value)}
-                />
-              </div>
-
               <Button
                 onClick={handleAddPermission}
                 disabled={addPermissionMutation.isPending}
@@ -272,17 +262,14 @@ export const UserPermissionsManager: React.FC = () => {
       <div className="grid gap-6">
         {users?.map((user) => {
           const rolePermissions = getRolePermissions(user.user_roles);
-          const activeUserPermissions = user.user_permissions.filter(
-            p => !p.expires_at || new Date(p.expires_at) > new Date()
-          );
 
           return (
             <Card key={user.id}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  {user.full_name || user.username}
-                  <Badge variant="secondary">{user.role}</Badge>
+                  {user.full_name || 'Без имени'}
+                  {getRoleBadge(user.user_roles)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -294,39 +281,36 @@ export const UserPermissionsManager: React.FC = () => {
                       Права по роли
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {rolePermissions.map((permission) => (
+                      {rolePermissions.slice(0, 10).map((permission) => (
                         <Badge key={permission} variant="outline">
-                          {PERMISSION_LABELS[permission as keyof typeof PERMISSION_LABELS]}
+                          {PERMISSION_LABELS[permission] || permission}
                         </Badge>
                       ))}
+                      {rolePermissions.length > 10 && (
+                        <Badge variant="secondary">+{rolePermissions.length - 10} ещё</Badge>
+                      )}
                     </div>
                   </div>
 
                   {/* Индивидуальные права */}
-                  {activeUserPermissions.length > 0 && (
+                  {user.user_permissions.length > 0 && (
                     <div>
                       <h4 className="font-medium mb-2 flex items-center gap-2">
                         <Plus className="h-4 w-4" />
                         Дополнительные права
                       </h4>
                       <div className="space-y-2">
-                        {activeUserPermissions.map((permission) => (
+                        {user.user_permissions.map((permission) => (
                           <div
                             key={permission.id}
                             className="flex items-center justify-between p-2 border rounded"
                           >
                             <div>
                               <span className="font-medium">
-                                {PERMISSION_LABELS[permission.permission as keyof typeof PERMISSION_LABELS]}
+                                {PERMISSION_LABELS[permission.permission] || permission.permission}
                               </span>
-                              <div className="text-sm text-muted-foreground flex items-center gap-2">
-                                <Calendar className="h-3 w-3" />
-                                Добавлено: {format(new Date(permission.granted_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
-                                {permission.expires_at && (
-                                  <>
-                                    , истекает: {format(new Date(permission.expires_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
-                                  </>
-                                )}
+                              <div className="text-sm text-muted-foreground">
+                                Добавлено: {format(new Date(permission.created_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
                               </div>
                             </div>
                             <Button

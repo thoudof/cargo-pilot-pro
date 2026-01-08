@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface DashboardStats {
@@ -39,11 +38,11 @@ class DashboardService {
 
       // Простые запросы без сложной оптимизации
       const [tripsResult, contractorsResult, driversResult, vehiclesResult, expensesResult] = await Promise.all([
-        supabase.from('trips').select('*').eq('user_id', user.data.user.id),
-        supabase.from('contractors').select('id').eq('user_id', user.data.user.id),
-        supabase.from('drivers').select('id').eq('user_id', user.data.user.id),
-        supabase.from('vehicles').select('id').eq('user_id', user.data.user.id),
-        supabase.from('trip_expenses').select('amount, expense_date').eq('user_id', user.data.user.id)
+        supabase.from('trips').select('*'),
+        supabase.from('contractors').select('id'),
+        supabase.from('drivers').select('id'),
+        supabase.from('vehicles').select('id'),
+        supabase.from('trip_expenses').select('amount, date')
       ]);
 
       const trips = tripsResult.data || [];
@@ -68,7 +67,7 @@ class DashboardService {
       
       const totalWeight = trips.reduce((sum, t) => sum + (t.cargo_weight || 0), 0);
       const totalVolume = trips.reduce((sum, t) => sum + (t.cargo_volume || 0), 0);
-      const totalExpenses = expenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+      const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
       // Простая месячная статистика
       const monthlyStats = this.generateMonthlyStats(trips);

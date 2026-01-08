@@ -14,16 +14,727 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      activity_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      cargo_types: {
+        Row: {
+          created_at: string
+          default_volume: number | null
+          default_weight: number | null
+          description: string | null
+          fragile: boolean | null
+          hazardous: boolean | null
+          id: string
+          name: string
+          temperature_controlled: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_volume?: number | null
+          default_weight?: number | null
+          description?: string | null
+          fragile?: boolean | null
+          hazardous?: boolean | null
+          id?: string
+          name: string
+          temperature_controlled?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_volume?: number | null
+          default_weight?: number | null
+          description?: string | null
+          fragile?: boolean | null
+          hazardous?: boolean | null
+          id?: string
+          name?: string
+          temperature_controlled?: boolean | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contacts: {
+        Row: {
+          contractor_id: string
+          created_at: string
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          position: string | null
+        }
+        Insert: {
+          contractor_id: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          position?: string | null
+        }
+        Update: {
+          contractor_id?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          position?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contractors: {
+        Row: {
+          address: string | null
+          company_name: string
+          created_at: string
+          id: string
+          inn: string | null
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          company_name: string
+          created_at?: string
+          id?: string
+          inn?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          company_name?: string
+          created_at?: string
+          id?: string
+          inn?: string | null
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      document_templates: {
+        Row: {
+          content: string | null
+          created_at: string
+          created_by: string | null
+          document_type: Database["public"]["Enums"]["document_type"]
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_type: Database["public"]["Enums"]["document_type"]
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          document_type?: Database["public"]["Enums"]["document_type"]
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      drivers: {
+        Row: {
+          created_at: string
+          experience_years: number | null
+          id: string
+          license: string | null
+          name: string
+          notes: string | null
+          passport_data: string | null
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          experience_years?: number | null
+          id?: string
+          license?: string | null
+          name: string
+          notes?: string | null
+          passport_data?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          experience_years?: number | null
+          id?: string
+          license?: string | null
+          name?: string
+          notes?: string | null
+          passport_data?: string | null
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean | null
+          title: string
+          type?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean | null
+          title?: string
+          type?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      push_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          platform: string | null
+          token: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          platform?: string | null
+          token: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          platform?: string | null
+          token?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission?: Database["public"]["Enums"]["app_permission"]
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
+      routes: {
+        Row: {
+          created_at: string
+          distance_km: number | null
+          estimated_duration_hours: number | null
+          id: string
+          name: string
+          notes: string | null
+          point_a: string
+          point_b: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          distance_km?: number | null
+          estimated_duration_hours?: number | null
+          id?: string
+          name: string
+          notes?: string | null
+          point_a: string
+          point_b: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          distance_km?: number | null
+          estimated_duration_hours?: number | null
+          id?: string
+          name?: string
+          notes?: string | null
+          point_a?: string
+          point_b?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      trip_documents: {
+        Row: {
+          created_at: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_name: string
+          file_size: number | null
+          file_url: string | null
+          id: string
+          trip_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_type: Database["public"]["Enums"]["document_type"]
+          file_name: string
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          trip_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_type?: Database["public"]["Enums"]["document_type"]
+          file_name?: string
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          trip_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_documents_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string | null
+          id: string
+          trip_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          trip_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          trip_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_expenses_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trips: {
+        Row: {
+          arrival_date: string | null
+          cargo_description: string | null
+          cargo_type_id: string | null
+          cargo_value: number | null
+          cargo_volume: number | null
+          cargo_weight: number | null
+          change_log: Json | null
+          comments: string | null
+          contractor_id: string | null
+          created_at: string
+          departure_date: string
+          documents: string[] | null
+          driver_id: string | null
+          driver_license: string | null
+          driver_name: string | null
+          driver_phone: string | null
+          id: string
+          point_a: string
+          point_b: string
+          route_id: string | null
+          status: string
+          updated_at: string
+          vehicle_brand: string | null
+          vehicle_capacity: number | null
+          vehicle_id: string | null
+          vehicle_license_plate: string | null
+          vehicle_model: string | null
+        }
+        Insert: {
+          arrival_date?: string | null
+          cargo_description?: string | null
+          cargo_type_id?: string | null
+          cargo_value?: number | null
+          cargo_volume?: number | null
+          cargo_weight?: number | null
+          change_log?: Json | null
+          comments?: string | null
+          contractor_id?: string | null
+          created_at?: string
+          departure_date: string
+          documents?: string[] | null
+          driver_id?: string | null
+          driver_license?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          id?: string
+          point_a: string
+          point_b: string
+          route_id?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_brand?: string | null
+          vehicle_capacity?: number | null
+          vehicle_id?: string | null
+          vehicle_license_plate?: string | null
+          vehicle_model?: string | null
+        }
+        Update: {
+          arrival_date?: string | null
+          cargo_description?: string | null
+          cargo_type_id?: string | null
+          cargo_value?: number | null
+          cargo_volume?: number | null
+          cargo_weight?: number | null
+          change_log?: Json | null
+          comments?: string | null
+          contractor_id?: string | null
+          created_at?: string
+          departure_date?: string
+          documents?: string[] | null
+          driver_id?: string | null
+          driver_license?: string | null
+          driver_name?: string | null
+          driver_phone?: string | null
+          id?: string
+          point_a?: string
+          point_b?: string
+          route_id?: string | null
+          status?: string
+          updated_at?: string
+          vehicle_brand?: string | null
+          vehicle_capacity?: number | null
+          vehicle_id?: string | null
+          vehicle_license_plate?: string | null
+          vehicle_model?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trips_cargo_type_id_fkey"
+            columns: ["cargo_type_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trips_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission: Database["public"]["Enums"]["app_permission"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission?: Database["public"]["Enums"]["app_permission"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vehicles: {
+        Row: {
+          brand: string
+          capacity: number | null
+          created_at: string
+          id: string
+          insurance_expiry: string | null
+          insurance_policy: string | null
+          license_plate: string
+          model: string
+          notes: string | null
+          registration_certificate: string | null
+          technical_inspection_expiry: string | null
+          updated_at: string
+          vin: string | null
+          year: number | null
+        }
+        Insert: {
+          brand: string
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          insurance_expiry?: string | null
+          insurance_policy?: string | null
+          license_plate: string
+          model: string
+          notes?: string | null
+          registration_certificate?: string | null
+          technical_inspection_expiry?: string | null
+          updated_at?: string
+          vin?: string | null
+          year?: number | null
+        }
+        Update: {
+          brand?: string
+          capacity?: number | null
+          created_at?: string
+          id?: string
+          insurance_expiry?: string | null
+          insurance_policy?: string | null
+          license_plate?: string
+          model?: string
+          notes?: string | null
+          registration_certificate?: string | null
+          technical_inspection_expiry?: string | null
+          updated_at?: string
+          vin?: string | null
+          year?: number | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_roles: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"][]
+      }
+      has_permission: {
+        Args: {
+          _permission: Database["public"]["Enums"]["app_permission"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_permission:
+        | "view_trips"
+        | "edit_trips"
+        | "delete_trips"
+        | "view_contractors"
+        | "edit_contractors"
+        | "delete_contractors"
+        | "view_drivers"
+        | "edit_drivers"
+        | "delete_drivers"
+        | "view_vehicles"
+        | "edit_vehicles"
+        | "delete_vehicles"
+        | "view_routes"
+        | "edit_routes"
+        | "delete_routes"
+        | "view_cargo_types"
+        | "edit_cargo_types"
+        | "delete_cargo_types"
+        | "view_reports"
+        | "view_admin_panel"
+        | "view_finances"
+        | "view_statistics"
+        | "manage_users"
+        | "view_documents"
+        | "edit_documents"
+        | "delete_documents"
+        | "view_expenses"
+        | "edit_expenses"
+        | "delete_expenses"
+        | "manage_document_templates"
+        | "manage_system"
+        | "view_analytics"
+        | "export_data"
+      app_role: "admin" | "dispatcher" | "driver"
+      document_type:
+        | "waybill"
+        | "invoice"
+        | "act"
+        | "contract"
+        | "power_of_attorney"
+        | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +861,51 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_permission: [
+        "view_trips",
+        "edit_trips",
+        "delete_trips",
+        "view_contractors",
+        "edit_contractors",
+        "delete_contractors",
+        "view_drivers",
+        "edit_drivers",
+        "delete_drivers",
+        "view_vehicles",
+        "edit_vehicles",
+        "delete_vehicles",
+        "view_routes",
+        "edit_routes",
+        "delete_routes",
+        "view_cargo_types",
+        "edit_cargo_types",
+        "delete_cargo_types",
+        "view_reports",
+        "view_admin_panel",
+        "view_finances",
+        "view_statistics",
+        "manage_users",
+        "view_documents",
+        "edit_documents",
+        "delete_documents",
+        "view_expenses",
+        "edit_expenses",
+        "delete_expenses",
+        "manage_document_templates",
+        "manage_system",
+        "view_analytics",
+        "export_data",
+      ],
+      app_role: ["admin", "dispatcher", "driver"],
+      document_type: [
+        "waybill",
+        "invoice",
+        "act",
+        "contract",
+        "power_of_attorney",
+        "other",
+      ],
+    },
   },
 } as const

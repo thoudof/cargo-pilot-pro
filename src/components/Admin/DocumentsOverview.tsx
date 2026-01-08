@@ -6,7 +6,6 @@ import {
   FileText, 
   CheckCircle, 
   AlertTriangle, 
-  Users,
   TrendingUp,
   Archive
 } from 'lucide-react';
@@ -17,7 +16,7 @@ interface DocumentStats {
   totalDocuments: number;
   documentsByType: Record<string, number>;
   totalTemplates: number;
-  requiredTemplates: number;
+  activeTemplates: number;
   documentsThisMonth: number;
   averageDocumentsPerTrip: number;
   tripCompletionRate: number;
@@ -47,10 +46,10 @@ export const DocumentsOverview: React.FC = () => {
         .from('document_templates')
         .select('*', { count: 'exact', head: true });
 
-      const { count: requiredTemplates } = await supabase
+      const { count: activeTemplates } = await supabase
         .from('document_templates')
         .select('*', { count: 'exact', head: true })
-        .eq('is_required', true);
+        .eq('is_active', true);
 
       // Документы за текущий месяц
       const currentMonth = new Date();
@@ -69,27 +68,22 @@ export const DocumentsOverview: React.FC = () => {
         ? Math.round((totalDocuments / totalTrips) * 10) / 10 
         : 0;
 
-      // Процент завершенности документооборота
-      const { data: tripsWithRequiredDocs } = await supabase
-        .rpc('get_required_documents_for_trip', { trip_uuid: 'dummy' })
-        .limit(0); // Получаем схему без данных
-
       // Примерная оценка завершенности (упрощенная)
-      const tripCompletionRate = totalTrips && requiredTemplates 
-        ? Math.min(100, Math.round((totalDocuments / (totalTrips * (requiredTemplates || 1))) * 100))
+      const tripCompletionRate = totalTrips && totalTemplates 
+        ? Math.min(100, Math.round((totalDocuments || 0) / (totalTrips * Math.max(1, totalTemplates || 1)) * 100))
         : 0;
 
       return {
         totalDocuments: totalDocuments || 0,
         documentsByType,
         totalTemplates: totalTemplates || 0,
-        requiredTemplates: requiredTemplates || 0,
+        activeTemplates: activeTemplates || 0,
         documentsThisMonth: documentsThisMonth || 0,
         averageDocumentsPerTrip,
         tripCompletionRate
       };
     },
-    staleTime: 5 * 60 * 1000 // 5 минут
+    staleTime: 5 * 60 * 1000
   });
 
   if (isLoading) {
@@ -146,7 +140,7 @@ export const DocumentsOverview: React.FC = () => {
           <CardContent>
             <div className="text-2xl font-bold">{stats.totalTemplates}</div>
             <p className="text-xs text-muted-foreground">
-              Обязательных: {stats.requiredTemplates}
+              Активных: {stats.activeTemplates}
             </p>
           </CardContent>
         </Card>
@@ -227,7 +221,7 @@ export const DocumentsOverview: React.FC = () => {
           </CardHeader>
           <CardContent className="text-orange-700 dark:text-orange-300">
             <ul className="space-y-2 text-sm">
-              {stats.requiredTemplates === 0 && (
+              {stats.activeTemplates === 0 && (
                 <li>• Создайте шаблоны обязательных документов для рейсов</li>
               )}
               {stats.averageDocumentsPerTrip < 2 && (

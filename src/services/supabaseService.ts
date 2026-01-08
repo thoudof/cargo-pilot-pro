@@ -1,22 +1,4 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { ExpenseType } from '@/types/expenses';
-
-interface Trip {
-  id: string;
-  created_at: string;
-  status: string;
-  contractor_id: string;
-  driver_id: string;
-  trip_expenses: TripExpense[];
-}
-
-interface TripExpense {
-  id: string;
-  trip_id: string;
-  type: string;
-  amount: number;
-}
 
 class SupabaseService {
   // Expose supabase client for direct access
@@ -142,14 +124,13 @@ class SupabaseService {
     return {
       id: dbExpense.id,
       tripId: dbExpense.trip_id,
-      expenseType: dbExpense.expense_type,
+      category: dbExpense.category,
       amount: dbExpense.amount,
       description: dbExpense.description,
-      expenseDate: new Date(dbExpense.expense_date),
-      receiptUrl: dbExpense.receipt_url,
+      date: new Date(dbExpense.date),
       createdAt: new Date(dbExpense.created_at),
       updatedAt: new Date(dbExpense.updated_at),
-      userId: dbExpense.user_id
+      createdBy: dbExpense.created_by
     };
   }
 
@@ -189,20 +170,15 @@ class SupabaseService {
         contacts(*)
       `);
     if (error) throw error;
-    return data.map(contractor => this.transformContractor(contractor));
+    return (data || []).map((contractor: any) => this.transformContractor(contractor));
   }
 
   async saveContractor(contractor: any) {
-    const user = await this.getCurrentUser();
-    if (!user) throw new Error('User not authenticated');
-
-    // Transform camelCase to snake_case for database
     const dbContractor = {
       company_name: contractor.companyName,
       inn: contractor.inn,
       address: contractor.address,
-      notes: contractor.notes,
-      user_id: user.id
+      notes: contractor.notes
     };
 
     if (contractor.id) {
@@ -238,21 +214,17 @@ class SupabaseService {
       .from('drivers')
       .select('*');
     if (error) throw error;
-    return data.map(driver => this.transformDriver(driver));
+    return (data || []).map((driver: any) => this.transformDriver(driver));
   }
 
   async saveDriver(driver: any) {
-    const user = await this.getCurrentUser();
-    if (!user) throw new Error('User not authenticated');
-
     const dbDriver = {
       name: driver.name,
       phone: driver.phone,
       license: driver.license,
       passport_data: driver.passportData,
       experience_years: driver.experienceYears,
-      notes: driver.notes,
-      user_id: user.id
+      notes: driver.notes
     };
 
     if (driver.id) {
@@ -288,13 +260,10 @@ class SupabaseService {
       .from('vehicles')
       .select('*');
     if (error) throw error;
-    return data.map(vehicle => this.transformVehicle(vehicle));
+    return (data || []).map((vehicle: any) => this.transformVehicle(vehicle));
   }
 
   async saveVehicle(vehicle: any) {
-    const user = await this.getCurrentUser();
-    if (!user) throw new Error('User not authenticated');
-
     const dbVehicle = {
       brand: vehicle.brand,
       model: vehicle.model,
@@ -306,8 +275,7 @@ class SupabaseService {
       insurance_policy: vehicle.insurancePolicy,
       insurance_expiry: vehicle.insuranceExpiry,
       technical_inspection_expiry: vehicle.technicalInspectionExpiry,
-      notes: vehicle.notes,
-      user_id: user.id
+      notes: vehicle.notes
     };
 
     if (vehicle.id) {
@@ -343,21 +311,17 @@ class SupabaseService {
       .from('routes')
       .select('*');
     if (error) throw error;
-    return data.map(route => this.transformRoute(route));
+    return (data || []).map((route: any) => this.transformRoute(route));
   }
 
   async saveRoute(route: any) {
-    const user = await this.getCurrentUser();
-    if (!user) throw new Error('User not authenticated');
-
     const dbRoute = {
       name: route.name,
       point_a: route.pointA,
       point_b: route.pointB,
       distance_km: route.distanceKm,
       estimated_duration_hours: route.estimatedDurationHours,
-      notes: route.notes,
-      user_id: user.id
+      notes: route.notes
     };
 
     if (route.id) {
@@ -393,13 +357,10 @@ class SupabaseService {
       .from('cargo_types')
       .select('*');
     if (error) throw error;
-    return data.map(cargoType => this.transformCargoType(cargoType));
+    return (data || []).map((cargoType: any) => this.transformCargoType(cargoType));
   }
 
   async saveCargoType(cargoType: any) {
-    const user = await this.getCurrentUser();
-    if (!user) throw new Error('User not authenticated');
-
     const dbCargoType = {
       name: cargoType.name,
       description: cargoType.description,
@@ -407,8 +368,7 @@ class SupabaseService {
       default_volume: cargoType.defaultVolume,
       hazardous: cargoType.hazardous,
       temperature_controlled: cargoType.temperatureControlled,
-      fragile: cargoType.fragile,
-      user_id: user.id
+      fragile: cargoType.fragile
     };
 
     if (cargoType.id) {
@@ -444,13 +404,10 @@ class SupabaseService {
       .from('trips')
       .select('*');
     if (error) throw error;
-    return data.map(trip => this.transformTrip(trip));
+    return (data || []).map((trip: any) => this.transformTrip(trip));
   }
 
   async saveTrip(trip: any) {
-    const user = await this.getCurrentUser();
-    if (!user) throw new Error('User not authenticated');
-
     const dbTrip = {
       status: trip.status,
       departure_date: trip.departureDate,
@@ -474,8 +431,7 @@ class SupabaseService {
       cargo_volume: trip.cargo?.volume,
       cargo_value: trip.cargo?.value,
       comments: trip.comments,
-      documents: trip.documents,
-      user_id: user.id
+      documents: trip.documents
     };
 
     if (trip.id) {
@@ -512,21 +468,21 @@ class SupabaseService {
       .select('*')
       .eq('trip_id', tripId);
     if (error) throw error;
-    return data.map(expense => this.transformTripExpense(expense));
+    return (data || []).map((expense: any) => this.transformTripExpense(expense));
   }
 
   async createTripExpense(expense: any) {
     const user = await this.getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 
+    // Use correct column names: category instead of expense_type, date instead of expense_date
     const dbExpense = {
       trip_id: expense.tripId,
-      expense_type: expense.expenseType,
+      category: expense.category || expense.expenseType,
       amount: expense.amount,
       description: expense.description,
-      expense_date: expense.expenseDate,
-      receipt_url: expense.receiptUrl,
-      user_id: user.id
+      date: expense.date || expense.expenseDate,
+      created_by: user.id
     };
 
     const { data, error } = await supabase
@@ -539,12 +495,12 @@ class SupabaseService {
   }
 
   async updateTripExpense(id: string, expense: any) {
+    // Use correct column names
     const dbExpense = {
-      expense_type: expense.expenseType,
+      category: expense.category || expense.expenseType,
       amount: expense.amount,
       description: expense.description,
-      expense_date: expense.expenseDate,
-      receipt_url: expense.receiptUrl
+      date: expense.date || expense.expenseDate
     };
 
     const { data, error } = await supabase
@@ -567,51 +523,43 @@ class SupabaseService {
 
   async getDashboardStats() {
     try {
-      const user = await this.getCurrentUser();
-      if (!user) throw new Error('User not authenticated');
-
-      // Получаем реальные данные из базы
-      const [
-        { data: trips, error: tripsError },
-        { data: contractors, error: contractorsError },
-        { data: drivers, error: driversError },
-        { data: vehicles, error: vehiclesError },
-        { data: tripExpenses, error: expensesError }
-      ] = await Promise.all([
-        supabase.from('trips').select('*').eq('user_id', user.id),
-        supabase.from('contractors').select('*').eq('user_id', user.id),
-        supabase.from('drivers').select('*').eq('user_id', user.id),
-        supabase.from('vehicles').select('*').eq('user_id', user.id),
-        supabase.from('trip_expenses').select('*').eq('user_id', user.id)
+      // Use RLS-protected queries (no user_id filter needed as RLS handles it)
+      const [tripsResult, contractorsResult, driversResult, vehiclesResult, expensesResult] = await Promise.all([
+        supabase.from('trips').select('*'),
+        supabase.from('contractors').select('*'),
+        supabase.from('drivers').select('*'),
+        supabase.from('vehicles').select('*'),
+        supabase.from('trip_expenses').select('*')
       ]);
 
-      if (tripsError) throw tripsError;
-      if (contractorsError) throw contractorsError;
-      if (driversError) throw driversError;
-      if (vehiclesError) throw vehiclesError;
-      if (expensesError) throw expensesError;
+      const trips = tripsResult.data || [];
+      const contractors = contractorsResult.data || [];
+      const drivers = driversResult.data || [];
+      const vehicles = vehiclesResult.data || [];
+      const tripExpenses = expensesResult.data || [];
 
       // Вычисляем статистику на основе реальных данных
-      const activeTrips = trips?.filter(trip => trip.status === 'in_progress').length || 0;
-      const totalTrips = trips?.length || 0;
-      const completedTrips = trips?.filter(trip => trip.status === 'completed').length || 0;
-      const plannedTrips = trips?.filter(trip => trip.status === 'planned').length || 0;
-      const cancelledTrips = trips?.filter(trip => trip.status === 'cancelled').length || 0;
+      const activeTrips = trips.filter((trip: any) => trip.status === 'in_progress').length;
+      const totalTrips = trips.length;
+      const completedTrips = trips.filter((trip: any) => trip.status === 'completed').length;
+      const plannedTrips = trips.filter((trip: any) => trip.status === 'planned').length;
+      const cancelledTrips = trips.filter((trip: any) => trip.status === 'cancelled').length;
 
       // Вычисляем общую стоимость грузов
-      const totalCargoValue = trips?.reduce((sum, trip) => sum + (trip.cargo_value || 0), 0) || 0;
-      const completedCargoValue = trips?.filter(trip => trip.status === 'completed')
-        .reduce((sum, trip) => sum + (trip.cargo_value || 0), 0) || 0;
+      const totalCargoValue = trips.reduce((sum: number, trip: any) => sum + (trip.cargo_value || 0), 0);
+      const completedCargoValue = trips
+        .filter((trip: any) => trip.status === 'completed')
+        .reduce((sum: number, trip: any) => sum + (trip.cargo_value || 0), 0);
 
       // Вычисляем общий вес и объем
-      const totalWeight = trips?.reduce((sum, trip) => sum + (trip.cargo_weight || 0), 0) || 0;
-      const totalVolume = trips?.reduce((sum, trip) => sum + (trip.cargo_volume || 0), 0) || 0;
+      const totalWeight = trips.reduce((sum: number, trip: any) => sum + (trip.cargo_weight || 0), 0);
+      const totalVolume = trips.reduce((sum: number, trip: any) => sum + (trip.cargo_volume || 0), 0);
 
       // Вычисляем общие расходы
-      const totalExpenses = tripExpenses?.reduce((sum, expense) => sum + (expense.amount || 0), 0) || 0;
+      const totalExpenses = tripExpenses.reduce((sum: number, expense: any) => sum + (expense.amount || 0), 0);
 
       // Генерируем статистику по месяцам на основе реальных данных
-      const monthlyStats = this.generateMonthlyStats(trips || [], tripExpenses || []);
+      const monthlyStats = this.generateMonthlyStats(trips, tripExpenses);
 
       const averageCargoValue = completedTrips > 0 ? completedCargoValue / completedTrips : 0;
       const completionRate = totalTrips > 0 ? (completedTrips / totalTrips) * 100 : 0;
@@ -624,9 +572,9 @@ class SupabaseService {
         completedTrips,
         plannedTrips,
         cancelledTrips,
-        contractors: contractors?.length || 0,
-        drivers: drivers?.length || 0,
-        vehicles: vehicles?.length || 0,
+        contractors: contractors.length,
+        drivers: drivers.length,
+        vehicles: vehicles.length,
         totalCargoValue,
         completedCargoValue,
         totalWeight,
@@ -659,22 +607,22 @@ class SupabaseService {
         return tripDate.getMonth() === date.getMonth() && tripDate.getFullYear() === date.getFullYear();
       });
 
-      // Фильтруем расходы по месяцу
+      // Фильтруем расходы по месяцу (use 'date' column)
       const monthExpenses = expenses.filter(expense => {
-        const expenseDate = new Date(expense.expense_date);
+        const expenseDate = new Date(expense.date);
         return expenseDate.getMonth() === date.getMonth() && expenseDate.getFullYear() === date.getFullYear();
       });
 
       const tripsCount = monthTrips.length;
-      const revenue = monthTrips.reduce((sum, trip) => sum + (trip.cargo_value || 0), 0);
-      const weight = monthTrips.reduce((sum, trip) => sum + (trip.cargo_weight || 0), 0);
-      const expensesTotal = monthExpenses.reduce((sum, expense) => sum + (expense.amount || 0), 0);
+      const revenue = monthTrips.reduce((sum: number, trip: any) => sum + (trip.cargo_value || 0), 0);
+      const weight = monthTrips.reduce((sum: number, trip: any) => sum + (trip.cargo_weight || 0), 0);
+      const expensesTotal = monthExpenses.reduce((sum: number, expense: any) => sum + (expense.amount || 0), 0);
 
       stats.push({
         month: monthName,
         trips: tripsCount,
         revenue,
-        weight: Math.round(weight / 1000), // Конвертируем в тонны
+        weight: Math.round(weight / 1000),
         expenses: expensesTotal
       });
     }
@@ -686,165 +634,81 @@ class SupabaseService {
     try {
       console.log('Getting advanced stats with filters:', filters);
       
-      const user = await this.getCurrentUser();
-      if (!user) throw new Error('User not authenticated');
-      
       // Строим запрос с фильтрами
       let tripsQuery = supabase
         .from('trips')
         .select(`
           *,
           trip_expenses(*)
-        `)
-        .eq('user_id', user.id);
+        `);
 
-      // Применяем фильтры даты
-      if (filters.dateRange?.from) {
-        tripsQuery = tripsQuery.gte('created_at', filters.dateRange.from.toISOString());
+      // Применяем фильтры по датам
+      if (filters.startDate) {
+        tripsQuery = tripsQuery.gte('departure_date', filters.startDate);
       }
-      if (filters.dateRange?.to) {
-        tripsQuery = tripsQuery.lte('created_at', filters.dateRange.to.toISOString());
+      if (filters.endDate) {
+        tripsQuery = tripsQuery.lte('departure_date', filters.endDate);
       }
-
-      // Применяем фильтр статуса
-      if (filters.status && filters.status !== 'all') {
+      if (filters.status) {
         tripsQuery = tripsQuery.eq('status', filters.status);
       }
 
-      // Применяем фильтр контрагента
-      if (filters.contractorId && filters.contractorId !== 'all') {
-        tripsQuery = tripsQuery.eq('contractor_id', filters.contractorId);
-      }
+      const { data: trips, error: tripsError } = await tripsQuery;
+      if (tripsError) throw tripsError;
 
-      // Применяем фильтр водителя
-      if (filters.driverId && filters.driverId !== 'all') {
-        tripsQuery = tripsQuery.eq('driver_id', filters.driverId);
-      }
-
-      const { data: trips, error } = await tripsQuery;
-
-      if (error) {
-        console.error('Error fetching filtered trips:', error);
-        throw error;
-      }
-
-      console.log('Filtered trips data:', trips);
-
-      // Получаем базовую статистику
-      const basicStats = await this.getDashboardStats();
-
-      // Вычисляем продвинутые метрики
-      const totalExpenses = trips?.reduce((sum, trip) => {
-        const tripExpenses = trip.trip_expenses?.reduce((expSum: number, exp: any) => 
-          expSum + (exp.amount || 0), 0) || 0;
-        return sum + tripExpenses;
-      }, 0) || 0;
-
-      const completedTrips = trips?.filter(trip => trip.status === 'completed') || [];
-      const completedTripsExpenses = completedTrips.reduce((sum, trip) => {
-        const tripExpenses = trip.trip_expenses?.reduce((expSum: number, exp: any) => 
-          expSum + (exp.amount || 0), 0) || 0;
-        return sum + tripExpenses;
-      }, 0);
-
-      // Вычисляем расходы по типам
-      const expensesByType: Record<string, number> = {};
+      // Аналитика по маршрутам
+      const routeStats: Record<string, { count: number; revenue: number; avgRevenue: number }> = {};
       trips?.forEach(trip => {
-        trip.trip_expenses?.forEach((expense: any) => {
-          const type = expense.expense_type || 'other';
-          expensesByType[type] = (expensesByType[type] || 0) + (expense.amount || 0);
-        });
-      });
-
-      const totalRevenue = completedTrips.reduce((sum, trip) => sum + (trip.cargo_value || 0), 0);
-      const profit = totalRevenue - completedTripsExpenses;
-      const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0;
-      const averageExpensePerTrip = trips?.length ? totalExpenses / trips.length : 0;
-
-      // Реальная статистика по маршрутам
-      const routeStats: Record<string, { count: number; revenue: number }> = {};
-      completedTrips.forEach(trip => {
-        const route = `${trip.point_a} - ${trip.point_b}`;
+        const route = `${trip.point_a} → ${trip.point_b}`;
         if (!routeStats[route]) {
-          routeStats[route] = { count: 0, revenue: 0 };
+          routeStats[route] = { count: 0, revenue: 0, avgRevenue: 0 };
         }
         routeStats[route].count++;
         routeStats[route].revenue += trip.cargo_value || 0;
       });
 
+      // Вычисляем средний доход по маршрутам
+      Object.keys(routeStats).forEach(route => {
+        routeStats[route].avgRevenue = routeStats[route].revenue / routeStats[route].count;
+      });
+
+      // Аналитика по водителям
+      const driverStats: Record<string, { trips: number; revenue: number }> = {};
+      trips?.forEach(trip => {
+        const driverName = trip.driver_name || 'Неизвестный';
+        if (!driverStats[driverName]) {
+          driverStats[driverName] = { trips: 0, revenue: 0 };
+        }
+        driverStats[driverName].trips++;
+        driverStats[driverName].revenue += trip.cargo_value || 0;
+      });
+
+      // Аналитика по статусам
+      const statusStats = trips?.reduce((acc: Record<string, number>, trip) => {
+        acc[trip.status] = (acc[trip.status] || 0) + 1;
+        return acc;
+      }, {}) || {};
+
+      // Топ маршруты
       const topRoutes = Object.entries(routeStats)
-        .map(([route, stats]) => ({ route, ...stats }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 5);
+        .sort(([, a], [, b]) => b.revenue - a.revenue)
+        .slice(0, 5)
+        .map(([route, stats]) => ({ route, ...stats }));
 
-      // Реальная производительность водителей
-      const driverStats: Record<string, { tripsCount: number; totalRevenue: number; totalExpenses: number; name: string }> = {};
-      trips?.forEach(trip => {
-        const driverId = trip.driver_id || 'unknown';
-        const driverName = trip.driver_name || 'Неизвестный водитель';
-        
-        if (!driverStats[driverId]) {
-          driverStats[driverId] = { tripsCount: 0, totalRevenue: 0, totalExpenses: 0, name: driverName };
-        }
-        
-        driverStats[driverId].tripsCount++;
-        if (trip.status === 'completed') {
-          driverStats[driverId].totalRevenue += trip.cargo_value || 0;
-        }
-        
-        const tripExpenses = trip.trip_expenses?.reduce((sum: number, exp: any) => sum + (exp.amount || 0), 0) || 0;
-        driverStats[driverId].totalExpenses += tripExpenses;
-      });
-
-      const driverPerformance = Object.entries(driverStats)
-        .map(([driverId, stats]) => ({
-          driverId,
-          driverName: stats.name,
-          tripsCount: stats.tripsCount,
-          totalRevenue: stats.totalRevenue,
-          totalExpenses: stats.totalExpenses
-        }))
-        .sort((a, b) => b.tripsCount - a.tripsCount)
-        .slice(0, 5);
-
-      // Реальная утилизация транспорта
-      const vehicleStats: Record<string, { tripsCount: number; totalRevenue: number; name: string }> = {};
-      trips?.forEach(trip => {
-        const vehicleId = trip.vehicle_id || 'unknown';
-        const vehicleName = trip.vehicle_license_plate || 'Неизвестный транспорт';
-        
-        if (!vehicleStats[vehicleId]) {
-          vehicleStats[vehicleId] = { tripsCount: 0, totalRevenue: 0, name: vehicleName };
-        }
-        
-        vehicleStats[vehicleId].tripsCount++;
-        if (trip.status === 'completed') {
-          vehicleStats[vehicleId].totalRevenue += trip.cargo_value || 0;
-        }
-      });
-
-      const vehicleUtilization = Object.entries(vehicleStats)
-        .map(([vehicleId, stats]) => ({
-          vehicleId,
-          vehicleName: stats.name,
-          tripsCount: stats.tripsCount,
-          totalKm: stats.tripsCount * 500, // Примерное значение
-          totalRevenue: stats.totalRevenue
-        }))
-        .sort((a, b) => b.tripsCount - a.tripsCount)
-        .slice(0, 5);
+      // Топ водители
+      const topDrivers = Object.entries(driverStats)
+        .sort(([, a], [, b]) => b.revenue - a.revenue)
+        .slice(0, 5)
+        .map(([name, stats]) => ({ name, ...stats }));
 
       return {
-        ...basicStats,
-        totalExpenses,
-        completedTripsExpenses,
-        expensesByType,
-        profit,
-        profitMargin,
-        averageExpensePerTrip,
+        routeStats,
+        driverStats,
+        statusStats,
         topRoutes,
-        driverPerformance,
-        vehicleUtilization
+        topDrivers,
+        totalTrips: trips?.length || 0,
+        totalRevenue: trips?.reduce((sum: number, t: any) => sum + (t.cargo_value || 0), 0) || 0
       };
     } catch (error) {
       console.error('Error in getAdvancedStats:', error);
@@ -853,16 +717,8 @@ class SupabaseService {
   }
 
   async signOut() {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('Sign out error:', error);
-        throw error;
-      }
-    } catch (error) {
-      console.error('Unexpected error during sign out:', error);
-      throw error;
-    }
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
   }
 }
 

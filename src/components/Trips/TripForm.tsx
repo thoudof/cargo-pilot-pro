@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,7 +45,6 @@ export const TripForm: React.FC<TripFormProps> = ({
   const [expenses, setExpenses] = useState<ExpenseFormData[]>([]);
   const { toast } = useToast();
 
-  // Функция для получения значений по умолчанию
   const getDefaultValues = (): TripFormData => {
     if (trip) {
       return {
@@ -106,14 +104,12 @@ export const TripForm: React.FC<TripFormProps> = ({
     defaultValues: getDefaultValues()
   });
 
-  // Сброс формы при изменении trip
   useEffect(() => {
     if (open) {
       const defaultValues = getDefaultValues();
       form.reset(defaultValues);
       loadData();
       
-      // Загружаем расходы если редактируем существующий рейс
       if (trip?.id) {
         loadTripExpenses(trip.id);
       } else {
@@ -144,11 +140,11 @@ export const TripForm: React.FC<TripFormProps> = ({
   const loadTripExpenses = async (tripId: string) => {
     try {
       const expensesData = await supabaseService.getTripExpenses(tripId);
-      const formattedExpenses = expensesData.map(expense => ({
-        expenseType: expense.expenseType,
+      const formattedExpenses = expensesData.map((expense: any) => ({
+        expenseType: expense.category as ExpenseType,
         amount: expense.amount.toString(),
         description: expense.description || '',
-        expenseDate: new Date(expense.expenseDate).toISOString().split('T')[0]
+        expenseDate: new Date(expense.date).toISOString().split('T')[0]
       }));
       setExpenses(formattedExpenses);
     } catch (error) {
@@ -167,7 +163,6 @@ export const TripForm: React.FC<TripFormProps> = ({
   const onSubmit = async (data: TripFormData) => {
     setLoading(true);
     try {
-      // Получаем текущего пользователя
       const user = await supabaseService.getCurrentUser();
       if (!user) {
         throw new Error('User not authenticated');
@@ -182,7 +177,6 @@ export const TripForm: React.FC<TripFormProps> = ({
         v.licensePlate === data.vehicle.licensePlate
       );
 
-      // Подготавливаем данные в формате snake_case для базы данных
       const tripData = {
         status: data.status,
         departure_date: data.departureDate.toISOString(),
@@ -204,22 +198,19 @@ export const TripForm: React.FC<TripFormProps> = ({
         cargo_volume: data.cargo.volume,
         cargo_value: data.cargo.value || null,
         comments: data.comments || null,
-        documents: data.documents || [],
-        user_id: user.id
+        documents: data.documents || []
       };
 
       console.log('Saving trip data:', tripData);
 
       let result;
       if (trip?.id) {
-        // Обновляем существующий рейс
         result = await supabaseService.supabase
           .from('trips')
           .update(tripData)
           .eq('id', trip.id)
           .select();
       } else {
-        // Создаем новый рейс
         result = await supabaseService.supabase
           .from('trips')
           .insert(tripData)
@@ -235,7 +226,6 @@ export const TripForm: React.FC<TripFormProps> = ({
 
       // Сохраняем расходы
       if (expenses.length > 0) {
-        // Если редактируем рейс, сначала удаляем старые расходы
         if (trip?.id) {
           await supabaseService.supabase
             .from('trip_expenses')
@@ -243,16 +233,16 @@ export const TripForm: React.FC<TripFormProps> = ({
             .eq('trip_id', trip.id);
         }
 
-        // Добавляем новые расходы
+        // Use correct column names: category instead of expense_type, date instead of expense_date
         const expensesToSave = expenses
           .filter(expense => expense.amount && parseFloat(expense.amount) > 0)
           .map(expense => ({
             trip_id: savedTrip.id,
-            expense_type: expense.expenseType,
+            category: expense.expenseType,
             amount: parseFloat(expense.amount),
             description: expense.description || null,
-            expense_date: new Date(expense.expenseDate).toISOString(),
-            user_id: user.id
+            date: new Date(expense.expenseDate).toISOString(),
+            created_by: user.id
           }));
 
         if (expensesToSave.length > 0) {

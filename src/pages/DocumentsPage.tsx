@@ -15,12 +15,11 @@ import { toast } from 'sonner';
 
 interface TripDocumentWithTrip {
   id: string;
-  document_name: string;
+  file_name: string;
   document_type: DocumentType;
-  file_url?: string;
-  file_size?: number;
-  description?: string;
-  upload_date: string;
+  file_url: string | null;
+  file_size: number | null;
+  created_at: string;
   trip_id: string;
   trips: {
     point_a: string;
@@ -40,12 +39,11 @@ export const DocumentsPage: React.FC = () => {
         .from('trip_documents')
         .select(`
           id,
-          document_name,
+          file_name,
           document_type,
           file_url,
           file_size,
-          description,
-          upload_date,
+          created_at,
           trip_id,
           trips!inner (
             point_a,
@@ -53,10 +51,10 @@ export const DocumentsPage: React.FC = () => {
             departure_date
           )
         `)
-        .order('upload_date', { ascending: false });
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return data as TripDocumentWithTrip[];
+      return data as unknown as TripDocumentWithTrip[];
     },
   });
 
@@ -71,14 +69,14 @@ export const DocumentsPage: React.FC = () => {
   const filteredDocuments = documents?.filter(doc => {
     const matchesType = filterType === 'all' || doc.document_type === filterType;
     const matchesSearch = !searchTerm || 
-      doc.document_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.file_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.trips.point_a.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.trips.point_b.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesType && matchesSearch;
   });
 
-  const formatFileSize = (bytes?: number) => {
+  const formatFileSize = (bytes: number | null) => {
     if (!bytes) return '';
     const mb = bytes / (1024 * 1024);
     return `${mb.toFixed(1)} МБ`;
@@ -153,7 +151,7 @@ export const DocumentsPage: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
                         <FileText className="h-5 w-5 text-muted-foreground" />
-                        <h3 className="font-medium">{document.document_name}</h3>
+                        <h3 className="font-medium">{document.file_name}</h3>
                         <Badge variant="secondary">
                           {documentTypeLabels[document.document_type]}
                         </Badge>
@@ -167,16 +165,11 @@ export const DocumentsPage: React.FC = () => {
                           <strong>Дата рейса:</strong> {format(new Date(document.trips.departure_date), 'dd.MM.yyyy', { locale: ru })}
                         </div>
                         <div>
-                          <strong>Загружен:</strong> {format(new Date(document.upload_date), 'dd.MM.yyyy HH:mm', { locale: ru })}
+                          <strong>Загружен:</strong> {format(new Date(document.created_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
                         </div>
                         {document.file_size && (
                           <div>
                             <strong>Размер:</strong> {formatFileSize(document.file_size)}
-                          </div>
-                        )}
-                        {document.description && (
-                          <div>
-                            <strong>Описание:</strong> {document.description}
                           </div>
                         )}
                       </div>

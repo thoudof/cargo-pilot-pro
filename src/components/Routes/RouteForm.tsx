@@ -42,12 +42,6 @@ export const RouteForm: React.FC<RouteFormProps> = ({ route, onSave, onCancel })
 
   const onSubmit = async (values: z.infer<typeof routeSchema>) => {
     try {
-      // Получаем текущего пользователя
-      const user = await supabaseService.getCurrentUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
       // Подготавливаем данные в формате, который ожидает Supabase (snake_case)
       const routeData = {
         name: values.name,
@@ -55,8 +49,7 @@ export const RouteForm: React.FC<RouteFormProps> = ({ route, onSave, onCancel })
         point_b: values.pointB,
         distance_km: values.distanceKm || null,
         estimated_duration_hours: values.estimatedDurationHours || null,
-        notes: values.notes || null,
-        user_id: user.id
+        notes: values.notes || null
       };
 
       console.log('Saving route data:', routeData);

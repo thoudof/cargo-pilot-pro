@@ -45,12 +45,6 @@ export const CargoTypeForm: React.FC<CargoTypeFormProps> = ({ cargoType, onSave,
 
   const onSubmit = async (values: z.infer<typeof cargoTypeSchema>) => {
     try {
-      // Получаем текущего пользователя
-      const user = await supabaseService.getCurrentUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
       // Подготавливаем данные в формате, который ожидает Supabase (snake_case)
       const cargoTypeData = {
         name: values.name,
@@ -59,8 +53,7 @@ export const CargoTypeForm: React.FC<CargoTypeFormProps> = ({ cargoType, onSave,
         default_volume: values.defaultVolume || null,
         hazardous: values.hazardous,
         temperature_controlled: values.temperatureControlled,
-        fragile: values.fragile,
-        user_id: user.id
+        fragile: values.fragile
       };
 
       console.log('Saving cargo type data:', cargoTypeData);

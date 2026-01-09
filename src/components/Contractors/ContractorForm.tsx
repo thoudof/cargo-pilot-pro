@@ -52,29 +52,71 @@ export const ContractorForm: React.FC<ContractorFormProps> = ({
   const onSubmit = async (data: ContractorFormData) => {
     setLoading(true);
     try {
-      const contractorData: Contractor = {
-        id: contractor?.id || crypto.randomUUID(),
-        companyName: data.companyName,
-        inn: data.inn,
-        address: data.address,
-        notes: data.notes || '',
-        contacts: data.contacts.map(contact => ({
-          id: contact.id || crypto.randomUUID(),
-          name: contact.name,
-          phone: contact.phone,
-          email: contact.email,
-          position: contact.position || ''
-        })),
-        createdAt: contractor?.createdAt || new Date(),
-        updatedAt: new Date()
+      // Подготавливаем данные в формате snake_case для Supabase
+      const contractorData = {
+        company_name: data.companyName,
+        inn: data.inn || null,
+        address: data.address || null,
+        notes: data.notes || null
       };
 
       console.log('Saving contractor:', contractorData);
-      await supabaseService.saveContractor(contractorData);
+
+      let result;
+      if (contractor?.id) {
+        result = await supabaseService.supabase
+          .from('contractors')
+          .update(contractorData)
+          .eq('id', contractor.id)
+          .select();
+      } else {
+        result = await supabaseService.supabase
+          .from('contractors')
+          .insert(contractorData)
+          .select();
+      }
+
+      if (result.error) {
+        console.error('Supabase error:', result.error);
+        throw result.error;
+      }
+
+      const savedContractor = result.data[0];
+
+      // Сохраняем контакты, если они есть
+      if (data.contacts && data.contacts.length > 0) {
+        // Удаляем старые контакты
+        if (contractor?.id) {
+          await supabaseService.supabase
+            .from('contacts')
+            .delete()
+            .eq('contractor_id', contractor.id);
+        }
+
+        // Добавляем новые контакты
+        const validContacts = data.contacts.filter(c => c.name && c.name.trim());
+        if (validContacts.length > 0) {
+          const contactsData = validContacts.map(contact => ({
+            contractor_id: savedContractor.id,
+            name: contact.name,
+            phone: contact.phone || null,
+            email: contact.email || null,
+            position: contact.position || null
+          }));
+
+          const contactsResult = await supabaseService.supabase
+            .from('contacts')
+            .insert(contactsData);
+
+          if (contactsResult.error) {
+            console.error('Failed to save contacts:', contactsResult.error);
+          }
+        }
+      }
       
       toast({
         title: contractor ? 'Контрагент обновлен' : 'Контрагент создан',
-        description: `${contractorData.companyName} успешно ${contractor ? 'обновлен' : 'добавлен'}`
+        description: `${data.companyName} успешно ${contractor ? 'обновлен' : 'добавлен'}`
       });
 
       onSuccess();

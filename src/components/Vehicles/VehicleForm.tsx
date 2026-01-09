@@ -51,12 +51,6 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
 
   const onSubmit = async (values: z.infer<typeof vehicleSchema>) => {
     try {
-      // Получаем текущего пользователя
-      const user = await supabaseService.getCurrentUser();
-      if (!user) {
-        throw new Error('User not authenticated');
-      }
-
       // Подготавливаем данные в формате, который ожидает Supabase (snake_case)
       const vehicleData = {
         brand: values.brand,
@@ -69,8 +63,7 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
         insurance_policy: values.insurancePolicy || null,
         insurance_expiry: values.insuranceExpiry || null,
         technical_inspection_expiry: values.technicalInspectionExpiry || null,
-        notes: values.notes || null,
-        user_id: user.id
+        notes: values.notes || null
       };
 
       console.log('Saving vehicle data:', vehicleData);

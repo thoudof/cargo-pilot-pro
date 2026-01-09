@@ -1,8 +1,6 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Truck, Users } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { Truck, Users, Car, Building2, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface DashboardStatsProps {
   stats: {
@@ -14,54 +12,88 @@ interface DashboardStatsProps {
   };
 }
 
-export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
-  const isMobile = useIsMobile();
+interface StatCardProps {
+  title: string;
+  value: number | string;
+  subtitle?: string;
+  icon: React.ReactNode;
+  trend?: {
+    value: number;
+    isPositive: boolean;
+  };
+  iconBgClass?: string;
+}
 
+const StatCard: React.FC<StatCardProps> = ({ 
+  title, 
+  value, 
+  subtitle, 
+  icon, 
+  trend,
+  iconBgClass = "bg-primary/10 text-primary"
+}) => (
+  <div className="stat-card group">
+    <div className="flex items-start justify-between">
+      <div className="space-y-2">
+        <p className="stat-card-label">{title}</p>
+        <p className="stat-card-value">{value}</p>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        )}
+        {trend && (
+          <div className={`flex items-center gap-1 text-xs font-medium ${
+            trend.isPositive ? 'text-emerald-600' : 'text-red-600'
+          }`}>
+            {trend.isPositive ? (
+              <TrendingUp className="h-3 w-3" />
+            ) : (
+              <TrendingDown className="h-3 w-3" />
+            )}
+            <span>{trend.isPositive ? '+' : ''}{trend.value}%</span>
+          </div>
+        )}
+      </div>
+      <div className={`stat-card-icon ${iconBgClass}`}>
+        {icon}
+      </div>
+    </div>
+  </div>
+);
+
+export const DashboardStats: React.FC<DashboardStatsProps> = ({ stats }) => {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
-          <CardTitle className="text-xs sm:text-sm font-medium">Активные рейсы</CardTitle>
-          <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0">
-          <div className="text-lg sm:text-2xl font-bold">{stats.activeTrips}</div>
-          <p className="text-xs text-muted-foreground">из {stats.totalTrips} всего</p>
-        </CardContent>
-      </Card>
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <StatCard
+        title="Активные рейсы"
+        value={stats.activeTrips}
+        subtitle={`из ${stats.totalTrips} всего`}
+        icon={<Truck className="h-5 w-5" />}
+        iconBgClass="bg-primary/10 text-primary"
+      />
       
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
-          <CardTitle className="text-xs sm:text-sm font-medium">Контрагенты</CardTitle>
-          <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0">
-          <div className="text-lg sm:text-2xl font-bold">{stats.contractors}</div>
-          <p className="text-xs text-muted-foreground">всего</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Контрагенты"
+        value={stats.contractors}
+        subtitle="в базе"
+        icon={<Building2 className="h-5 w-5" />}
+        iconBgClass="bg-emerald-500/10 text-emerald-600"
+      />
       
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
-          <CardTitle className="text-xs sm:text-sm font-medium">Водители</CardTitle>
-          <Users className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0">
-          <div className="text-lg sm:text-2xl font-bold">{stats.drivers}</div>
-          <p className="text-xs text-muted-foreground">в базе</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Водители"
+        value={stats.drivers}
+        subtitle="активных"
+        icon={<Users className="h-5 w-5" />}
+        iconBgClass="bg-amber-500/10 text-amber-600"
+      />
       
-      <Card className="hover:shadow-md transition-shadow">
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-6">
-          <CardTitle className="text-xs sm:text-sm font-medium">Транспорт</CardTitle>
-          <Truck className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6 pt-0">
-          <div className="text-lg sm:text-2xl font-bold">{stats.vehicles}</div>
-          <p className="text-xs text-muted-foreground">в парке</p>
-        </CardContent>
-      </Card>
+      <StatCard
+        title="Транспорт"
+        value={stats.vehicles}
+        subtitle="в парке"
+        icon={<Car className="h-5 w-5" />}
+        iconBgClass="bg-purple-500/10 text-purple-600"
+      />
     </div>
   );
 };

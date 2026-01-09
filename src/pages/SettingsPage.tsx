@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,11 +9,12 @@ import { useAuth } from '@/components/Auth/AuthProvider';
 import { supabaseService } from '@/services/supabaseService';
 import { activityLogger } from '@/services/activityLogger';
 import { useToast } from '@/hooks/use-toast';
-import { User, Bell, Shield, Database, Download, Trash2, Key, Smartphone, Settings, Palette } from 'lucide-react';
+import { User, Bell, Shield, Database, Download, Trash2, Key, Smartphone, Settings } from 'lucide-react';
 import { ChangePasswordDialog } from '@/components/Settings/ChangePasswordDialog';
 import { TwoFactorSetupDialog } from '@/components/Settings/TwoFactorSetupDialog';
 import { ThemeToggle } from '@/components/Theme/ThemeToggle';
 import { useTheme } from '@/components/Theme/ThemeProvider';
+import { PageHeader } from '@/components/Layout/PageHeader';
 
 interface UserProfile {
   full_name: string;
@@ -72,7 +72,6 @@ export const SettingsPage: React.FC = () => {
 
   const loadSettings = async () => {
     try {
-      // Загружаем настройки из localStorage или Supabase
       const savedNotifications = localStorage.getItem('notification_settings');
       const savedAppSettings = localStorage.getItem('app_settings');
       
@@ -150,7 +149,6 @@ export const SettingsPage: React.FC = () => {
       description: `${getAppSettingLabel(key)} изменена`
     });
   };
-
 
   const getNotificationLabel = (key: keyof NotificationSettings): string => {
     const labels = {
@@ -231,155 +229,143 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  const SettingsSection: React.FC<{ 
+    icon: React.ReactNode; 
+    title: string; 
+    children: React.ReactNode 
+  }> = ({ icon, title, children }) => (
+    <div className="card-elevated">
+      <div className="p-4 sm:p-6 border-b border-border">
+        <h2 className="flex items-center gap-2 font-semibold">
+          {icon}
+          {title}
+        </h2>
+      </div>
+      <div className="p-4 sm:p-6 space-y-4">
+        {children}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
+      <PageHeader 
+        title="Настройки" 
+        description="Управление профилем и настройками приложения"
+      />
+
       {/* Профиль пользователя */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            Профиль пользователя
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <SettingsSection icon={<User className="h-5 w-5 text-primary" />} title="Профиль">
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-sm">Email</Label>
             <Input
               id="email"
               type="email"
               value={user?.email || ''}
               disabled
-              className="bg-gray-50"
+              className="bg-muted h-10"
             />
-            <p className="text-xs text-gray-500">Email нельзя изменить</p>
+            <p className="text-xs text-muted-foreground">Email нельзя изменить</p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Полное имя</Label>
-            <Input
-              id="fullName"
-              value={profile.full_name}
-              onChange={(e) => setProfile(prev => ({ ...prev, full_name: e.target.value }))}
-              placeholder="Введите полное имя"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="text-sm">Полное имя</Label>
+              <Input
+                id="fullName"
+                value={profile.full_name}
+                onChange={(e) => setProfile(prev => ({ ...prev, full_name: e.target.value }))}
+                placeholder="Введите полное имя"
+                className="h-10"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="username" className="text-sm">Логин</Label>
+              <Input
+                id="username"
+                value={profile.username}
+                onChange={(e) => setProfile(prev => ({ ...prev, username: e.target.value }))}
+                placeholder="Введите логин"
+                className="h-10"
+              />
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="username">Имя пользователя</Label>
-            <Input
-              id="username"
-              value={profile.username}
-              onChange={(e) => setProfile(prev => ({ ...prev, username: e.target.value }))}
-              placeholder="Введите имя пользователя"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="role">Роль</Label>
-            <Input
-              id="role"
-              value={profile.role}
-              disabled
-              className="bg-gray-50"
-            />
-            <p className="text-xs text-gray-500">Роль назначается администратором</p>
-          </div>
-
-          <Button onClick={handleProfileUpdate} disabled={loading}>
+          <Button onClick={handleProfileUpdate} disabled={loading} className="w-full sm:w-auto">
             {loading ? 'Сохранение...' : 'Сохранить изменения'}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </SettingsSection>
 
       {/* Настройки уведомлений */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
-            Уведомления
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {Object.entries(notifications).map(([key, value]) => (
-            <div key={key}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label>{getNotificationLabel(key as keyof NotificationSettings)}</Label>
-                  <p className="text-sm text-gray-500">
-                    {key === 'emailNotifications' && 'Получать уведомления на email'}
-                    {key === 'pushNotifications' && 'Получать push-уведомления в браузере'}
-                    {key === 'tripUpdates' && 'Уведомления об изменениях в рейсах'}
-                    {key === 'systemAlerts' && 'Важные системные сообщения'}
-                  </p>
-                </div>
-                <Switch
-                  checked={value}
-                  onCheckedChange={(checked) => handleNotificationUpdate(key as keyof NotificationSettings, checked)}
-                />
+      <SettingsSection icon={<Bell className="h-5 w-5 text-primary" />} title="Уведомления">
+        {Object.entries(notifications).map(([key, value], index) => (
+          <div key={key}>
+            {index > 0 && <Separator className="my-4" />}
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium text-sm">{getNotificationLabel(key as keyof NotificationSettings)}</p>
+                <p className="text-xs text-muted-foreground">
+                  {key === 'emailNotifications' && 'Получать уведомления на email'}
+                  {key === 'pushNotifications' && 'Получать push-уведомления в браузере'}
+                  {key === 'tripUpdates' && 'Уведомления об изменениях в рейсах'}
+                  {key === 'systemAlerts' && 'Важные системные сообщения'}
+                </p>
               </div>
-              <Separator className="mt-4" />
+              <Switch
+                checked={value}
+                onCheckedChange={(checked) => handleNotificationUpdate(key as keyof NotificationSettings, checked)}
+              />
             </div>
-          ))}
-        </CardContent>
-      </Card>
+          </div>
+        ))}
+      </SettingsSection>
 
       {/* Настройки приложения */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Настройки приложения
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Тема оформления</Label>
-              <p className="text-sm text-muted-foreground">Выберите тему оформления приложения</p>
-            </div>
-            <ThemeToggle />
+      <SettingsSection icon={<Settings className="h-5 w-5 text-primary" />} title="Приложение">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium text-sm">Тема оформления</p>
+            <p className="text-xs text-muted-foreground">Выберите тему интерфейса</p>
           </div>
+          <ThemeToggle />
+        </div>
 
-          <Separator />
+        <Separator />
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Автосинхронизация</Label>
-              <p className="text-sm text-gray-500">Автоматически синхронизировать данные</p>
-            </div>
-            <Switch
-              checked={appSettings.autoSync}
-              onCheckedChange={(value) => handleAppSettingUpdate('autoSync', value)}
-            />
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium text-sm">Автосинхронизация</p>
+            <p className="text-xs text-muted-foreground">Автоматически синхронизировать данные</p>
           </div>
+          <Switch
+            checked={appSettings.autoSync}
+            onCheckedChange={(value) => handleAppSettingUpdate('autoSync', value)}
+          />
+        </div>
 
-          <Separator />
+        <Separator />
 
-          <div className="flex items-center justify-between">
-            <div>
-              <Label>Компактный вид</Label>
-              <p className="text-sm text-gray-500">Отображать информацию в компактном виде</p>
-            </div>
-            <Switch
-              checked={appSettings.compactView}
-              onCheckedChange={(value) => handleAppSettingUpdate('compactView', value)}
-            />
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium text-sm">Компактный вид</p>
+            <p className="text-xs text-muted-foreground">Отображать информацию компактно</p>
           </div>
-        </CardContent>
-      </Card>
+          <Switch
+            checked={appSettings.compactView}
+            onCheckedChange={(value) => handleAppSettingUpdate('compactView', value)}
+          />
+        </div>
+      </SettingsSection>
 
       {/* Безопасность */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Безопасность
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <SettingsSection icon={<Shield className="h-5 w-5 text-primary" />} title="Безопасность">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Button
             variant="outline"
-            className="w-full flex items-center gap-2"
+            className="w-full justify-start gap-2 h-11"
             onClick={() => setChangePasswordOpen(true)}
           >
             <Key className="h-4 w-4" />
@@ -387,51 +373,44 @@ export const SettingsPage: React.FC = () => {
           </Button>
           <Button
             variant="outline"
-            className="w-full flex items-center gap-2"
+            className="w-full justify-start gap-2 h-11"
             onClick={() => setTwoFactorOpen(true)}
           >
             <Smartphone className="h-4 w-4" />
-            Настроить двухфакторную аутентификацию
+            Двухфакторная аутентификация
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+      </SettingsSection>
 
-      {/* Данные и конфиденциальность */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Database className="h-5 w-5" />
-            Данные и конфиденциальность
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Данные */}
+      <SettingsSection icon={<Database className="h-5 w-5 text-primary" />} title="Данные">
+        <Button
+          variant="outline"
+          onClick={handleExportData}
+          className="w-full justify-start gap-2 h-11"
+        >
+          <Download className="h-4 w-4" />
+          Экспортировать мои данные
+        </Button>
+
+        <Separator />
+
+        <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+          <h4 className="font-medium text-destructive mb-2">Опасная зона</h4>
+          <p className="text-sm text-muted-foreground mb-4">
+            Удаление аккаунта приведет к безвозвратной потере всех данных.
+          </p>
           <Button
-            variant="outline"
-            onClick={handleExportData}
-            className="w-full flex items-center gap-2"
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteAccount}
+            className="gap-2"
           >
-            <Download className="h-4 w-4" />
-            Экспортировать мои данные
+            <Trash2 className="h-4 w-4" />
+            Удалить аккаунт
           </Button>
-
-          <Separator />
-
-          <div className="bg-red-50 p-4 rounded-lg">
-            <h4 className="font-semibold text-red-800 mb-2">Опасная зона</h4>
-            <p className="text-sm text-red-600 mb-4">
-              Удаление аккаунта приведет к безвозвратной потере всех данных.
-            </p>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteAccount}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="h-4 w-4" />
-              Удалить аккаунт
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </SettingsSection>
 
       <ChangePasswordDialog
         open={changePasswordOpen}

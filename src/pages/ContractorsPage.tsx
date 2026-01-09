@@ -1,14 +1,15 @@
 
 import React from 'react';
 import { ContractorList } from '@/components/Contractors/ContractorList';
+import { PageHeader } from '@/components/Layout/PageHeader';
 
 export const ContractorsPage: React.FC = () => {
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Подрядчики</h1>
-        <p className="text-muted-foreground">Управление подрядчиками</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader 
+        title="Контрагенты" 
+        description="Управление клиентами и партнёрами"
+      />
       <ContractorList />
     </div>
   );

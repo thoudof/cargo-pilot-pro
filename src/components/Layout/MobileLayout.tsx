@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Menu } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { LogOut, Menu, Settings, ChevronRight } from 'lucide-react';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { AppNavigation } from '@/components/Navigation/AppNavigation';
 import { ThemeToggle } from '@/components/Theme/ThemeToggle';
@@ -17,19 +17,6 @@ interface MobileLayoutProps {
   children: React.ReactNode;
 }
 
-const pageTitles: { [key: string]: string } = {
-  '/': 'Главная',
-  '/trips': 'Рейсы',
-  '/reports': 'Отчеты',
-  '/contractors': 'Контрагенты',
-  '/drivers': 'Водители',
-  '/vehicles': 'Транспорт',
-  '/routes': 'Маршруты',
-  '/cargo-types': 'Типы грузов',
-  '/admin': 'Админ панель',
-  '/settings': 'Настройки'
-};
-
 export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user } = useAuth();
@@ -39,19 +26,14 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
 
   const handleLogout = useCallback(async () => {
     try {
-      console.log('Starting logout process...');
-      
-      // Логируем выход из системы
       try {
         await activityLogger.logLogout();
       } catch (logError) {
         console.warn('Failed to log logout activity:', logError);
       }
       
-      // Выходим из Supabase
       const { error } = await supabase.auth.signOut();
       if (error) {
-        console.error('Logout error:', error);
         toast({
           title: "Ошибка выхода",
           description: "Не удалось выйти из системы. Попробуйте еще раз.",
@@ -60,19 +42,14 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
         return;
       }
 
-      console.log('Logout successful, redirecting...');
-      
-      // Показываем уведомление об успешном выходе
       toast({
         title: "Выход выполнен",
         description: "Вы успешно вышли из системы",
       });
 
-      // Перенаправляем на главную страницу
       navigate('/', { replace: true });
       
     } catch (error) {
-      console.error('Unexpected logout error:', error);
       toast({
         title: "Ошибка",
         description: "Произошла неожиданная ошибка при выходе",
@@ -85,16 +62,6 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
     setIsSidebarOpen(false);
     await handleLogout();
   }, [handleLogout]);
-
-  const currentPage = useMemo(() => 
-    location.pathname === '/' ? '/' : location.pathname,
-    [location.pathname]
-  );
-
-  const pageTitle = useMemo(() => 
-    pageTitles[currentPage] || 'Страница',
-    [currentPage]
-  );
 
   const userInitial = useMemo(() => 
     user?.user_metadata?.full_name?.charAt(0) || user?.email?.charAt(0) || "U",
@@ -110,148 +77,180 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
     setIsSidebarOpen(false);
   }, []);
 
-  const openSidebar = useCallback(() => {
-    setIsSidebarOpen(true);
-  }, []);
-
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header с логотипом и кнопкой меню */}
-      <header className="bg-card border-b border-border px-4 py-3 sticky top-0 z-40">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
+    <div className="min-h-screen bg-background flex">
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 xl:w-72 flex-col gradient-sidebar border-r border-sidebar-border">
+        {/* Logo */}
+        <div className="p-4 xl:p-6 border-b border-sidebar-border">
+          <img 
+            src="/lovable-uploads/8085f690-6d29-4dc3-8dfc-890319ea82ed.png" 
+            alt="Fix Logistics" 
+            className="h-10 w-auto object-contain brightness-0 invert"
+          />
+        </div>
+
+        {/* User Info */}
+        <div className="p-4 xl:p-6 border-b border-sidebar-border">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10 ring-2 ring-sidebar-primary/20">
+              <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt={userName} />
+              <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground font-semibold">
+                {userInitial}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm text-sidebar-foreground truncate">
+                {userName}
+              </p>
+              <p className="text-xs text-sidebar-foreground/60 truncate">
+                {user?.email}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        {/* Navigation */}
+        <ScrollArea className="flex-1 py-4">
+          <div className="px-3">
+            <AppNavigation variant="desktop" />
+          </div>
+        </ScrollArea>
+        
+        {/* Bottom Actions */}
+        <div className="p-4 border-t border-sidebar-border space-y-1">
+          <Link
+            to="/settings"
+            className="nav-item w-full"
+          >
+            <Settings className="h-4 w-4" />
+            <span>Настройки</span>
+          </Link>
+          <button 
+            onClick={handleLogout}
+            className="nav-item w-full text-left hover:bg-red-500/10 hover:text-red-400"
+          >
+            <LogOut className="h-4 w-4" />
+            <span>Выйти</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top Header */}
+        <header className="bg-card border-b border-border px-4 lg:px-6 h-14 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-3">
             <Button 
               variant="ghost" 
-              size="sm" 
-              onClick={openSidebar}
-              className="lg:hidden p-2"
+              size="icon"
+              onClick={() => setIsSidebarOpen(true)}
+              className="lg:hidden"
             >
               <Menu className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-2">
-              <img 
-                src="/lovable-uploads/8085f690-6d29-4dc3-8dfc-890319ea82ed.png" 
-                alt="Fix Logistics" 
-                className="h-10 w-auto object-contain"
-              />
-            </div>
+            
+            {/* Mobile Logo */}
+            <img 
+              src="/lovable-uploads/8085f690-6d29-4dc3-8dfc-890319ea82ed.png" 
+              alt="Fix Logistics" 
+              className="h-8 w-auto object-contain lg:hidden"
+            />
           </div>
           
           <div className="flex items-center gap-2">
             <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
-      {/* Заголовок страницы */}
-      <div className="bg-card border-b border-border px-4 py-2">
-        <div className="max-w-7xl mx-auto">
-          <h1 className="text-lg font-medium text-foreground">
-            {pageTitle}
-          </h1>
-        </div>
-      </div>
-
-      {/* Desktop Sidebar для планшетов и больших экранов */}
-      <div className="hidden lg:flex flex-1">
-        <aside className="w-64 xl:w-72 bg-card border-r border-border flex flex-col">
-          <ScrollArea className="flex-1">
-            <div className="p-4 xl:p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <Avatar className="h-10 w-10 xl:h-12 xl:w-12 flex-shrink-0">
-                  <AvatarImage 
-                    src={user?.user_metadata?.avatar_url || ""} 
-                    alt={userName} 
-                  />
-                  <AvatarFallback>{userInitial}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm xl:text-base truncate">
-                    {userName}
-                  </p>
-                  <p className="text-xs xl:text-sm text-muted-foreground truncate break-all">{user?.email}</p>
-                </div>
-              </div>
-              
-              <AppNavigation />
+            
+            {/* Desktop User Menu */}
+            <div className="hidden lg:flex items-center gap-3 ml-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt={userName} />
+                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                  {userInitial}
+                </AvatarFallback>
+              </Avatar>
             </div>
-          </ScrollArea>
-          
-          <div className="p-4 xl:p-6 border-t">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start h-10 xl:h-12 text-sm xl:text-base" 
-              onClick={handleLogout}
-            >
-              <LogOut className="h-4 w-4 xl:h-5 xl:w-5 mr-3" />
-              Выйти
-            </Button>
           </div>
-        </aside>
-        
+        </header>
+
+        {/* Page Content */}
         <main className="flex-1 overflow-auto">
-          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
-            {children}
+          <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto pb-20 lg:pb-8">
+            <div className="animate-fade-in">
+              {children}
+            </div>
           </div>
         </main>
       </div>
 
-      {/* Mobile Sidebar */}
+      {/* Mobile Sidebar Sheet */}
       <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
-        <SheetTrigger asChild>
-          <div className="hidden" />
-        </SheetTrigger>
-        <SheetContent side="left" className="w-72 sm:w-80 flex flex-col p-0">
-          <SheetHeader className="text-left p-6 pb-0">
-            <SheetTitle>Меню</SheetTitle>
+        <SheetContent side="left" className="w-80 p-0 gradient-sidebar border-sidebar-border">
+          <SheetHeader className="p-6 border-b border-sidebar-border">
+            <SheetTitle className="text-left">
+              <img 
+                src="/lovable-uploads/8085f690-6d29-4dc3-8dfc-890319ea82ed.png" 
+                alt="Fix Logistics" 
+                className="h-8 w-auto object-contain brightness-0 invert"
+              />
+            </SheetTitle>
           </SheetHeader>
           
-          <ScrollArea className="flex-1">
-            <div className="p-6 space-y-6">
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted">
-                <Avatar className="h-10 w-10 flex-shrink-0">
-                  <AvatarImage 
-                    src={user?.user_metadata?.avatar_url || ""} 
-                    alt={userName} 
-                  />
-                  <AvatarFallback>{userInitial}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm truncate">
-                    {userName}
-                  </p>
-                  <p className="text-xs text-muted-foreground truncate break-all">{user?.email}</p>
-                </div>
+          {/* User Info */}
+          <div className="p-4 border-b border-sidebar-border">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-sidebar-accent">
+              <Avatar className="h-10 w-10">
+                <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt={userName} />
+                <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
+                  {userInitial}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-sm text-sidebar-foreground truncate">
+                  {userName}
+                </p>
+                <p className="text-xs text-sidebar-foreground/60 truncate">
+                  {user?.email}
+                </p>
               </div>
-              
-              <AppNavigation onItemClick={closeSidebar} />
+            </div>
+          </div>
+          
+          <ScrollArea className="flex-1 h-[calc(100vh-280px)]">
+            <div className="p-3">
+              <AppNavigation variant="mobile" onItemClick={closeSidebar} />
             </div>
           </ScrollArea>
 
-          <div className="p-6 border-t">
-            <Button 
-              variant="ghost" 
-              className="w-full justify-start h-12" 
-              onClick={handleMobileLogout}
-            >
-              <LogOut className="h-5 w-5 mr-3" />
-              Выйти
-            </Button>
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-sidebar-border bg-sidebar-background">
+            <div className="space-y-1">
+              <Link
+                to="/settings"
+                onClick={closeSidebar}
+                className="nav-item w-full"
+              >
+                <Settings className="h-4 w-4" />
+                <span>Настройки</span>
+                <ChevronRight className="h-4 w-4 ml-auto opacity-50" />
+              </Link>
+              <button 
+                onClick={handleMobileLogout}
+                className="nav-item w-full text-left hover:bg-red-500/10 hover:text-red-400"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Выйти</span>
+              </button>
+            </div>
           </div>
         </SheetContent>
       </Sheet>
 
-      {/* Mobile Main Content */}
-      <main className="flex-1 lg:hidden">
-        <div className="p-2 sm:p-4 pb-20">
-          {children}
+      {/* Bottom Navigation - Mobile Only */}
+      <div className="bottom-nav lg:hidden">
+        <div className="max-w-lg mx-auto">
+          <AppNavigation variant="bottom" />
         </div>
-      </main>
-
-      {/* Bottom Navigation - только для мобильных */}
-      <footer className="lg:hidden fixed bottom-0 left-0 w-full bg-card border-t border-border py-1 px-2 safe-area-inset">
-        <AppNavigation variant="bottom" />
-      </footer>
+      </div>
     </div>
   );
 };

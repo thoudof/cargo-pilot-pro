@@ -3,7 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { CalendarDays, TrendingUp, Users, Truck } from 'lucide-react';
+import { CalendarDays, TrendingUp, Users, Truck, BarChart3 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 
 interface AnalyticsData {
   dailyTrips: Array<{ date: string; trips: number; completed: number; cancelled: number }>;
@@ -12,7 +14,15 @@ interface AnalyticsData {
   monthlyGrowth: Array<{ month: string; users: number; trips: number }>;
 }
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+const CHART_COLORS = {
+  primary: 'hsl(var(--primary))',
+  success: 'hsl(var(--success))',
+  warning: 'hsl(var(--warning))',
+  destructive: 'hsl(var(--destructive))',
+  info: 'hsl(var(--info))',
+};
+
+const STATUS_COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444'];
 
 export const Analytics: React.FC = () => {
   const [data, setData] = useState<AnalyticsData>({
@@ -46,7 +56,6 @@ export const Analytics: React.FC = () => {
           break;
       }
 
-      // Получаем данные о рейсах по дням
       const { data: tripsData, error: tripsError } = await supabase
         .from('trips')
         .select('created_at, status')
@@ -55,7 +64,6 @@ export const Analytics: React.FC = () => {
 
       if (tripsError) throw tripsError;
 
-      // Группируем рейсы по дням
       const dailyTripsMap = new Map();
       tripsData?.forEach(trip => {
         const date = new Date(trip.created_at).toISOString().split('T')[0];
@@ -68,7 +76,6 @@ export const Analytics: React.FC = () => {
         if (trip.status === 'cancelled') dayData.cancelled++;
       });
 
-      // Получаем активность пользователей
       const { data: activityData, error: activityError } = await supabase
         .from('activity_logs')
         .select('created_at, user_id')
@@ -77,7 +84,6 @@ export const Analytics: React.FC = () => {
 
       if (activityError) throw activityError;
 
-      // Группируем активность по дням
       const dailyActivityMap = new Map();
       activityData?.forEach(log => {
         const date = new Date(log.created_at).toISOString().split('T')[0];
@@ -92,7 +98,6 @@ export const Analytics: React.FC = () => {
         activeUsers: userSet.size
       }));
 
-      // Статистика по статусам рейсов
       const statusMap = new Map();
       tripsData?.forEach(trip => {
         statusMap.set(trip.status, (statusMap.get(trip.status) || 0) + 1);
@@ -101,10 +106,9 @@ export const Analytics: React.FC = () => {
       const tripsByStatus = Array.from(statusMap.entries()).map(([status, count], index) => ({
         status: getStatusLabel(status),
         count,
-        color: COLORS[index % COLORS.length]
+        color: STATUS_COLORS[index % STATUS_COLORS.length]
       }));
 
-      // Месячный рост (последние 6 месяцев)
       const monthlyData = [];
       for (let i = 5; i >= 0; i--) {
         const date = new Date();
@@ -156,123 +160,158 @@ export const Analytics: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader>
-              <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-64 bg-gray-100 rounded animate-pulse"></div>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="space-y-6">
+        <Card className="border-border/50">
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+        </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="border-border/50">
+              <CardHeader>
+                <Skeleton className="h-5 w-32" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-64 w-full" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4 lg:space-y-6">
-      {/* Управление временным диапазоном */}
-      <Card>
-        <CardHeader>
+    <div className="space-y-6">
+      {/* Header with time range */}
+      <Card className="border-border/50">
+        <CardHeader className="border-b border-border/50 bg-muted/30">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <BarChart className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-3 text-lg">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <BarChart3 className="h-5 w-5 text-primary" />
+              </div>
               Системная аналитика
             </CardTitle>
             <div className="flex gap-2">
-              {['7d', '30d', '90d'].map((range) => (
-                <button
-                  key={range}
-                  onClick={() => setTimeRange(range as any)}
-                  className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                    timeRange === range
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                  }`}
+              {[
+                { value: '7d', label: '7 дней' },
+                { value: '30d', label: '30 дней' },
+                { value: '90d', label: '90 дней' }
+              ].map((range) => (
+                <Button
+                  key={range.value}
+                  variant={timeRange === range.value ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setTimeRange(range.value as any)}
                 >
-                  {range === '7d' ? '7 дней' : range === '30d' ? '30 дней' : '90 дней'}
-                </button>
+                  {range.label}
+                </Button>
               ))}
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      {/* Графики */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-        {/* Ежедневные рейсы */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-              <Truck className="h-4 w-4 lg:h-5 lg:w-5" />
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Daily Trips */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="p-1.5 rounded-lg bg-success/10">
+                <Truck className="h-4 w-4 text-success" />
+              </div>
               Рейсы по дням
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 lg:h-80">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={data.dailyTrips}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                   <XAxis 
                     dataKey="date" 
-                    fontSize={12}
-                    tickFormatter={(value) => new Date(value).toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })}
+                    fontSize={11}
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                    className="fill-muted-foreground"
                   />
-                  <YAxis fontSize={12} />
+                  <YAxis fontSize={11} className="fill-muted-foreground" />
                   <Tooltip 
                     labelFormatter={(value) => new Date(value).toLocaleDateString('ru-RU')}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
                   />
                   <Legend />
-                  <Bar dataKey="trips" fill="#8884d8" name="Всего рейсов" />
-                  <Bar dataKey="completed" fill="#82ca9d" name="Завершено" />
-                  <Bar dataKey="cancelled" fill="#ffc658" name="Отменено" />
+                  <Bar dataKey="trips" fill="#3b82f6" name="Всего рейсов" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="completed" fill="#22c55e" name="Завершено" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="cancelled" fill="#f59e0b" name="Отменено" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        {/* Активность пользователей */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-              <Users className="h-4 w-4 lg:h-5 lg:w-5" />
+        {/* User Activity */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="p-1.5 rounded-lg bg-primary/10">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
               Активные пользователи
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 lg:h-80">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.userActivity}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
                   <XAxis 
                     dataKey="date" 
-                    fontSize={12}
-                    tickFormatter={(value) => new Date(value).toLocaleDateString('ru-RU', { month: 'short', day: 'numeric' })}
+                    fontSize={11}
+                    tickFormatter={(value) => new Date(value).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                    className="fill-muted-foreground"
                   />
-                  <YAxis fontSize={12} />
+                  <YAxis fontSize={11} className="fill-muted-foreground" />
                   <Tooltip 
                     labelFormatter={(value) => new Date(value).toLocaleDateString('ru-RU')}
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
                   />
-                  <Line type="monotone" dataKey="activeUsers" stroke="#8884d8" name="Активные пользователи" />
+                  <Line 
+                    type="monotone" 
+                    dataKey="activeUsers" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6', strokeWidth: 2 }}
+                    name="Активные пользователи" 
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        {/* Рейсы по статусам */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-              <TrendingUp className="h-4 w-4 lg:h-5 lg:w-5" />
+        {/* Status Distribution */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="p-1.5 rounded-lg bg-info/10">
+                <TrendingUp className="h-4 w-4 text-info" />
+              </div>
               Распределение по статусам
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 lg:h-80">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -281,40 +320,70 @@ export const Analytics: React.FC = () => {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
+                    outerRadius={90}
+                    innerRadius={40}
                     fill="#8884d8"
                     dataKey="count"
+                    paddingAngle={2}
                   >
                     {data.tripsByStatus.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        {/* Месячный рост */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base lg:text-lg">
-              <CalendarDays className="h-4 w-4 lg:h-5 lg:w-5" />
+        {/* Monthly Growth */}
+        <Card className="border-border/50">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <div className="p-1.5 rounded-lg bg-warning/10">
+                <CalendarDays className="h-4 w-4 text-warning" />
+              </div>
               Динамика роста
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64 lg:h-80">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={data.monthlyGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" fontSize={12} />
-                  <YAxis fontSize={12} />
-                  <Tooltip />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border/50" />
+                  <XAxis dataKey="month" fontSize={11} className="fill-muted-foreground" />
+                  <YAxis fontSize={11} className="fill-muted-foreground" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--card))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '8px'
+                    }}
+                  />
                   <Legend />
-                  <Line type="monotone" dataKey="users" stroke="#8884d8" name="Новые пользователи" />
-                  <Line type="monotone" dataKey="trips" stroke="#82ca9d" name="Новые рейсы" />
+                  <Line 
+                    type="monotone" 
+                    dataKey="users" 
+                    stroke="#3b82f6" 
+                    strokeWidth={2}
+                    dot={{ fill: '#3b82f6', strokeWidth: 2 }}
+                    name="Новые пользователи" 
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="trips" 
+                    stroke="#22c55e" 
+                    strokeWidth={2}
+                    dot={{ fill: '#22c55e', strokeWidth: 2 }}
+                    name="Новые рейсы" 
+                  />
                 </LineChart>
               </ResponsiveContainer>
             </div>

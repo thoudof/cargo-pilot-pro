@@ -1,17 +1,18 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Download, FileText, Search } from 'lucide-react';
+import { Download, FileText, Search, Filter } from 'lucide-react';
 import { documentTypeLabels, DocumentType } from '@/types/documents';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { PageHeader } from '@/components/Layout/PageHeader';
 
 interface TripDocumentWithTrip {
   id: string;
@@ -83,114 +84,110 @@ export const DocumentsPage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Документы рейсов</h1>
-        <p className="text-muted-foreground">Просмотр всех загруженных документов</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader 
+        title="Документы" 
+        description="Все загруженные документы рейсов"
+      />
 
       {/* Фильтры */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            Фильтры
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Тип документа</Label>
-              <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Выберите тип документа" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все типы</SelectItem>
-                  {Object.entries(documentTypeLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label>Поиск</Label>
+      <div className="card-elevated p-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Filter className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Фильтры</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label className="text-sm">Тип документа</Label>
+            <Select value={filterType} onValueChange={setFilterType}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Выберите тип" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все типы</SelectItem>
+                {Object.entries(documentTypeLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="space-y-2">
+            <Label className="text-sm">Поиск</Label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Поиск по названию или маршруту..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 h-10"
               />
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Список документов */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-3">
+            <div className="spinner h-8 w-8 text-primary" />
+            <p className="text-sm text-muted-foreground">Загрузка документов...</p>
+          </div>
+        </div>
+      ) : filteredDocuments?.length === 0 ? (
+        <div className="card-elevated p-12">
+          <div className="flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+              <FileText className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <p className="text-lg font-medium">Документы не найдены</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Попробуйте изменить фильтры поиска
+            </p>
+          </div>
         </div>
       ) : (
-        <div className="grid gap-4">
-          {filteredDocuments?.length === 0 ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-8">
-                <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                <p className="text-lg font-medium">Документы не найдены</p>
-                <p className="text-muted-foreground">Попробуйте изменить фильтры поиска</p>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredDocuments?.map((document) => (
-              <Card key={document.id}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <FileText className="h-5 w-5 text-muted-foreground" />
-                        <h3 className="font-medium">{document.file_name}</h3>
-                        <Badge variant="secondary">
-                          {documentTypeLabels[document.document_type]}
-                        </Badge>
-                      </div>
-                      
-                      <div className="space-y-1 text-sm text-muted-foreground">
-                        <div>
-                          <strong>Рейс:</strong> {document.trips.point_a} → {document.trips.point_b}
-                        </div>
-                        <div>
-                          <strong>Дата рейса:</strong> {format(new Date(document.trips.departure_date), 'dd.MM.yyyy', { locale: ru })}
-                        </div>
-                        <div>
-                          <strong>Загружен:</strong> {format(new Date(document.created_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
-                        </div>
-                        {document.file_size && (
-                          <div>
-                            <strong>Размер:</strong> {formatFileSize(document.file_size)}
-                          </div>
-                        )}
-                      </div>
+        <div className="grid gap-3">
+          {filteredDocuments?.map((document) => (
+            <div key={document.id} className="card-elevated card-interactive p-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center flex-shrink-0">
+                    <FileText className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                      <h3 className="font-medium truncate">{document.file_name}</h3>
+                      <Badge variant="secondary" className="text-xs">
+                        {documentTypeLabels[document.document_type]}
+                      </Badge>
                     </div>
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDownload(document)}
-                        disabled={!document.file_url}
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Скачать
-                      </Button>
+                    <div className="space-y-0.5 text-sm text-muted-foreground">
+                      <p>{document.trips.point_a} → {document.trips.point_b}</p>
+                      <p className="text-xs">
+                        {format(new Date(document.trips.departure_date), 'dd MMM yyyy', { locale: ru })}
+                        {document.file_size && ` • ${formatFileSize(document.file_size)}`}
+                      </p>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))
-          )}
+                </div>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownload(document)}
+                  disabled={!document.file_url}
+                  className="flex-shrink-0"
+                >
+                  <Download className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Скачать</span>
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

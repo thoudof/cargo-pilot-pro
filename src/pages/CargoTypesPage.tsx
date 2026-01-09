@@ -1,14 +1,15 @@
 
 import React from 'react';
 import { CargoTypeList } from '@/components/CargoTypes/CargoTypeList';
+import { PageHeader } from '@/components/Layout/PageHeader';
 
 export const CargoTypesPage: React.FC = () => {
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Типы грузов</h1>
-        <p className="text-muted-foreground">Управление типами грузов</p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader 
+        title="Типы грузов" 
+        description="Классификация грузов для рейсов"
+      />
       <CargoTypeList />
     </div>
   );

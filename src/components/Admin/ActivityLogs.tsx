@@ -5,14 +5,42 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Activity, Filter, ChevronLeft, ChevronRight, Search, User, X } from 'lucide-react';
+import { Activity, Filter, Search, User, X, Clock, Globe, FileText } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Pagination, PaginationContent, PaginationEllipsis, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Skeleton } from '@/components/ui/skeleton';
 import type { Database } from '@/integrations/supabase/types';
 
 type ActivityLog = Database['public']['Tables']['activity_logs']['Row'];
 
 const LOGS_PER_PAGE = 20;
+
+const actionConfig: Record<string, { label: string; className: string }> = {
+  login: { label: 'Вход в систему', className: 'bg-success/10 text-success border-success/20' },
+  logout: { label: 'Выход из системы', className: 'bg-muted text-muted-foreground border-border' },
+  create: { label: 'Создание', className: 'bg-primary/10 text-primary border-primary/20' },
+  update: { label: 'Обновление', className: 'bg-info/10 text-info border-info/20' },
+  delete: { label: 'Удаление', className: 'bg-destructive/10 text-destructive border-destructive/20' },
+  navigation: { label: 'Навигация', className: 'bg-muted text-muted-foreground border-border' },
+  view: { label: 'Просмотр', className: 'bg-muted text-muted-foreground border-border' },
+  export: { label: 'Экспорт', className: 'bg-warning/10 text-warning border-warning/20' },
+  import: { label: 'Импорт', className: 'bg-warning/10 text-warning border-warning/20' },
+  search: { label: 'Поиск', className: 'bg-muted text-muted-foreground border-border' },
+  filter: { label: 'Фильтрация', className: 'bg-muted text-muted-foreground border-border' }
+};
+
+const entityLabels: Record<string, string> = {
+  trip: 'Рейс',
+  contractor: 'Контрагент',
+  driver: 'Водитель',
+  vehicle: 'Транспорт',
+  route: 'Маршрут',
+  cargo_type: 'Тип груза',
+  auth: 'Аутентификация',
+  page: 'Страница',
+  user: 'Пользователь',
+  notification: 'Уведомление'
+};
 
 export const ActivityLogs: React.FC = () => {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
@@ -28,12 +56,10 @@ export const ActivityLogs: React.FC = () => {
 
   const fetchLogs = async () => {
     setLoading(true);
-    console.log('ActivityLogs: Fetching logs with filter:', filter, 'userSearch:', userSearch, 'page:', currentPage);
     
     try {
       const offset = (currentPage - 1) * LOGS_PER_PAGE;
       
-      // Получаем общее количество записей для пагинации
       let countQuery = supabase
         .from('activity_logs')
         .select('*', { count: 'exact', head: true });
@@ -43,14 +69,12 @@ export const ActivityLogs: React.FC = () => {
       }
 
       if (userSearch.trim()) {
-        // Поиск по email пользователя или имени в details
         countQuery = countQuery.or(`details->>user_email.ilike.%${userSearch}%,details->>user_name.ilike.%${userSearch}%`);
       }
 
       const { count } = await countQuery;
       setTotalLogs(count || 0);
 
-      // Получаем записи для текущей страницы
       let query = supabase
         .from('activity_logs')
         .select('*')
@@ -62,18 +86,13 @@ export const ActivityLogs: React.FC = () => {
       }
 
       if (userSearch.trim()) {
-        // Поиск по email пользователя или имени в details
         query = query.or(`details->>user_email.ilike.%${userSearch}%,details->>user_name.ilike.%${userSearch}%`);
       }
 
       const { data, error } = await query;
 
-      if (error) {
-        console.error('ActivityLogs: Error fetching logs:', error);
-        throw error;
-      }
+      if (error) throw error;
       
-      console.log('ActivityLogs: Successfully fetched', data?.length || 0, 'logs');
       setLogs(data || []);
     } catch (error) {
       console.error('ActivityLogs: Exception while fetching logs:', error);
@@ -85,137 +104,52 @@ export const ActivityLogs: React.FC = () => {
 
   const getUserInfo = (log: ActivityLog) => {
     if (!log.details) return 'Неизвестный пользователь';
-    
     try {
       const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
       return details.user_name || details.user_email || 'Неизвестный пользователь';
-    } catch (error) {
+    } catch {
       return 'Неизвестный пользователь';
     }
   };
 
   const getUserEmail = (log: ActivityLog) => {
     if (!log.details) return null;
-    
     try {
       const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
       return details.user_email || null;
-    } catch (error) {
+    } catch {
       return null;
     }
   };
 
-  const handleUserSearchChange = (value: string) => {
-    setUserSearch(value);
-    setCurrentPage(1); // Сбрасываем на первую страницу при поиске
-  };
-
-  const clearUserSearch = () => {
-    setUserSearch('');
-    setCurrentPage(1);
-  };
-
-  const getActionBadgeVariant = (action: string) => {
-    switch (action.toLowerCase()) {
-      case 'login': return 'default';
-      case 'logout': return 'secondary';
-      case 'create': return 'default';
-      case 'update': return 'outline';
-      case 'delete': return 'destructive';
-      case 'navigation': return 'secondary';
-      default: return 'outline';
-    }
-  };
-
-  const getActionLabel = (action: string) => {
-    const labels: Record<string, string> = {
-      'login': 'Вход в систему',
-      'logout': 'Выход из системы',
-      'create': 'Создание записи',
-      'update': 'Обновление записи',
-      'delete': 'Удаление записи',
-      'navigation': 'Переход по страницам',
-      'view': 'Просмотр данных',
-      'export': 'Экспорт данных',
-      'import': 'Импорт данных',
-      'search': 'Поиск данных',
-      'filter': 'Фильтрация данных'
-    };
-    return labels[action.toLowerCase()] || action;
-  };
-
-  const getEntityTypeLabel = (entityType: string | null) => {
-    if (!entityType) return 'Система';
-    
-    const labels: Record<string, string> = {
-      'trip': 'Рейс',
-      'contractor': 'Контрагент',
-      'driver': 'Водитель',
-      'vehicle': 'Транспорт',
-      'route': 'Маршрут',
-      'cargo_type': 'Тип груза',
-      'auth': 'Аутентификация',
-      'page': 'Страница',
-      'user': 'Пользователь',
-      'notification': 'Уведомление'
-    };
-    return labels[entityType] || entityType;
-  };
-
   const getDetailedDescription = (log: ActivityLog) => {
-    const action = getActionLabel(log.action);
-    const entityType = getEntityTypeLabel(log.entity_type);
+    const action = actionConfig[log.action]?.label || log.action;
+    const entityType = entityLabels[log.entity_type || ''] || log.entity_type || 'Система';
     
     if (log.details) {
       try {
         const details = typeof log.details === 'string' ? JSON.parse(log.details) : log.details;
-        
-        // Специальная обработка для навигации
         if (log.action === 'navigation' && details.page) {
           return `Переход на страницу: ${details.page}`;
         }
-        
-        // Специальная обработка для создания/обновления/удаления
         if (['create', 'update', 'delete'].includes(log.action) && log.entity_id) {
           return `${action} ${entityType.toLowerCase()} (ID: ${log.entity_id.substring(0, 8)}...)`;
         }
-        
-        // Общая обработка других действий
         return `${action} - ${entityType}`;
-      } catch (error) {
-        console.warn('ActivityLogs: Error parsing details:', error);
+      } catch {
         return `${action} - ${entityType}`;
       }
     }
-    
     return `${action} - ${entityType}`;
-  };
-
-  const formatDetails = (details: any) => {
-    if (!details) return 'Нет дополнительной информации';
-    
-    try {
-      const parsed = typeof details === 'string' ? JSON.parse(details) : details;
-      // Исключаем пользовательскую информацию из деталей, так как она отображается отдельно
-      const filteredDetails = Object.entries(parsed)
-        .filter(([key]) => !['user_name', 'user_email', 'timestamp'].includes(key))
-        .map(([key, value]) => `${key}: ${value}`)
-        .join(', ');
-      return filteredDetails.length > 100 ? filteredDetails.substring(0, 100) + '...' : filteredDetails || 'Нет дополнительной информации';
-    } catch (error) {
-      return 'Некорректные данные';
-    }
   };
 
   const formatUserAgent = (userAgent: string | null) => {
     if (!userAgent) return 'Неизвестно';
-    
-    // Упрощенное определение браузера
     if (userAgent.includes('Chrome')) return 'Chrome';
     if (userAgent.includes('Firefox')) return 'Firefox';
     if (userAgent.includes('Safari')) return 'Safari';
     if (userAgent.includes('Edge')) return 'Edge';
-    return 'Другой браузер';
+    return 'Другой';
   };
 
   const totalPages = Math.ceil(totalLogs / LOGS_PER_PAGE);
@@ -226,51 +160,66 @@ export const ActivityLogs: React.FC = () => {
     }
   };
 
-  if (loading) {
+  if (loading && logs.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
+      <Card className="border-border/50">
+        <CardHeader className="border-b border-border/50 bg-muted/30">
+          <Skeleton className="h-6 w-64" />
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="p-6 space-y-4">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Логи активности пользователей
+    <Card className="border-border/50 overflow-hidden">
+      <CardHeader className="border-b border-border/50 bg-muted/30">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <CardTitle className="flex items-center gap-3 text-lg">
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Activity className="h-5 w-5 text-primary" />
+            </div>
+            Логи активности
           </CardTitle>
-          <div className="flex items-center gap-2">
-            {/* Поиск по пользователю */}
+          <div className="flex items-center gap-2 flex-wrap">
             <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Поиск по пользователю..."
                 value={userSearch}
-                onChange={(e) => handleUserSearchChange(e.target.value)}
-                className="pl-8 w-48"
+                onChange={(e) => {
+                  setUserSearch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-9 w-48 h-9"
               />
               {userSearch && (
                 <Button
                   variant="ghost"
-                  size="sm"
-                  onClick={clearUserSearch}
-                  className="absolute right-1 top-1 h-6 w-6 p-0"
+                  size="icon"
+                  onClick={() => {
+                    setUserSearch('');
+                    setCurrentPage(1);
+                  }}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
                 >
                   <X className="h-3 w-3" />
                 </Button>
               )}
             </div>
             
-            {/* Фильтр по действию */}
-            <Filter className="h-4 w-4" />
             <Select value={filter} onValueChange={(value) => {
               setFilter(value);
-              setCurrentPage(1); // Сбрасываем на первую страницу при смене фильтра
+              setCurrentPage(1);
             }}>
-              <SelectTrigger className="w-40">
+              <SelectTrigger className="w-40 h-9">
+                <Filter className="h-4 w-4 mr-2" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -281,100 +230,93 @@ export const ActivityLogs: React.FC = () => {
                 <SelectItem value="update">Обновление</SelectItem>
                 <SelectItem value="delete">Удаление</SelectItem>
                 <SelectItem value="navigation">Навигация</SelectItem>
-                <SelectItem value="view">Просмотр</SelectItem>
-                <SelectItem value="export">Экспорт</SelectItem>
-                <SelectItem value="search">Поиск</SelectItem>
               </SelectContent>
             </Select>
           </div>
         </div>
-        <div className="text-sm text-muted-foreground">
-          Показано {logs.length} из {totalLogs} записей (страница {currentPage} из {totalPages})
-          {userSearch && <span> • Поиск: "{userSearch}"</span>}
-        </div>
+        <p className="text-sm text-muted-foreground mt-2">
+          Показано {logs.length} из {totalLogs} записей • Страница {currentPage} из {totalPages || 1}
+          {userSearch && <span className="ml-2">• Поиск: "{userSearch}"</span>}
+        </p>
       </CardHeader>
-      <CardContent>
-        <div className="rounded-md border">
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Дата и время</TableHead>
-                <TableHead>Пользователь</TableHead>
-                <TableHead>Действие</TableHead>
-                <TableHead>Описание</TableHead>
-                <TableHead>Браузер</TableHead>
-                <TableHead>Детали</TableHead>
+              <TableRow className="bg-muted/20 hover:bg-muted/20">
+                <TableHead className="font-semibold">Время</TableHead>
+                <TableHead className="font-semibold">Пользователь</TableHead>
+                <TableHead className="font-semibold">Действие</TableHead>
+                <TableHead className="font-semibold">Описание</TableHead>
+                <TableHead className="font-semibold">Браузер</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {logs.map((log) => (
-                <TableRow key={log.id}>
-                  <TableCell className="font-mono text-xs">
-                    {new Date(log.created_at).toLocaleString('ru-RU', {
-                      year: 'numeric',
-                      month: '2-digit',
-                      day: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      second: '2-digit'
-                    })}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <User className="h-4 w-4 text-muted-foreground" />
-                      <div className="max-w-xs">
-                        <div className="font-medium text-sm truncate">
-                          {getUserInfo(log)}
-                        </div>
-                        {getUserEmail(log) && (
-                          <div className="text-xs text-muted-foreground truncate">
-                            {getUserEmail(log)}
-                          </div>
-                        )}
+              {logs.map((log) => {
+                const config = actionConfig[log.action] || { label: log.action, className: 'bg-muted text-muted-foreground border-border' };
+                
+                return (
+                  <TableRow key={log.id} className="group">
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="font-mono text-xs">
+                          {new Date(log.created_at).toLocaleString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getActionBadgeVariant(log.action)}>
-                      {getActionLabel(log.action)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-xs">
-                      {getDetailedDescription(log)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs">
-                    {formatUserAgent(log.user_agent)}
-                  </TableCell>
-                  <TableCell className="max-w-xs">
-                    <div className="text-xs text-muted-foreground truncate">
-                      {formatDetails(log.details)}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-full bg-muted">
+                          <User className="h-3.5 w-3.5 text-muted-foreground" />
+                        </div>
+                        <div className="max-w-[150px]">
+                          <p className="text-sm font-medium truncate">{getUserInfo(log)}</p>
+                          {getUserEmail(log) && (
+                            <p className="text-xs text-muted-foreground truncate">{getUserEmail(log)}</p>
+                          )}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`${config.className} border text-xs`}>
+                        {config.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground max-w-[200px]">
+                        <FileText className="h-3.5 w-3.5 flex-shrink-0" />
+                        <span className="truncate">{getDetailedDescription(log)}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Globe className="h-3.5 w-3.5" />
+                        {formatUserAgent(log.user_agent)}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </div>
         
         {logs.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            {userSearch 
-              ? `Логи для пользователя "${userSearch}" не найдены`
-              : filter === 'all' 
-                ? 'Логи активности не найдены' 
-                : `Логи с действием "${getActionLabel(filter)}" не найдены`
-            }
+          <div className="text-center py-12 text-muted-foreground">
+            <Activity className="h-12 w-12 mx-auto mb-3 opacity-50" />
+            <p>{userSearch ? `Логи для "${userSearch}" не найдены` : 'Логи активности не найдены'}</p>
           </div>
         )}
 
-        {/* Пагинация */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between pt-4">
-            <div className="text-sm text-muted-foreground">
-              Всего записей: {totalLogs}
-            </div>
+          <div className="flex items-center justify-between p-4 border-t border-border/50">
+            <p className="text-sm text-muted-foreground">Всего записей: {totalLogs}</p>
             <Pagination>
               <PaginationContent>
                 <PaginationItem>
@@ -384,23 +326,18 @@ export const ActivityLogs: React.FC = () => {
                   />
                 </PaginationItem>
                 
-                {/* Показываем первую страницу */}
                 {currentPage > 3 && (
                   <>
                     <PaginationItem>
-                      <PaginationLink onClick={() => handlePageChange(1)} className="cursor-pointer">
-                        1
-                      </PaginationLink>
+                      <PaginationLink onClick={() => handlePageChange(1)} className="cursor-pointer">1</PaginationLink>
                     </PaginationItem>
                     {currentPage > 4 && <PaginationEllipsis />}
                   </>
                 )}
                 
-                {/* Показываем текущую страницу и соседние */}
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   const page = Math.max(1, Math.min(totalPages - 4, currentPage - 2)) + i;
                   if (page > totalPages) return null;
-                  
                   return (
                     <PaginationItem key={page}>
                       <PaginationLink 
@@ -414,7 +351,6 @@ export const ActivityLogs: React.FC = () => {
                   );
                 }).filter(Boolean)}
                 
-                {/* Показываем последнюю страницу */}
                 {currentPage < totalPages - 2 && (
                   <>
                     {currentPage < totalPages - 3 && <PaginationEllipsis />}

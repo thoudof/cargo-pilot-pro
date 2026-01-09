@@ -1,10 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Database, Users, Truck, Building, Activity, MapPin, Package } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { 
+  Users, 
+  Truck, 
+  Building, 
+  Activity, 
+  MapPin, 
+  Package, 
+  Route,
+  Clock,
+  TrendingUp
+} from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface SystemStats {
+interface SystemStatsData {
   totalUsers: number;
   totalTrips: number;
   totalContractors: number;
@@ -16,8 +27,74 @@ interface SystemStats {
   recentActivity: number;
 }
 
+const statsConfig = [
+  {
+    key: 'totalUsers',
+    title: 'Пользователей',
+    icon: Users,
+    colorClass: 'bg-primary/10 text-primary',
+    suffix: 'в системе'
+  },
+  {
+    key: 'totalTrips',
+    title: 'Всего рейсов',
+    icon: Truck,
+    colorClass: 'bg-success/10 text-success',
+    suffix: 'создано'
+  },
+  {
+    key: 'activeTrips',
+    title: 'Активных рейсов',
+    icon: Activity,
+    colorClass: 'bg-warning/10 text-warning',
+    suffix: 'в пути'
+  },
+  {
+    key: 'totalContractors',
+    title: 'Контрагентов',
+    icon: Building,
+    colorClass: 'bg-info/10 text-info',
+    suffix: 'записей'
+  },
+  {
+    key: 'totalDrivers',
+    title: 'Водителей',
+    icon: Users,
+    colorClass: 'bg-primary/10 text-primary',
+    suffix: 'записей'
+  },
+  {
+    key: 'totalVehicles',
+    title: 'Транспорта',
+    icon: Truck,
+    colorClass: 'bg-destructive/10 text-destructive',
+    suffix: 'единиц'
+  },
+  {
+    key: 'totalRoutes',
+    title: 'Маршрутов',
+    icon: Route,
+    colorClass: 'bg-success/10 text-success',
+    suffix: 'записей'
+  },
+  {
+    key: 'totalCargoTypes',
+    title: 'Типов грузов',
+    icon: Package,
+    colorClass: 'bg-warning/10 text-warning',
+    suffix: 'записей'
+  },
+  {
+    key: 'recentActivity',
+    title: 'За 24 часа',
+    icon: Clock,
+    colorClass: 'bg-info/10 text-info',
+    suffix: 'действий'
+  }
+];
+
 export const SystemStats: React.FC = () => {
-  const [stats, setStats] = useState<SystemStats>({
+  const [stats, setStats] = useState<SystemStatsData>({
     totalUsers: 0,
     totalTrips: 0,
     totalContractors: 0,
@@ -76,73 +153,15 @@ export const SystemStats: React.FC = () => {
     }
   };
 
-  const statsCards = [
-    {
-      title: 'Всего пользователей',
-      value: stats.totalUsers,
-      icon: Users,
-      color: 'text-blue-600'
-    },
-    {
-      title: 'Всего рейсов',
-      value: stats.totalTrips,
-      icon: Truck,
-      color: 'text-green-600'
-    },
-    {
-      title: 'Активные рейсы',
-      value: stats.activeTrips,
-      icon: Activity,
-      color: 'text-orange-600'
-    },
-    {
-      title: 'Контрагенты',
-      value: stats.totalContractors,
-      icon: Building,
-      color: 'text-purple-600'
-    },
-    {
-      title: 'Водители',
-      value: stats.totalDrivers,
-      icon: Users,
-      color: 'text-indigo-600'
-    },
-    {
-      title: 'Транспорт',
-      value: stats.totalVehicles,
-      icon: Truck,
-      color: 'text-red-600'
-    },
-    {
-      title: 'Маршруты',
-      value: stats.totalRoutes,
-      icon: MapPin,
-      color: 'text-teal-600'
-    },
-    {
-      title: 'Типы грузов',
-      value: stats.totalCargoTypes,
-      icon: Package,
-      color: 'text-pink-600'
-    },
-    {
-      title: 'Активность за 24ч',
-      value: stats.recentActivity,
-      icon: Database,
-      color: 'text-gray-600'
-    }
-  ];
-
   if (loading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-3">
         {Array.from({ length: 9 }).map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
-            </CardHeader>
-            <CardContent>
-              <div className="h-8 bg-gray-200 rounded animate-pulse"></div>
+          <Card key={i} className="border-border/50">
+            <CardContent className="p-4">
+              <Skeleton className="h-10 w-10 rounded-lg mb-3" />
+              <Skeleton className="h-7 w-16 mb-1" />
+              <Skeleton className="h-4 w-20" />
             </CardContent>
           </Card>
         ))}
@@ -151,22 +170,26 @@ export const SystemStats: React.FC = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
-      {statsCards.map((stat, index) => {
-        const Icon = stat.icon;
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-3">
+      {statsConfig.map((config) => {
+        const Icon = config.icon;
+        const value = stats[config.key as keyof SystemStatsData];
+        
         return (
-          <Card key={index} className="transition-all duration-200 hover:shadow-md">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs lg:text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <Icon className={`h-3 w-3 lg:h-4 lg:w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-xl lg:text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">
-                {index === 8 ? 'действий' : index === 2 ? 'в пути' : 'записей'}
-              </p>
+          <Card 
+            key={config.key} 
+            className="group border-border/50 hover:border-primary/30 hover:shadow-md transition-all duration-200"
+          >
+            <CardContent className="p-4">
+              <div className={`p-2.5 rounded-lg ${config.colorClass} w-fit mb-3 group-hover:scale-110 transition-transform`}>
+                <Icon className="h-5 w-5" />
+              </div>
+              <div className="text-2xl font-bold text-foreground mb-0.5">
+                {value.toLocaleString('ru-RU')}
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {config.title}
+              </div>
             </CardContent>
           </Card>
         );

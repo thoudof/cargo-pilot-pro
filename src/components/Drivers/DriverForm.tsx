@@ -43,19 +43,39 @@ export const DriverForm: React.FC<DriverFormProps> = ({ driver, onSave, onCancel
 
   const onSubmit = async (values: z.infer<typeof driverSchema>) => {
     try {
-      const driverData: Driver = {
-        id: driver?.id || crypto.randomUUID(),
+      // Подготавливаем данные в формате snake_case для Supabase
+      const driverData = {
         name: values.name,
         phone: values.phone,
-        license: values.license,
-        passportData: values.passportData,
-        experienceYears: values.experienceYears,
-        notes: values.notes,
-        createdAt: driver?.createdAt || new Date(),
-        updatedAt: new Date()
+        license: values.license || null,
+        passport_data: values.passportData || null,
+        experience_years: values.experienceYears || null,
+        notes: values.notes || null
       };
 
-      await supabaseService.saveDriver(driverData);
+      console.log('Saving driver data:', driverData);
+
+      let result;
+      if (driver?.id) {
+        result = await supabaseService.supabase
+          .from('drivers')
+          .update(driverData)
+          .eq('id', driver.id)
+          .select();
+      } else {
+        result = await supabaseService.supabase
+          .from('drivers')
+          .insert(driverData)
+          .select();
+      }
+
+      if (result.error) {
+        console.error('Supabase error:', result.error);
+        throw result.error;
+      }
+
+      console.log('Driver saved successfully:', result.data);
+
       toast({
         title: driver ? 'Водитель обновлен' : 'Водитель создан',
         description: `${values.name} успешно ${driver ? 'обновлен' : 'создан'}`
@@ -65,7 +85,7 @@ export const DriverForm: React.FC<DriverFormProps> = ({ driver, onSave, onCancel
       console.error('Failed to save driver:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось сохранить водителя',
+        description: `Не удалось сохранить водителя: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
         variant: 'destructive'
       });
     }

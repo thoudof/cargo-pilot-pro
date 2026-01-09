@@ -1,11 +1,12 @@
 
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/components/Auth/AuthProvider";
 import { AuthPage } from "@/components/Auth/AuthPage";
 import { MobileLayout } from "@/components/Layout/MobileLayout";
 import { Dashboard } from "@/components/Dashboard/Dashboard";
 import { PushNotificationManager } from "@/components/Notifications/PushNotificationManager";
 import { useActivityLogger } from "@/hooks/useActivityLogger";
+import { PageTransition } from "@/components/Layout/PageTransition";
 import { TripsPage } from "./TripsPage";
 import { ContractorsPage } from "./ContractorsPage";
 import { DriversPage } from "./DriversPage";
@@ -17,15 +18,16 @@ import AdminPage from "./AdminPage";
 import { ReportsPage } from './ReportsPage';
 import { DocumentsPage } from './DocumentsPage';
 import { AdminRoute } from "@/components/Admin/AdminRoute";
+import { AnimatePresence } from "framer-motion";
 
 const Index = () => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   
   useActivityLogger();
 
   console.log('Index render - user:', !!user, 'loading:', loading);
 
-  // Показываем загрузку только во время инициализации авторизации
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -37,33 +39,75 @@ const Index = () => {
     );
   }
 
-  // Если пользователя нет, показываем страницу аутентификации
   if (!user) {
     return <AuthPage />;
   }
 
-  // Если пользователь аутентифицирован, показываем основное приложение
   return (
     <MobileLayout>
       <PushNotificationManager />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/trips" element={<TripsPage />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/documents" element={<DocumentsPage />} />
-        <Route path="/contractors" element={<ContractorsPage />} />
-        <Route path="/drivers" element={<DriversPage />} />
-        <Route path="/vehicles" element={<VehiclesPage />} />
-        <Route path="/routes" element={<RoutesPage />} />
-        <Route path="/cargo-types" element={<CargoTypesPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/admin" element={
-          <AdminRoute>
-            <AdminPage />
-          </AdminRoute>
-        } />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <AnimatePresence mode="wait">
+        <Routes location={location} key={location.pathname}>
+          <Route path="/" element={
+            <PageTransition>
+              <Dashboard />
+            </PageTransition>
+          } />
+          <Route path="/trips" element={
+            <PageTransition>
+              <TripsPage />
+            </PageTransition>
+          } />
+          <Route path="/reports" element={
+            <PageTransition>
+              <ReportsPage />
+            </PageTransition>
+          } />
+          <Route path="/documents" element={
+            <PageTransition>
+              <DocumentsPage />
+            </PageTransition>
+          } />
+          <Route path="/contractors" element={
+            <PageTransition>
+              <ContractorsPage />
+            </PageTransition>
+          } />
+          <Route path="/drivers" element={
+            <PageTransition>
+              <DriversPage />
+            </PageTransition>
+          } />
+          <Route path="/vehicles" element={
+            <PageTransition>
+              <VehiclesPage />
+            </PageTransition>
+          } />
+          <Route path="/routes" element={
+            <PageTransition>
+              <RoutesPage />
+            </PageTransition>
+          } />
+          <Route path="/cargo-types" element={
+            <PageTransition>
+              <CargoTypesPage />
+            </PageTransition>
+          } />
+          <Route path="/settings" element={
+            <PageTransition>
+              <SettingsPage />
+            </PageTransition>
+          } />
+          <Route path="/admin" element={
+            <AdminRoute>
+              <PageTransition>
+                <AdminPage />
+              </PageTransition>
+            </AdminRoute>
+          } />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AnimatePresence>
     </MobileLayout>
   );
 };

@@ -1,12 +1,11 @@
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Trip } from '@/types';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
-import { TripForm } from './TripForm';
+import { TripFormTabs } from './TripFormTabs';
 import { useToast } from '@/hooks/use-toast';
 import { TripDetails } from './TripDetails';
 import { TripCard } from './TripCard';
-import { TripListFilters } from './TripListFilters';
+import { TripListFiltersAdvanced } from './TripListFiltersAdvanced';
 import { TripListEmptyState } from './TripListEmptyState';
 import { useDataCache } from '@/hooks/useDataCache';
 
@@ -20,6 +19,9 @@ export const TripList: React.FC = () => {
   const [tripExpenses, setTripExpenses] = useState<Record<string, number>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [contractorFilter, setContractorFilter] = useState<string>('all');
+  const [dateFromFilter, setDateFromFilter] = useState<string>('');
+  const [dateToFilter, setDateToFilter] = useState<string>('');
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | undefined>();
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -117,15 +119,42 @@ export const TripList: React.FC = () => {
     return contractor?.companyName || 'Неизвестный контрагент';
   }, [contractors]);
 
+  const handleClearFilters = useCallback(() => {
+    setStatusFilter('all');
+    setContractorFilter('all');
+    setDateFromFilter('');
+    setDateToFilter('');
+  }, []);
+
   const filteredTrips = useMemo(() => {
     if (!Array.isArray(trips) || trips.length === 0) return [];
     
     let result = trips;
     
+    // Status filter
     if (statusFilter !== 'all') {
       result = result.filter(trip => trip.status === statusFilter);
     }
     
+    // Contractor filter
+    if (contractorFilter !== 'all') {
+      result = result.filter(trip => trip.contractorId === contractorFilter);
+    }
+    
+    // Date from filter
+    if (dateFromFilter) {
+      const fromDate = new Date(dateFromFilter);
+      result = result.filter(trip => new Date(trip.departureDate) >= fromDate);
+    }
+    
+    // Date to filter
+    if (dateToFilter) {
+      const toDate = new Date(dateToFilter);
+      toDate.setHours(23, 59, 59, 999);
+      result = result.filter(trip => new Date(trip.departureDate) <= toDate);
+    }
+    
+    // Search filter
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
       result = result.filter(trip => 
@@ -138,7 +167,7 @@ export const TripList: React.FC = () => {
     }
     
     return result;
-  }, [trips, searchTerm, statusFilter, getContractorName]);
+  }, [trips, searchTerm, statusFilter, contractorFilter, dateFromFilter, dateToFilter, getContractorName]);
 
   if (loading) {
     return (
@@ -150,12 +179,20 @@ export const TripList: React.FC = () => {
 
   return (
     <div className="space-y-4">
-      <TripListFilters
+      <TripListFiltersAdvanced
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         onAddTrip={handleAddTrip}
+        contractors={contractors}
+        contractorFilter={contractorFilter}
+        onContractorFilterChange={setContractorFilter}
+        dateFromFilter={dateFromFilter}
+        onDateFromFilterChange={setDateFromFilter}
+        dateToFilter={dateToFilter}
+        onDateToFilterChange={setDateToFilter}
+        onClearFilters={handleClearFilters}
       />
 
       {filteredTrips.length === 0 ? (
@@ -180,7 +217,7 @@ export const TripList: React.FC = () => {
         </div>
       )}
 
-      <TripForm
+      <TripFormTabs
         trip={editingTrip}
         open={formOpen}
         onOpenChange={setFormOpen}

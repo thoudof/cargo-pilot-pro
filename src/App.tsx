@@ -5,6 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/components/Auth/AuthProvider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ThemeProvider } from "@/components/Theme/ThemeProvider";
+import { RealtimeNotificationProvider } from "@/components/Notifications/RealtimeNotificationProvider";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { useMemo } from "react";
@@ -39,15 +40,17 @@ function App() {
       <ThemeProvider defaultTheme="system" storageKey="cargo-app-theme">
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <BrowserRouter>
-              <TooltipProvider>
-                <Routes>
-                  <Route path="/*" element={<Index />} />
-                  <Route path="/404" element={<NotFound />} />
-                </Routes>
-                <Toaster />
-              </TooltipProvider>
-            </BrowserRouter>
+            <RealtimeNotificationProvider>
+              <BrowserRouter>
+                <TooltipProvider>
+                  <Routes>
+                    <Route path="/*" element={<Index />} />
+                    <Route path="/404" element={<NotFound />} />
+                  </Routes>
+                  <Toaster />
+                </TooltipProvider>
+              </BrowserRouter>
+            </RealtimeNotificationProvider>
           </AuthProvider>
         </QueryClientProvider>
       </ThemeProvider>

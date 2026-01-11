@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -49,6 +49,22 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
     }
   });
 
+  // Reset form when vehicle changes
+  useEffect(() => {
+    form.reset({
+      brand: vehicle?.brand || '',
+      model: vehicle?.model || '',
+      licensePlate: vehicle?.licensePlate || '',
+      capacity: vehicle?.capacity || undefined,
+      year: vehicle?.year || undefined,
+      vin: vehicle?.vin || '',
+      registrationCertificate: vehicle?.registrationCertificate || '',
+      insurancePolicy: vehicle?.insurancePolicy || '',
+      insuranceExpiry: vehicle?.insuranceExpiry ? new Date(vehicle.insuranceExpiry).toISOString().split('T')[0] : '',
+      technicalInspectionExpiry: vehicle?.technicalInspectionExpiry ? new Date(vehicle.technicalInspectionExpiry).toISOString().split('T')[0] : '',
+      notes: vehicle?.notes || ''
+    });
+  }, [vehicle, form]);
   const onSubmit = async (values: z.infer<typeof vehicleSchema>) => {
     try {
       // Подготавливаем данные в формате, который ожидает Supabase (snake_case)

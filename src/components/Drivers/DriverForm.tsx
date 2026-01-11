@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -41,6 +40,17 @@ export const DriverForm: React.FC<DriverFormProps> = ({ driver, onSave, onCancel
     }
   });
 
+  // Reset form when driver changes
+  useEffect(() => {
+    form.reset({
+      name: driver?.name || '',
+      phone: driver?.phone || '',
+      license: driver?.license || '',
+      passportData: driver?.passportData || '',
+      experienceYears: driver?.experienceYears || 0,
+      notes: driver?.notes || ''
+    });
+  }, [driver, form]);
   const onSubmit = async (values: z.infer<typeof driverSchema>) => {
     try {
       // Подготавливаем данные в формате snake_case для Supabase

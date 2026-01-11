@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -43,6 +42,18 @@ export const CargoTypeForm: React.FC<CargoTypeFormProps> = ({ cargoType, onSave,
     }
   });
 
+  // Reset form when cargoType changes
+  useEffect(() => {
+    form.reset({
+      name: cargoType?.name || '',
+      description: cargoType?.description || '',
+      defaultWeight: cargoType?.defaultWeight || 0,
+      defaultVolume: cargoType?.defaultVolume || 0,
+      hazardous: cargoType?.hazardous || false,
+      temperatureControlled: cargoType?.temperatureControlled || false,
+      fragile: cargoType?.fragile || false
+    });
+  }, [cargoType, form]);
   const onSubmit = async (values: z.infer<typeof cargoTypeSchema>) => {
     try {
       // Подготавливаем данные в формате, который ожидает Supabase (snake_case)

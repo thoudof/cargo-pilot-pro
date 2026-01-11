@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -30,9 +30,22 @@ export const ContractorForm: React.FC<ContractorFormProps> = ({
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  const form = useForm<ContractorFormData>({
-    resolver: zodResolver(contractorSchema),
-    defaultValues: contractor || {
+  const getDefaultValues = (): ContractorFormData => {
+    if (contractor) {
+      return {
+        id: contractor.id || '',
+        companyName: contractor.companyName || '',
+        inn: contractor.inn || '',
+        address: contractor.address || '',
+        contacts: contractor.contacts?.length > 0 
+          ? contractor.contacts 
+          : [{ id: '', name: '', phone: '', email: '', position: '' }],
+        notes: contractor.notes || '',
+        createdAt: contractor.createdAt ? new Date(contractor.createdAt) : new Date(),
+        updatedAt: contractor.updatedAt ? new Date(contractor.updatedAt) : new Date()
+      };
+    }
+    return {
       id: '',
       companyName: '',
       inn: '',
@@ -41,13 +54,25 @@ export const ContractorForm: React.FC<ContractorFormProps> = ({
       notes: '',
       createdAt: new Date(),
       updatedAt: new Date()
-    }
+    };
+  };
+
+  const form = useForm<ContractorFormData>({
+    resolver: zodResolver(contractorSchema),
+    defaultValues: getDefaultValues()
   });
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: 'contacts'
   });
+
+  // Reset form when contractor changes or dialog opens
+  useEffect(() => {
+    if (open) {
+      form.reset(getDefaultValues());
+    }
+  }, [contractor, open, form]);
 
   const onSubmit = async (data: ContractorFormData) => {
     setLoading(true);

@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -40,6 +39,17 @@ export const RouteForm: React.FC<RouteFormProps> = ({ route, onSave, onCancel })
     }
   });
 
+  // Reset form when route changes
+  useEffect(() => {
+    form.reset({
+      name: route?.name || '',
+      pointA: route?.pointA || '',
+      pointB: route?.pointB || '',
+      distanceKm: route?.distanceKm || 0,
+      estimatedDurationHours: route?.estimatedDurationHours || 0,
+      notes: route?.notes || ''
+    });
+  }, [route, form]);
   const onSubmit = async (values: z.infer<typeof routeSchema>) => {
     try {
       // Подготавливаем данные в формате, который ожидает Supabase (snake_case)

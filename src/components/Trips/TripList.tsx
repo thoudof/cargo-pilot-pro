@@ -7,6 +7,8 @@ import { TripDetails } from './TripDetails';
 import { TripCard } from './TripCard';
 import { TripListFiltersAdvanced } from './TripListFiltersAdvanced';
 import { TripListEmptyState } from './TripListEmptyState';
+import { TripBulkActions } from './TripBulkActions';
+import { TripBulkEditDialog } from './TripBulkEditDialog';
 import { useDataCache } from '@/hooks/useDataCache';
 
 interface SimpleContractor {
@@ -26,6 +28,8 @@ export const TripList: React.FC = () => {
   const [editingTrip, setEditingTrip] = useState<Trip | undefined>();
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedTrip, setSelectedTrip] = useState<Trip | undefined>();
+  const [selectedTripIds, setSelectedTripIds] = useState<Set<string>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
   const { toast } = useToast();
 
   const { data: trips = [], loading, refetch } = useDataCache<Trip[]>(
@@ -126,6 +130,62 @@ export const TripList: React.FC = () => {
     setDateToFilter('');
   }, []);
 
+  // Bulk selection handlers
+  const handleTripSelect = useCallback((tripId: string, selected: boolean) => {
+    setSelectedTripIds(prev => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(tripId);
+      } else {
+        newSet.delete(tripId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  const handleSelectAll = useCallback(() => {
+    const allIds = filteredTrips.map(t => t.id);
+    setSelectedTripIds(new Set(allIds));
+  }, []);
+
+  const handleClearSelection = useCallback(() => {
+    setSelectedTripIds(new Set());
+  }, []);
+
+  const handleBulkDelete = useCallback(async () => {
+    try {
+      const ids = Array.from(selectedTripIds);
+      const { error } = await optimizedSupabaseService.supabase
+        .from('trips')
+        .delete()
+        .in('id', ids);
+
+      if (error) throw error;
+
+      optimizedSupabaseService.invalidateCache('trips');
+      refetch();
+      setSelectedTripIds(new Set());
+
+      toast({
+        title: 'Рейсы удалены',
+        description: `Успешно удалено ${ids.length} рейс(ов)`
+      });
+    } catch (error) {
+      console.error('Failed to bulk delete trips:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить рейсы',
+        variant: 'destructive'
+      });
+    }
+  }, [selectedTripIds, refetch, toast]);
+
+  const handleBulkEditSuccess = useCallback(() => {
+    optimizedSupabaseService.invalidateCache('trips');
+    refetch();
+    setSelectedTripIds(new Set());
+  }, [refetch]);
+
   const filteredTrips = useMemo(() => {
     if (!Array.isArray(trips) || trips.length === 0) return [];
     
@@ -169,6 +229,16 @@ export const TripList: React.FC = () => {
     return result;
   }, [trips, searchTerm, statusFilter, contractorFilter, dateFromFilter, dateToFilter, getContractorName]);
 
+  const selectedTrips = useMemo(() => 
+    filteredTrips.filter(t => selectedTripIds.has(t.id)),
+    [filteredTrips, selectedTripIds]
+  );
+
+  const allSelected = useMemo(() => 
+    filteredTrips.length > 0 && selectedTripIds.size === filteredTrips.length,
+    [filteredTrips, selectedTripIds]
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -195,6 +265,16 @@ export const TripList: React.FC = () => {
         onClearFilters={handleClearFilters}
       />
 
+      <TripBulkActions
+        selectedTrips={selectedTrips}
+        onEdit={() => setBulkEditOpen(true)}
+        onDelete={handleBulkDelete}
+        onClearSelection={handleClearSelection}
+        onSelectAll={handleSelectAll}
+        totalTrips={filteredTrips.length}
+        allSelected={allSelected}
+      />
+
       {filteredTrips.length === 0 ? (
         <TripListEmptyState
           searchTerm={searchTerm}
@@ -212,6 +292,9 @@ export const TripList: React.FC = () => {
               onViewDetails={handleViewDetails}
               onEditTrip={handleEditTrip}
               onDeleteTrip={handleDeleteTrip}
+              isSelected={selectedTripIds.has(trip.id)}
+              onSelectChange={(selected) => handleTripSelect(trip.id, selected)}
+              showCheckbox={true}
             />
           ))}
         </div>
@@ -228,6 +311,13 @@ export const TripList: React.FC = () => {
         trip={selectedTrip}
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
+      />
+
+      <TripBulkEditDialog
+        open={bulkEditOpen}
+        onOpenChange={setBulkEditOpen}
+        selectedTrips={selectedTrips}
+        onSuccess={handleBulkEditSuccess}
       />
     </div>
   );

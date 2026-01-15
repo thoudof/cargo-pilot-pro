@@ -3,6 +3,7 @@ import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar, User, Edit2, Trash2, Receipt, DollarSign, MapPin, Truck, Package, ArrowRight, Phone } from 'lucide-react';
 import { Trip, TripStatus } from '@/types';
 import { format } from 'date-fns';
@@ -43,6 +44,9 @@ interface TripCardProps {
   onViewDetails: (trip: Trip) => void;
   onEditTrip: (trip: Trip) => void;
   onDeleteTrip: (trip: Trip) => void;
+  isSelected?: boolean;
+  onSelectChange?: (selected: boolean) => void;
+  showCheckbox?: boolean;
 }
 
 export const TripCard: React.FC<TripCardProps> = ({
@@ -51,7 +55,10 @@ export const TripCard: React.FC<TripCardProps> = ({
   tripExpenses,
   onViewDetails,
   onEditTrip,
-  onDeleteTrip
+  onDeleteTrip,
+  isSelected = false,
+  onSelectChange,
+  showCheckbox = false
 }) => {
   const contractorName = useMemo(() => {
     const contractor = contractors.find(c => c.id === trip.contractorId);
@@ -81,13 +88,28 @@ export const TripCard: React.FC<TripCardProps> = ({
 
   const status = statusConfig[trip.status];
 
+  const handleCheckboxChange = (checked: boolean | 'indeterminate') => {
+    if (onSelectChange && typeof checked === 'boolean') {
+      onSelectChange(checked);
+    }
+  };
+
   return (
-    <Card className="group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30 bg-card overflow-hidden">
+    <Card className={`group hover:shadow-lg transition-all duration-300 border-border/50 hover:border-primary/30 bg-card overflow-hidden ${isSelected ? 'ring-2 ring-primary border-primary/50' : ''}`}>
       {/* Status indicator bar */}
       <div className={`h-1 w-full ${status.dot.replace('animate-pulse', '')}`} />
       
       <CardHeader className="pb-3 pt-4">
         <div className="flex items-start justify-between gap-4">
+          {showCheckbox && (
+            <div className="flex items-center pt-1" onClick={(e) => e.stopPropagation()}>
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={handleCheckboxChange}
+                className="h-5 w-5"
+              />
+            </div>
+          )}
           <div className="flex-1 cursor-pointer" onClick={() => onViewDetails(trip)}>
             {/* Route */}
             <div className="flex items-center gap-2 mb-3">

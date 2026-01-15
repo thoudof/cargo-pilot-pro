@@ -17,6 +17,7 @@ import { SettingsPage } from "./SettingsPage";
 import AdminPage from "./AdminPage";
 import { ReportsPage } from './ReportsPage';
 import { DocumentsPage } from './DocumentsPage';
+import NotificationsPage from './NotificationsPage';
 import { AdminRoute } from "@/components/Admin/AdminRoute";
 import { AnimatePresence } from "framer-motion";
 
@@ -96,6 +97,11 @@ const Index = () => {
           <Route path="/settings" element={
             <PageTransition>
               <SettingsPage />
+            </PageTransition>
+          } />
+          <Route path="/notifications" element={
+            <PageTransition>
+              <NotificationsPage />
             </PageTransition>
           } />
           <Route path="/admin" element={

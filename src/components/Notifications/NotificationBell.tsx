@@ -3,8 +3,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Bell, Check } from 'lucide-react';
+import { Bell, Check, History } from 'lucide-react';
 import { NotificationList } from './NotificationList';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -189,6 +190,20 @@ export const NotificationBell: React.FC = () => {
           onMarkAsRead={markAsRead}
           onRefresh={loadNotifications}
         />
+        <div className="border-t p-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="w-full justify-start" 
+            asChild
+            onClick={() => setOpen(false)}
+          >
+            <Link to="/notifications">
+              <History className="h-4 w-4 mr-2" />
+              Вся история уведомлений
+            </Link>
+          </Button>
+        </div>
       </PopoverContent>
     </Popover>
   );

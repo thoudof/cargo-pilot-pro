@@ -11,7 +11,7 @@ import {
   SidebarMenuItem,
   SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
-import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, Shield } from 'lucide-react';
+import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, Shield, Bell } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { AppPermission } from '@/types';
 import { useAuth } from "@/components/Auth/AuthProvider";
@@ -25,6 +25,7 @@ const allMenuItems = [
   { title: "Транспорт", url: "/vehicles", icon: Car, permission: AppPermission.VIEW_VEHICLES },
   { title: "Маршруты", url: "/routes", icon: MapPin, permission: AppPermission.VIEW_ROUTES },
   { title: "Типы грузов", url: "/cargo-types", icon: Package, permission: AppPermission.VIEW_CARGO_TYPES },
+  { title: "Уведомления", url: "/notifications", icon: Bell, permission: null },
   { title: "Админ панель", url: "/admin", icon: Shield, permission: AppPermission.VIEW_ADMIN_PANEL },
 ];
 

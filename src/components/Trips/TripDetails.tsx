@@ -1,16 +1,18 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { TripDocuments } from './TripDocuments';
+import { TripLocationMap } from './TripLocationMap';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, User, Truck, Package, MapPin, FileText, DollarSign } from 'lucide-react';
-import { Trip, TripStatus } from '@/types';
+import { Calendar, User, Truck, Package, MapPin, FileText, DollarSign, Navigation } from 'lucide-react';
+import { Trip, TripStatus, AppPermission } from '@/types';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { TripExpenses } from './TripExpenses';
 import { TripExpensesSummary } from './TripExpensesSummary';
+import { useAuth } from '@/components/Auth/AuthProvider';
 
 const statusColors = {
   [TripStatus.PLANNED]: 'bg-blue-500',
@@ -37,6 +39,12 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
   open,
   onOpenChange
 }) => {
+  const [showMap, setShowMap] = useState(false);
+  const { hasPermission, hasRole } = useAuth();
+  
+  // Show map for dispatchers and admins
+  const canViewMap = hasPermission(AppPermission.VIEW_TRIPS) || hasRole('admin') || hasRole('dispatcher');
+
   if (!trip) return null;
 
   return (
@@ -185,6 +193,26 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
           </div>
 
           <div className="space-y-6">
+            {/* GPS-трек карта */}
+            {canViewMap && (
+              showMap ? (
+                <TripLocationMap tripId={trip.id} onClose={() => setShowMap(false)} />
+              ) : (
+                <Card className="border-border/50">
+                  <CardContent className="p-4">
+                    <Button 
+                      variant="outline" 
+                      className="w-full gap-2"
+                      onClick={() => setShowMap(true)}
+                    >
+                      <Navigation className="h-4 w-4" />
+                      Показать GPS-трек на карте
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            )}
+
             {/* Сводка расходов */}
             <TripExpensesSummary tripId={trip.id} />
 

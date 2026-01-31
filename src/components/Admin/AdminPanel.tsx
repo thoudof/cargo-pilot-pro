@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Shield, Users, Activity, BarChart3, TrendingUp, Server, FileText } from 'lucide-react';
+import { Shield, Users, Activity, BarChart3, TrendingUp, Server, FileText, Link2 } from 'lucide-react';
 import { UserManagement } from './UserManagement';
 import { ActivityLogs } from './ActivityLogs';
 import { SystemStats } from './SystemStats';
@@ -11,10 +10,12 @@ import { SystemMonitoring } from './SystemMonitoring';
 import { Analytics } from './Analytics';
 import { DocumentTemplatesManager } from './DocumentTemplatesManager';
 import { UserPermissionsManager } from './UserPermissionsManager';
+import { DriverUserLinking } from './DriverUserLinking';
 import { PageHeader } from '@/components/Layout/PageHeader';
 
 const tabItems = [
   { value: 'users', label: 'Пользователи', shortLabel: 'Польз.', icon: Users },
+  { value: 'drivers', label: 'Привязка водителей', shortLabel: 'Водит.', icon: Link2 },
   { value: 'permissions', label: 'Права доступа', shortLabel: 'Права', icon: Shield },
   { value: 'logs', label: 'Логи активности', shortLabel: 'Логи', icon: Activity },
   { value: 'analytics', label: 'Аналитика', shortLabel: 'Анал.', icon: BarChart3 },
@@ -54,6 +55,10 @@ export const AdminPanel: React.FC = () => {
 
           <TabsContent value="users" className="mt-0">
             <UserManagement />
+          </TabsContent>
+
+          <TabsContent value="drivers" className="mt-0">
+            <DriverUserLinking />
           </TabsContent>
 
           <TabsContent value="permissions" className="mt-0">

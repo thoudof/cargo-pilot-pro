@@ -33,7 +33,7 @@ export const TripExpensesSummary: React.FC<TripExpensesSummaryProps> = ({ tripId
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
   const expensesByType = expenses.reduce((acc, expense) => {
-    acc[expense.expenseType] = (acc[expense.expenseType] || 0) + expense.amount;
+    acc[expense.category] = (acc[expense.category] || 0) + expense.amount;
     return acc;
   }, {} as Record<string, number>);
 
@@ -101,10 +101,10 @@ export const TripExpensesSummary: React.FC<TripExpensesSummaryProps> = ({ tripId
                     <div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="text-xs">
-                          {expenseTypeLabels[expense.expenseType]}
+                          {expenseTypeLabels[expense.category]}
                         </Badge>
                         <span className="text-muted-foreground">
-                          {format(expense.expenseDate, 'dd.MM.yyyy', { locale: ru })}
+                          {format(expense.date, 'dd.MM.yyyy', { locale: ru })}
                         </span>
                       </div>
                       {expense.description && (

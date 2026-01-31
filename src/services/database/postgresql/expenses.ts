@@ -13,17 +13,16 @@ export class PostgresExpensesHandler {
         SELECT 
           id,
           trip_id AS "tripId",
-          user_id AS "userId",
-          expense_type AS "expenseType",
+          created_by AS "createdBy",
+          category,
           amount,
           description,
-          expense_date AS "expenseDate",
-          receipt_url AS "receiptUrl",
+          date,
           created_at AS "createdAt",
           updated_at AS "updatedAt"
         FROM trip_expenses
         WHERE trip_id = ${tripId}
-        ORDER BY expense_date DESC
+        ORDER BY date DESC
       `;
       console.log(`PostgreSQLService: Fetched ${expenses.length} expenses for trip ${tripId}.`);
       return expenses;
@@ -32,22 +31,21 @@ export class PostgresExpensesHandler {
       throw new Error(`Failed to fetch trip expenses: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
-  async createTripExpense(expense: Omit<TripExpense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & { tripId: string }): Promise<TripExpense> {
+  async createTripExpense(expense: Omit<TripExpense, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'> & { tripId: string }): Promise<TripExpense> {
     this.getDB();
-    console.warn('PostgreSQLService: createTripExpense not fully implemented due to missing user_id context.');
+    console.warn('PostgreSQLService: createTripExpense not fully implemented due to missing user context.');
     // @ts-ignore
     throw new Error('createTripExpense not implemented for PostgreSQL. Missing user context.');
   }
-  async updateTripExpense(id: string, expense: Partial<Omit<TripExpense, 'id'|'createdAt'|'updatedAt'|'userId'|'tripId'>>): Promise<TripExpense> {
+  async updateTripExpense(id: string, expense: Partial<Omit<TripExpense, 'id'|'createdAt'|'updatedAt'|'createdBy'|'tripId'>>): Promise<TripExpense> {
     const sql = this.getDB();
     console.log('PostgreSQLService: Updating trip expense with id:', id, expense);
     try {
         const dataToUpdate = {
-            expense_type: expense.expenseType,
+            category: expense.category,
             amount: expense.amount,
             description: expense.description,
-            expense_date: expense.expenseDate ? new Date(expense.expenseDate) : undefined,
-            receipt_url: expense.receiptUrl,
+            date: expense.date ? new Date(expense.date) : undefined,
         };
 
         const filteredData = Object.fromEntries(Object.entries(dataToUpdate).filter(([, v]) => v !== undefined));
@@ -55,8 +53,8 @@ export class PostgresExpensesHandler {
         if (Object.keys(filteredData).length === 0) {
           const [currentExpense] = await sql<TripExpense[]>`
             SELECT
-              id, trip_id AS "tripId", user_id AS "userId", expense_type AS "expenseType",
-              amount, description, expense_date AS "expenseDate", receipt_url AS "receiptUrl",
+              id, trip_id AS "tripId", created_by AS "createdBy", category,
+              amount, description, date,
               created_at AS "createdAt", updated_at AS "updatedAt"
             FROM trip_expenses WHERE id = ${id}
           `;
@@ -73,12 +71,11 @@ export class PostgresExpensesHandler {
             RETURNING 
               id,
               trip_id AS "tripId",
-              user_id AS "userId",
-              expense_type AS "expenseType",
+              created_by AS "createdBy",
+              category,
               amount,
               description,
-              expense_date AS "expenseDate",
-              receipt_url AS "receiptUrl",
+              date,
               created_at AS "createdAt",
               updated_at AS "updatedAt"
         `;

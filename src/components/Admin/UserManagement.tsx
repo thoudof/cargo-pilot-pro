@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Users, Edit, Trash2, Plus, UserCircle, Phone, Calendar, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { UserDetailsDialog } from './UserDetailsDialog';
+import { CreateUserDialog } from './CreateUserDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -135,10 +136,7 @@ export const UserManagement: React.FC = () => {
             </div>
             Управление пользователями
           </CardTitle>
-          <Button size="sm" className="gap-2">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Добавить пользователя</span>
-          </Button>
+          <CreateUserDialog onUserCreated={fetchUsers} />
         </div>
       </CardHeader>
       <CardContent className="p-0">

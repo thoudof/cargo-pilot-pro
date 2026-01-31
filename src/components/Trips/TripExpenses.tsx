@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog } from '@/components/ui/dialog';
 import { TripExpense, ExpenseCategory } from '@/types/expenses';
-import { appDbService } from '@/services/database/AppDatabaseService';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { TripExpenseForm } from './TripExpenseForm';
@@ -12,6 +11,19 @@ import { TripExpenseList } from './TripExpenseList';
 interface TripExpensesProps {
   tripId: string;
 }
+
+// Transform database expense to TripExpense type
+const transformExpense = (dbExpense: any): TripExpense => ({
+  id: dbExpense.id,
+  tripId: dbExpense.trip_id,
+  category: dbExpense.category,
+  amount: Number(dbExpense.amount),
+  description: dbExpense.description,
+  date: new Date(dbExpense.date),
+  createdAt: new Date(dbExpense.created_at),
+  updatedAt: new Date(dbExpense.updated_at),
+  createdBy: dbExpense.created_by
+});
 
 export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
   const [expenses, setExpenses] = useState<TripExpense[]>([]);
@@ -28,8 +40,15 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
 
   const loadExpenses = useCallback(async () => {
     try {
-      const data = await appDbService.getTripExpenses(tripId);
-      setExpenses(data);
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('trip_expenses')
+        .select('*')
+        .eq('trip_id', tripId)
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+      setExpenses((data || []).map(transformExpense));
     } catch (error) {
       console.error('Failed to load expenses:', error);
       toast({
@@ -65,22 +84,39 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
     e.preventDefault();
     
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      
       const expenseData = {
-        tripId,
+        trip_id: tripId,
         category: formData.expenseType,
         amount: parseFloat(formData.amount),
-        description: formData.description || undefined,
-        date: new Date(formData.expenseDate)
+        description: formData.description || null,
+        date: formData.expenseDate,
+        created_by: userData.user?.id || null
       };
 
       if (editingExpense) {
-        await appDbService.updateTripExpense(editingExpense.id, expenseData);
+        const { error } = await supabase
+          .from('trip_expenses')
+          .update({
+            category: expenseData.category,
+            amount: expenseData.amount,
+            description: expenseData.description,
+            date: expenseData.date
+          })
+          .eq('id', editingExpense.id);
+          
+        if (error) throw error;
         toast({
           title: 'Расход обновлен',
           description: 'Расход успешно обновлен'
         });
       } else {
-        await appDbService.createTripExpense(expenseData);
+        const { error } = await supabase
+          .from('trip_expenses')
+          .insert(expenseData);
+          
+        if (error) throw error;
         toast({
           title: 'Расход добавлен',
           description: 'Расход успешно добавлен'
@@ -103,7 +139,7 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
   const handleEdit = useCallback((expense: TripExpense) => {
     setEditingExpense(expense);
     setFormData({
-      expenseType: expense.category,
+      expenseType: expense.category as ExpenseCategory,
       amount: expense.amount.toString(),
       description: expense.description || '',
       expenseDate: format(expense.date, 'yyyy-MM-dd')
@@ -117,7 +153,13 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
     }
 
     try {
-      await appDbService.deleteTripExpense(expense.id);
+      const { error } = await supabase
+        .from('trip_expenses')
+        .delete()
+        .eq('id', expense.id);
+        
+      if (error) throw error;
+      
       toast({
         title: 'Расход удален',
         description: 'Расход успешно удален'
@@ -145,18 +187,17 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-32">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-      </div>
+      <Card>
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+        </div>
+      </Card>
     );
   }
 
   return (
-    <Card>
-      <Dialog open={formOpen} onOpenChange={(open) => {
-        setFormOpen(open);
-        if (!open) resetForm();
-      }}>
+    <>
+      <Card>
         <TripExpenseHeader 
           totalExpenses={totalExpenses}
           onAddExpense={handleAddExpense}
@@ -168,17 +209,17 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
             onDelete={handleDelete}
           />
         </CardContent>
-        
-        <TripExpenseForm
-          open={formOpen}
-          onOpenChange={setFormOpen}
-          editingExpense={editingExpense}
-          formData={formData}
-          onFormDataChange={setFormData}
-          onSubmit={handleSubmit}
-          onCancel={handleCancel}
-        />
-      </Dialog>
-    </Card>
+      </Card>
+      
+      <TripExpenseForm
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        editingExpense={editingExpense}
+        formData={formData}
+        onFormDataChange={setFormData}
+        onSubmit={handleSubmit}
+        onCancel={handleCancel}
+      />
+    </>
   );
 };

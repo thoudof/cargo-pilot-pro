@@ -49,45 +49,47 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <div className={`w-4 h-4 rounded-full ${statusColors[trip.status]}`}></div>
-            {trip.pointA} → {trip.pointB}
-            <Badge variant="outline">{statusLabels[trip.status]}</Badge>
+          <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-base sm:text-lg">
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${statusColors[trip.status]}`}></div>
+              <span className="truncate">{trip.pointA} → {trip.pointB}</span>
+            </div>
+            <Badge variant="outline" className="w-fit">{statusLabels[trip.status]}</Badge>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Основная информация */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
                   Основная информация
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <CardContent className="space-y-3 sm:space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                   <div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                      <MapPin className="h-4 w-4" />
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground mb-1">
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
                       Отправление
                     </div>
-                    <p className="font-medium">{trip.pointA}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="font-medium text-sm sm:text-base">{trip.pointA}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       {format(trip.departureDate, 'dd MMMM yyyy, HH:mm', { locale: ru })}
                     </p>
                   </div>
                   <div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
-                      <MapPin className="h-4 w-4" />
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground mb-1">
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
                       Назначение
                     </div>
-                    <p className="font-medium">{trip.pointB}</p>
+                    <p className="font-medium text-sm sm:text-base">{trip.pointB}</p>
                     {trip.arrivalDate && (
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs sm:text-sm text-muted-foreground">
                         {format(trip.arrivalDate, 'dd MMMM yyyy, HH:mm', { locale: ru })}
                       </p>
                     )}
@@ -98,18 +100,18 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
 
             {/* Водитель */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                  <User className="h-4 w-4 sm:h-5 sm:w-5" />
                   Водитель
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <p className="font-medium">{trip.driver.name}</p>
-                  <p className="text-sm text-muted-foreground">{trip.driver.phone}</p>
+                <div className="space-y-1 sm:space-y-2">
+                  <p className="font-medium text-sm sm:text-base">{trip.driver.name}</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">{trip.driver.phone}</p>
                   {trip.driver.license && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Удостоверение: {trip.driver.license}
                     </p>
                   )}
@@ -119,22 +121,22 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
 
             {/* Транспорт */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Truck className="h-5 w-5" />
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                  <Truck className="h-4 w-4 sm:h-5 sm:w-5" />
                   Транспорт
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2">
-                  <p className="font-medium">
+                <div className="space-y-1 sm:space-y-2">
+                  <p className="font-medium text-sm sm:text-base">
                     {trip.vehicle.brand} {trip.vehicle.model}
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     Гос. номер: {trip.vehicle.licensePlate}
                   </p>
                   {trip.vehicle.capacity && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground">
                       Грузоподъемность: {trip.vehicle.capacity} тонн
                     </p>
                   )}
@@ -144,16 +146,16 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
 
             {/* Груз */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+              <CardHeader className="pb-2 sm:pb-4">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                   Груз
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <p className="font-medium">{trip.cargo.description}</p>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="space-y-2 sm:space-y-3">
+                  <p className="font-medium text-sm sm:text-base">{trip.cargo.description}</p>
+                  <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                     <div>
                       <span className="text-muted-foreground">Вес:</span>
                       <p className="font-medium">{trip.cargo.weight} тонн</p>
@@ -165,9 +167,9 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
                   </div>
                   {trip.cargo.value && (
                     <div className="flex items-center gap-2 pt-2 border-t">
-                      <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Стоимость:</span>
-                      <span className="font-medium">
+                      <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+                      <span className="text-xs sm:text-sm text-muted-foreground">Стоимость:</span>
+                      <span className="font-medium text-sm">
                         {trip.cargo.value.toLocaleString('ru-RU')} ₽
                       </span>
                     </div>
@@ -179,20 +181,20 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
             {/* Комментарии */}
             {trip.comments && (
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="h-5 w-5" />
+                <CardHeader className="pb-2 sm:pb-4">
+                  <CardTitle className="flex items-center gap-2 text-sm sm:text-base">
+                    <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
                     Комментарии
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm">{trip.comments}</p>
+                  <p className="text-xs sm:text-sm">{trip.comments}</p>
                 </CardContent>
               </Card>
             )}
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* GPS-трек карта */}
             {canViewMap && (
               showMap ? (

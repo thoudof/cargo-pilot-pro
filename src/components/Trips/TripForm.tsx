@@ -15,6 +15,7 @@ import { TripFormDriver } from './TripFormDriver';
 import { TripFormVehicle } from './TripFormVehicle';
 import { TripFormCargo } from './TripFormCargo';
 import { TripFormExpenses } from './TripFormExpenses';
+import { notifyTripAssigned, notifyTripStatusChanged } from '@/services/notificationService';
 
 interface TripFormProps {
   trip?: Trip;
@@ -262,6 +263,32 @@ export const TripForm: React.FC<TripFormProps> = ({
       }
 
       console.log('Trip saved successfully:', result.data);
+
+      // Send notifications
+      const savedTripData = savedTrip;
+      const isNewTrip = !trip?.id;
+      const driverChanged = trip?.driverId !== selectedDriver?.id;
+
+      // Notify driver if assigned to a new trip or driver changed
+      if (selectedDriver?.id && (isNewTrip || driverChanged)) {
+        notifyTripAssigned(
+          savedTripData.id,
+          selectedDriver.id,
+          data.pointA,
+          data.pointB
+        ).catch(err => console.error('Failed to send trip assignment notification:', err));
+      }
+
+      // Notify about status change if editing and status changed
+      if (!isNewTrip && trip?.status !== data.status) {
+        notifyTripStatusChanged(
+          savedTripData.id,
+          data.pointA,
+          data.pointB,
+          trip.status,
+          data.status
+        ).catch(err => console.error('Failed to send status change notification:', err));
+      }
       
       toast({
         title: trip ? 'Рейс обновлен' : 'Рейс создан',

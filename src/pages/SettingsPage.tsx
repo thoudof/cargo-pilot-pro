@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +14,7 @@ import { TwoFactorSetupDialog } from '@/components/Settings/TwoFactorSetupDialog
 import { ThemeToggle } from '@/components/Theme/ThemeToggle';
 import { useTheme } from '@/components/Theme/ThemeProvider';
 import { PageHeader } from '@/components/Layout/PageHeader';
+import { PushNotificationManager } from '@/components/Notifications/PushNotificationManager';
 
 interface UserProfile {
   full_name: string;
@@ -301,6 +301,17 @@ export const SettingsPage: React.FC = () => {
 
       {/* Настройки уведомлений */}
       <SettingsSection icon={<Bell className="h-5 w-5 text-primary" />} title="Уведомления">
+        {/* Push notification subscription button */}
+        <div className="flex items-center justify-between pb-4 border-b border-border">
+          <div>
+            <p className="font-medium text-sm">Push-уведомления в браузере</p>
+            <p className="text-xs text-muted-foreground">
+              Получайте уведомления даже когда приложение закрыто
+            </p>
+          </div>
+          <PushNotificationManager userId={user?.id} showButton />
+        </div>
+
         {Object.entries(notifications).map(([key, value], index) => (
           <div key={key}>
             {index > 0 && <Separator className="my-4" />}

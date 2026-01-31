@@ -43,10 +43,10 @@ serve(async (req) => {
 
     const { action, dateRange } = await req.json();
 
-    // Fetch financial data
+    // Fetch financial data with related entities
     let tripsQuery = supabase
       .from("trips")
-      .select("*, trip_expenses(*)");
+      .select("*, trip_expenses(*), drivers(*), vehicles(*), routes(*), contractors(*), cargo_types(*)");
 
     if (dateRange?.from) {
       tripsQuery = tripsQuery.gte("departure_date", dateRange.from);
@@ -61,48 +61,174 @@ serve(async (req) => {
       throw new Error("Failed to fetch trips data");
     }
 
-    // Calculate financial metrics
+    // Filter out cancelled trips for revenue calculations (they won't generate income)
+    const activeTrips = trips?.filter((t) => t.status !== "cancelled") || [];
+    const cancelledTrips = trips?.filter((t) => t.status === "cancelled") || [];
+
+    // Calculate financial metrics (excluding cancelled trips from revenue)
     const totalTrips = trips?.length || 0;
-    const completedTrips = trips?.filter((t) => t.status === "completed").length || 0;
-    const totalRevenue = trips?.reduce((sum, t) => sum + (Number(t.cargo_value) || 0), 0) || 0;
-    const totalExpenses = trips?.reduce((sum, t) => {
+    const activeTripsCount = activeTrips.length;
+    const cancelledTripsCount = cancelledTrips.length;
+    const completedTrips = activeTrips.filter((t) => t.status === "completed").length;
+    const inProgressTrips = activeTrips.filter((t) => t.status === "in_progress").length;
+    const plannedTrips = activeTrips.filter((t) => t.status === "planned").length;
+    
+    // Revenue only from non-cancelled trips
+    const totalRevenue = activeTrips.reduce((sum, t) => sum + (Number(t.cargo_value) || 0), 0);
+    const completedRevenue = activeTrips
+      .filter((t) => t.status === "completed")
+      .reduce((sum, t) => sum + (Number(t.cargo_value) || 0), 0);
+    const pendingRevenue = activeTrips
+      .filter((t) => t.status !== "completed")
+      .reduce((sum, t) => sum + (Number(t.cargo_value) || 0), 0);
+    
+    // Expenses from all non-cancelled trips
+    const totalExpenses = activeTrips.reduce((sum, t) => {
       const tripExpenses = t.trip_expenses?.reduce((expSum: number, exp: any) => expSum + (Number(exp.amount) || 0), 0) || 0;
       return sum + tripExpenses;
-    }, 0) || 0;
+    }, 0);
+    
     const netProfit = totalRevenue - totalExpenses;
     const profitMargin = totalRevenue > 0 ? ((netProfit / totalRevenue) * 100).toFixed(1) : 0;
+    const completionRate = activeTripsCount > 0 ? ((completedTrips / activeTripsCount) * 100).toFixed(1) : 0;
 
     // Expense breakdown by category
     const expensesByCategory: Record<string, number> = {};
-    trips?.forEach((trip) => {
+    activeTrips.forEach((trip) => {
       trip.trip_expenses?.forEach((exp: any) => {
         const category = exp.category || "other";
         expensesByCategory[category] = (expensesByCategory[category] || 0) + (Number(exp.amount) || 0);
       });
     });
 
-    // Monthly trends
-    const monthlyData: Record<string, { revenue: number; expenses: number }> = {};
-    trips?.forEach((trip) => {
+    // Calculate average expense per trip
+    const avgExpensePerTrip = completedTrips > 0 ? (totalExpenses / completedTrips).toFixed(0) : 0;
+    const avgRevenuePerTrip = completedTrips > 0 ? (completedRevenue / completedTrips).toFixed(0) : 0;
+
+    // Monthly trends (excluding cancelled)
+    const monthlyData: Record<string, { revenue: number; expenses: number; trips: number; completed: number }> = {};
+    activeTrips.forEach((trip) => {
       const month = new Date(trip.departure_date).toISOString().slice(0, 7);
       if (!monthlyData[month]) {
-        monthlyData[month] = { revenue: 0, expenses: 0 };
+        monthlyData[month] = { revenue: 0, expenses: 0, trips: 0, completed: 0 };
       }
       monthlyData[month].revenue += Number(trip.cargo_value) || 0;
+      monthlyData[month].trips += 1;
+      if (trip.status === "completed") {
+        monthlyData[month].completed += 1;
+      }
       trip.trip_expenses?.forEach((exp: any) => {
         monthlyData[month].expenses += Number(exp.amount) || 0;
       });
     });
 
+    // Route analysis
+    const routeStats: Record<string, { count: number; revenue: number; avgValue: number }> = {};
+    activeTrips.forEach((trip) => {
+      const routeKey = `${trip.point_a} → ${trip.point_b}`;
+      if (!routeStats[routeKey]) {
+        routeStats[routeKey] = { count: 0, revenue: 0, avgValue: 0 };
+      }
+      routeStats[routeKey].count += 1;
+      routeStats[routeKey].revenue += Number(trip.cargo_value) || 0;
+    });
+    Object.keys(routeStats).forEach((key) => {
+      routeStats[key].avgValue = routeStats[key].count > 0 
+        ? Math.round(routeStats[key].revenue / routeStats[key].count) 
+        : 0;
+    });
+
+    // Top routes by revenue
+    const topRoutes = Object.entries(routeStats)
+      .sort(([, a], [, b]) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    // Contractor analysis
+    const contractorStats: Record<string, { name: string; count: number; revenue: number }> = {};
+    activeTrips.forEach((trip) => {
+      if (trip.contractor_id && trip.contractors) {
+        const contractorId = trip.contractor_id;
+        if (!contractorStats[contractorId]) {
+          contractorStats[contractorId] = { 
+            name: trip.contractors.company_name || "Неизвестный", 
+            count: 0, 
+            revenue: 0 
+          };
+        }
+        contractorStats[contractorId].count += 1;
+        contractorStats[contractorId].revenue += Number(trip.cargo_value) || 0;
+      }
+    });
+
+    // Top contractors
+    const topContractors = Object.entries(contractorStats)
+      .sort(([, a], [, b]) => b.revenue - a.revenue)
+      .slice(0, 5);
+
+    // Driver performance
+    const driverStats: Record<string, { name: string; trips: number; completed: number; revenue: number }> = {};
+    activeTrips.forEach((trip) => {
+      if (trip.driver_id && trip.drivers) {
+        const driverId = trip.driver_id;
+        if (!driverStats[driverId]) {
+          driverStats[driverId] = { 
+            name: trip.drivers.name || trip.driver_name || "Неизвестный", 
+            trips: 0, 
+            completed: 0,
+            revenue: 0 
+          };
+        }
+        driverStats[driverId].trips += 1;
+        if (trip.status === "completed") {
+          driverStats[driverId].completed += 1;
+        }
+        driverStats[driverId].revenue += Number(trip.cargo_value) || 0;
+      }
+    });
+
+    // Cargo analysis
+    const cargoStats: Record<string, { name: string; count: number; totalWeight: number; totalVolume: number; revenue: number }> = {};
+    activeTrips.forEach((trip) => {
+      if (trip.cargo_type_id && trip.cargo_types) {
+        const cargoId = trip.cargo_type_id;
+        if (!cargoStats[cargoId]) {
+          cargoStats[cargoId] = { 
+            name: trip.cargo_types.name || "Неизвестный", 
+            count: 0, 
+            totalWeight: 0,
+            totalVolume: 0,
+            revenue: 0 
+          };
+        }
+        cargoStats[cargoId].count += 1;
+        cargoStats[cargoId].totalWeight += Number(trip.cargo_weight) || 0;
+        cargoStats[cargoId].totalVolume += Number(trip.cargo_volume) || 0;
+        cargoStats[cargoId].revenue += Number(trip.cargo_value) || 0;
+      }
+    });
+
     const financialSummary = {
       totalTrips,
+      activeTripsCount,
+      cancelledTripsCount,
       completedTrips,
+      inProgressTrips,
+      plannedTrips,
+      completionRate,
       totalRevenue,
+      completedRevenue,
+      pendingRevenue,
       totalExpenses,
       netProfit,
       profitMargin,
+      avgExpensePerTrip,
+      avgRevenuePerTrip,
       expensesByCategory,
       monthlyData,
+      topRoutes,
+      topContractors: topContractors.map(([, stats]) => stats),
+      driverStats: Object.values(driverStats),
+      cargoStats: Object.values(cargoStats),
     };
 
     if (action === "get_summary") {
@@ -127,31 +253,89 @@ serve(async (req) => {
 - Выделяй важные цифры
 - Давай приоритизированные действия`;
 
-    const userPrompt = `Проанализируй финансовую ситуацию логистической компании:
+    // Format data for AI prompt
+    const topRoutesFormatted = topRoutes
+      .map(([route, stats]) => `  - ${route}: ${stats.count} рейсов, выручка ${stats.revenue.toLocaleString("ru-RU")} ₽, средний чек ${stats.avgValue.toLocaleString("ru-RU")} ₽`)
+      .join("\n");
 
-📊 ОБЩАЯ СТАТИСТИКА:
-- Всего рейсов: ${totalTrips}
+    const topContractorsFormatted = topContractors
+      .map(([, stats]) => `  - ${stats.name}: ${stats.count} рейсов, выручка ${stats.revenue.toLocaleString("ru-RU")} ₽`)
+      .join("\n");
+
+    const driverStatsFormatted = Object.values(driverStats)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+      .map((d) => `  - ${d.name}: ${d.trips} рейсов (${d.completed} завершено), выручка ${d.revenue.toLocaleString("ru-RU")} ₽`)
+      .join("\n");
+
+    const cargoStatsFormatted = Object.values(cargoStats)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+      .map((c) => `  - ${c.name}: ${c.count} рейсов, ${c.totalWeight.toLocaleString("ru-RU")} кг, выручка ${c.revenue.toLocaleString("ru-RU")} ₽`)
+      .join("\n");
+
+    const userPrompt = `Проанализируй финансовую ситуацию логистической компании. ВАЖНО: Отменённые рейсы исключены из расчётов выручки, так как по ним оплата не поступит.
+
+📊 ОБЩАЯ СТАТИСТИКА РЕЙСОВ:
+- Всего рейсов в системе: ${totalTrips}
+- Активных рейсов (без отменённых): ${activeTripsCount}
+- Отменённых рейсов: ${cancelledTripsCount}
 - Завершённых: ${completedTrips}
-- Коэффициент завершения: ${totalTrips > 0 ? ((completedTrips / totalTrips) * 100).toFixed(1) : 0}%
+- В пути: ${inProgressTrips}
+- Запланировано: ${plannedTrips}
+- Коэффициент завершения: ${completionRate}%
 
-💰 ФИНАНСОВЫЕ ПОКАЗАТЕЛИ:
-- Общая выручка: ${totalRevenue.toLocaleString("ru-RU")} ₽
+💰 ФИНАНСОВЫЕ ПОКАЗАТЕЛИ (только активные рейсы):
+- Общая плановая выручка: ${totalRevenue.toLocaleString("ru-RU")} ₽
+- Подтверждённая выручка (завершённые): ${completedRevenue.toLocaleString("ru-RU")} ₽
+- Ожидаемая выручка (незавершённые): ${pendingRevenue.toLocaleString("ru-RU")} ₽
 - Общие расходы: ${totalExpenses.toLocaleString("ru-RU")} ₽
 - Чистая прибыль: ${netProfit.toLocaleString("ru-RU")} ₽
 - Рентабельность: ${profitMargin}%
+- Средняя выручка на рейс: ${avgRevenuePerTrip} ₽
+- Средние расходы на рейс: ${avgExpensePerTrip} ₽
 
-📈 РАСХОДЫ ПО КАТЕГОРИЯМ:
-${Object.entries(expensesByCategory)
-  .map(([cat, amount]) => `- ${cat}: ${amount.toLocaleString("ru-RU")} ₽`)
-  .join("\n")}
+📈 СТРУКТУРА РАСХОДОВ ПО КАТЕГОРИЯМ:
+${Object.entries(expensesByCategory).length > 0 
+  ? Object.entries(expensesByCategory)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .map(([cat, amount]) => {
+        const percentage = totalExpenses > 0 ? ((amount as number / totalExpenses) * 100).toFixed(1) : 0;
+        return `- ${cat}: ${(amount as number).toLocaleString("ru-RU")} ₽ (${percentage}%)`;
+      })
+      .join("\n")
+  : "- Расходы не зафиксированы"}
 
 📅 ДИНАМИКА ПО МЕСЯЦАМ:
-${Object.entries(monthlyData)
-  .sort(([a], [b]) => a.localeCompare(b))
-  .map(([month, data]) => `- ${month}: выручка ${data.revenue.toLocaleString("ru-RU")} ₽, расходы ${data.expenses.toLocaleString("ru-RU")} ₽`)
-  .join("\n")}
+${Object.entries(monthlyData).length > 0
+  ? Object.entries(monthlyData)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, data]) => {
+        const monthProfit = data.revenue - data.expenses;
+        const monthMargin = data.revenue > 0 ? ((monthProfit / data.revenue) * 100).toFixed(1) : 0;
+        return `- ${month}: ${data.trips} рейсов (${data.completed} завершено), выручка ${data.revenue.toLocaleString("ru-RU")} ₽, расходы ${data.expenses.toLocaleString("ru-RU")} ₽, прибыль ${monthProfit.toLocaleString("ru-RU")} ₽ (${monthMargin}%)`;
+      })
+      .join("\n")
+  : "- Нет данных за период"}
 
-Дай детальный анализ и рекомендации по улучшению финансовой ситуации.`;
+🛣️ ТОП-5 МАРШРУТОВ ПО ВЫРУЧКЕ:
+${topRoutesFormatted || "- Нет данных о маршрутах"}
+
+🏢 ТОП-5 ЗАКАЗЧИКОВ ПО ВЫРУЧКЕ:
+${topContractorsFormatted || "- Нет данных о заказчиках"}
+
+👨‍✈️ СТАТИСТИКА ПО ВОДИТЕЛЯМ (ТОП-5):
+${driverStatsFormatted || "- Нет данных о водителях"}
+
+📦 СТАТИСТИКА ПО ТИПАМ ГРУЗОВ (ТОП-5):
+${cargoStatsFormatted || "- Нет данных о грузах"}
+
+На основе этих данных:
+1. Оцени общее финансовое здоровье компании
+2. Выяви проблемные области и риски
+3. Определи наиболее прибыльные направления
+4. Дай конкретные рекомендации по оптимизации
+5. Предложи план действий на ближайший период`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

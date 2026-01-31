@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { telegramService } from './telegramService';
 
 export type NotificationEvent = 
   | 'trip_assigned'
@@ -133,22 +134,34 @@ export async function notifyTripAssigned(
   tripId: string,
   driverId: string,
   pointA: string,
-  pointB: string
+  pointB: string,
+  departureDate?: string,
+  cargoDescription?: string
 ): Promise<void> {
   const driverUserId = await getDriverUserId(driverId);
   
-  if (!driverUserId) {
-    console.log('Driver not linked to user, skipping notification');
-    return;
+  // Send push notification if driver is linked to user
+  if (driverUserId) {
+    await sendNotification('trip_assigned', {
+      tripId,
+      driverId,
+      driverUserId,
+      pointA,
+      pointB
+    });
   }
 
-  await sendNotification('trip_assigned', {
-    tripId,
-    driverId,
-    driverUserId,
-    pointA,
-    pointB
-  });
+  // Always try to send Telegram notification
+  try {
+    await telegramService.notifyNewTrip(driverId, tripId, {
+      pointA,
+      pointB,
+      departureDate: departureDate || new Date().toISOString(),
+      cargoDescription
+    });
+  } catch (error) {
+    console.error('Failed to send Telegram notification:', error);
+  }
 }
 
 export async function notifyTripStatusChanged(
@@ -156,7 +169,9 @@ export async function notifyTripStatusChanged(
   pointA: string,
   pointB: string,
   oldStatus: string,
-  newStatus: string
+  newStatus: string,
+  driverId?: string,
+  departureDate?: string
 ): Promise<void> {
   // Special handling for completed/cancelled
   if (newStatus === 'completed') {
@@ -171,6 +186,26 @@ export async function notifyTripStatusChanged(
       oldStatus,
       newStatus
     });
+  }
+
+  // Send Telegram notification about trip update if driver is assigned
+  if (driverId) {
+    try {
+      const statusLabelsRu: Record<string, string> = {
+        planned: 'Запланирован',
+        in_progress: 'В пути',
+        completed: 'Завершён',
+        cancelled: 'Отменён'
+      };
+
+      await telegramService.notifyTripUpdated(driverId, tripId, {
+        pointA,
+        pointB,
+        departureDate: departureDate || new Date().toISOString()
+      }, [`Статус изменён: ${statusLabelsRu[newStatus] || newStatus}`]);
+    } catch (error) {
+      console.error('Failed to send Telegram notification:', error);
+    }
   }
 }
 

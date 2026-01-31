@@ -229,6 +229,9 @@ export type Database = {
           notes: string | null
           passport_data: string | null
           phone: string | null
+          telegram_chat_id: string | null
+          telegram_link_code: string | null
+          telegram_link_code_expires_at: string | null
           updated_at: string
         }
         Insert: {
@@ -240,6 +243,9 @@ export type Database = {
           notes?: string | null
           passport_data?: string | null
           phone?: string | null
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -251,6 +257,9 @@ export type Database = {
           notes?: string | null
           passport_data?: string | null
           phone?: string | null
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -292,6 +301,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          telegram_notifications_enabled: boolean | null
           updated_at: string
         }
         Insert: {
@@ -300,6 +310,7 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          telegram_notifications_enabled?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -308,6 +319,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          telegram_notifications_enabled?: boolean | null
           updated_at?: string
         }
         Relationships: []

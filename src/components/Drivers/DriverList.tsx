@@ -1,22 +1,30 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Search, User, Edit2, Trash2, Phone } from 'lucide-react';
+import { Plus, Search, User, Edit2, Trash2, Phone, MessageCircle } from 'lucide-react';
 import { Driver } from '@/types';
 import { supabaseService } from '@/services/supabaseService';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { DriverForm } from './DriverForm';
+import { TelegramLinkDialog } from './TelegramLinkDialog';
+import { useAuth } from '@/components/Auth/AuthProvider';
+
+interface DriverWithTelegram extends Driver {
+  telegramChatId?: string | null;
+}
 
 export const DriverList: React.FC = () => {
-  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [drivers, setDrivers] = useState<DriverWithTelegram[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | undefined>();
+  const [telegramDialogDriver, setTelegramDialogDriver] = useState<DriverWithTelegram | null>(null);
   const { toast } = useToast();
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
     loadDrivers();
@@ -24,8 +32,28 @@ export const DriverList: React.FC = () => {
 
   const loadDrivers = async () => {
     try {
-      const data = await supabaseService.getDrivers();
-      setDrivers(data);
+      // Load drivers with telegram_chat_id
+      const { data, error } = await supabase
+        .from('drivers')
+        .select('*')
+        .order('name');
+      
+      if (error) throw error;
+      
+      const transformedDrivers: DriverWithTelegram[] = (data || []).map(d => ({
+        id: d.id,
+        name: d.name,
+        phone: d.phone || '',
+        license: d.license,
+        passportData: d.passport_data,
+        experienceYears: d.experience_years,
+        notes: d.notes,
+        createdAt: new Date(d.created_at),
+        updatedAt: new Date(d.updated_at),
+        telegramChatId: d.telegram_chat_id,
+      }));
+      
+      setDrivers(transformedDrivers);
     } catch (error) {
       console.error('Failed to load drivers:', error);
       toast({
@@ -153,7 +181,24 @@ export const DriverList: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge variant="outline">Свободен</Badge>
+                    {driver.telegramChatId ? (
+                      <Badge variant="secondary" className="gap-1">
+                        <MessageCircle className="h-3 w-3" />
+                        Telegram
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">Свободен</Badge>
+                    )}
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setTelegramDialogDriver(driver)}
+                        title="Настройки Telegram"
+                      >
+                        <MessageCircle className="h-4 w-4" />
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -179,6 +224,21 @@ export const DriverList: React.FC = () => {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Telegram Link Dialog */}
+      {telegramDialogDriver && (
+        <TelegramLinkDialog
+          open={!!telegramDialogDriver}
+          onOpenChange={(open) => {
+            if (!open) {
+              setTelegramDialogDriver(null);
+              loadDrivers(); // Refresh to show updated telegram status
+            }
+          }}
+          driverId={telegramDialogDriver.id}
+          driverName={telegramDialogDriver.name}
+        />
       )}
     </div>
   );

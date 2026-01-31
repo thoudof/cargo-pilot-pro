@@ -39,6 +39,7 @@ export const AdminTelegramSettings: React.FC = () => {
   const { user, isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [webhookSaving, setWebhookSaving] = useState(false);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [linkCode, setLinkCode] = useState<string | null>(null);
   const [linkCodeExpires, setLinkCodeExpires] = useState<Date | null>(null);
@@ -191,6 +192,22 @@ export const AdminTelegramSettings: React.FC = () => {
     toast.success('Скопировано');
   };
 
+  const setupTelegramWebhook = async () => {
+    setWebhookSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('telegram-webhook-setup');
+      if (error) throw error;
+
+      const url = (data as any)?.desiredUrl as string | undefined;
+      toast.success(url ? `Webhook настроен: ${url}` : 'Webhook настроен');
+    } catch (error) {
+      console.error('Failed to setup telegram webhook:', error);
+      toast.error('Не удалось настроить webhook Telegram');
+    } finally {
+      setWebhookSaving(false);
+    }
+  };
+
   const isCodeExpired = linkCodeExpires && new Date() > linkCodeExpires;
   const botLink = linkCode ? `https://t.me/${BOT_USERNAME}?start=${linkCode}` : null;
 
@@ -220,6 +237,21 @@ export const AdminTelegramSettings: React.FC = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        <div className="flex flex-col gap-2">
+          <div className="text-sm text-muted-foreground">
+            Если бот не отвечает на /link или /start, сначала настройте webhook.
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={setupTelegramWebhook}
+            disabled={webhookSaving}
+          >
+            {webhookSaving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Настроить webhook бота
+          </Button>
+        </div>
+
         {subscription ? (
           <>
             <div className="flex items-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">

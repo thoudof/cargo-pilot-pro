@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, FileText, Shield } from 'lucide-react';
+import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, FileText, Shield, Brain } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/components/Auth/AuthProvider';
@@ -18,6 +18,7 @@ const navigation: NavItem[] = [
   { name: 'Главная', shortName: 'Главная', href: '/', icon: Home, permission: null },
   { name: 'Рейсы', shortName: 'Рейсы', href: '/trips', icon: Truck, permission: AppPermission.VIEW_TRIPS },
   { name: 'Отчеты', shortName: 'Отчеты', href: '/reports', icon: BarChart3, permission: AppPermission.VIEW_REPORTS },
+  { name: 'Аналитика', shortName: 'Аналит.', href: '/analytics', icon: Brain, permission: AppPermission.VIEW_ANALYTICS },
   { name: 'Документы', shortName: 'Докум.', href: '/documents', icon: FileText, permission: AppPermission.VIEW_REPORTS },
   { name: 'Контрагенты', shortName: 'Контр.', href: '/contractors', icon: Building2, permission: AppPermission.VIEW_CONTRACTORS },
   { name: 'Водители', shortName: 'Водит.', href: '/drivers', icon: Users, permission: AppPermission.VIEW_DRIVERS },

@@ -152,6 +152,7 @@ export enum AppPermission {
   VIEW_ADMIN_PANEL = 'view_admin_panel',
   VIEW_FINANCES = 'view_finances',
   VIEW_STATISTICS = 'view_statistics',
+  VIEW_ANALYTICS = 'view_analytics',
   MANAGE_USERS = 'manage_users'
 }
 

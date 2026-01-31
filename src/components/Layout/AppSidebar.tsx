@@ -1,4 +1,3 @@
-
 import {
   Sidebar,
   SidebarContent,
@@ -11,13 +10,22 @@ import {
   SidebarMenuItem,
   SidebarMenuSkeleton,
 } from "@/components/ui/sidebar";
-import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, Shield, Bell } from 'lucide-react';
+import { Home, Truck, Building2, Users, Car, MapPin, Package, BarChart3, Shield, Bell, Navigation } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import { AppPermission } from '@/types';
 import { useAuth } from "@/components/Auth/AuthProvider";
 
-const allMenuItems = [
+interface MenuItem {
+  title: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  permission: AppPermission | null;
+  requiresRole?: 'driver' | 'admin' | 'dispatcher';
+}
+
+const allMenuItems: MenuItem[] = [
   { title: "Главная", url: "/", icon: Home, permission: null },
+  { title: "Панель водителя", url: "/driver", icon: Navigation, permission: null, requiresRole: 'driver' },
   { title: "Рейсы", url: "/trips", icon: Truck, permission: AppPermission.VIEW_TRIPS },
   { title: "Отчеты", url: "/reports", icon: BarChart3, permission: AppPermission.VIEW_REPORTS },
   { title: "Контрагенты", url: "/contractors", icon: Building2, permission: AppPermission.VIEW_CONTRACTORS },
@@ -31,9 +39,19 @@ const allMenuItems = [
 
 export function AppSidebar() {
   const location = useLocation();
-  const { hasPermission, loading } = useAuth();
+  const { hasPermission, hasRole, loading } = useAuth();
   
-  const menuItems = allMenuItems.filter(item => !item.permission || hasPermission(item.permission));
+  const menuItems = allMenuItems.filter(item => {
+    // Check role requirement first
+    if (item.requiresRole && !hasRole(item.requiresRole)) {
+      return false;
+    }
+    // Check permission requirement
+    if (item.permission && !hasPermission(item.permission)) {
+      return false;
+    }
+    return true;
+  });
 
   return (
     <Sidebar>
@@ -74,3 +92,4 @@ export function AppSidebar() {
     </Sidebar>
   );
 }
+

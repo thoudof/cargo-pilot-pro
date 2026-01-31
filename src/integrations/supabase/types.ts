@@ -190,6 +190,35 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_users: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_users_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       drivers: {
         Row: {
           created_at: string
@@ -449,6 +478,69 @@ export type Database = {
           },
         ]
       }
+      trip_locations: {
+        Row: {
+          accuracy: number | null
+          altitude: number | null
+          created_at: string
+          driver_id: string | null
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          metadata: Json | null
+          recorded_at: string
+          speed: number | null
+          trip_id: string
+          user_id: string | null
+        }
+        Insert: {
+          accuracy?: number | null
+          altitude?: number | null
+          created_at?: string
+          driver_id?: string | null
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          metadata?: Json | null
+          recorded_at?: string
+          speed?: number | null
+          trip_id: string
+          user_id?: string | null
+        }
+        Update: {
+          accuracy?: number | null
+          altitude?: number | null
+          created_at?: string
+          driver_id?: string | null
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          metadata?: Json | null
+          recorded_at?: string
+          speed?: number | null
+          trip_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_locations_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_locations_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           arrival_date: string | null
@@ -673,6 +765,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_driver_trips: { Args: { _user_id: string }; Returns: string[] }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]

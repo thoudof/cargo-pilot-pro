@@ -727,6 +727,11 @@ export type Database = {
         | "manage_system"
         | "view_analytics"
         | "export_data"
+        | "view_own_trips"
+        | "update_trip_status"
+        | "update_trip_location"
+        | "view_own_expenses"
+        | "add_own_expenses"
       app_role: "admin" | "dispatcher" | "driver"
       document_type:
         | "waybill"
@@ -896,6 +901,11 @@ export const Constants = {
         "manage_system",
         "view_analytics",
         "export_data",
+        "view_own_trips",
+        "update_trip_status",
+        "update_trip_location",
+        "view_own_expenses",
+        "add_own_expenses",
       ],
       app_role: ["admin", "dispatcher", "driver"],
       document_type: [

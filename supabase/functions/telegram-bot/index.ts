@@ -28,7 +28,27 @@ serve(async (req) => {
   const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
   try {
-    const body = await req.json();
+    // Check if request has a body
+    const contentType = req.headers.get('content-type') || '';
+    const bodyText = await req.text();
+    
+    if (!bodyText) {
+      console.log('Empty request body - likely a health check');
+      return new Response(JSON.stringify({ ok: true, message: 'Bot is running' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    let body;
+    try {
+      body = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error('Invalid JSON body:', bodyText);
+      return new Response(JSON.stringify({ ok: true, message: 'Invalid request' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     console.log('Telegram webhook received:', JSON.stringify(body));
 
     // Handle Telegram webhook (incoming messages from bot)

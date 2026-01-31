@@ -33,7 +33,7 @@ interface Subscription {
   is_active: boolean;
 }
 
-const BOT_USERNAME = 'YourTransportBot'; // TODO: Replace with actual bot username
+const BOT_USERNAME = 'fix_notif_bot';
 
 export const AdminTelegramSettings: React.FC = () => {
   const { user, isAdmin } = useAuth();

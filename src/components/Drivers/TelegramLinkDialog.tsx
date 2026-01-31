@@ -25,7 +25,7 @@ export const TelegramLinkDialog: React.FC<TelegramLinkDialogProps> = ({
   onOpenChange,
   driverId,
   driverName,
-  botUsername = 'YourTransportBot', // Замените на имя вашего бота
+  botUsername = 'fix_notif_bot',
 }) => {
   const [loading, setLoading] = useState(false);
   const [linkCode, setLinkCode] = useState<string | null>(null);

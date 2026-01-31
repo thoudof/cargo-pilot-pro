@@ -44,6 +44,7 @@ interface AuthContextType {
   loading: boolean;
   signOut: () => Promise<void>;
   hasPermission: (permission: AppPermission) => boolean;
+  hasRole: (role: AppRole) => boolean;
   isAdmin: boolean;
   roles: AppRole[];
 }
@@ -54,6 +55,7 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   signOut: async () => {},
   hasPermission: () => false,
+  hasRole: () => false,
   isAdmin: false,
   roles: [],
 });
@@ -88,6 +90,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const hasPermission = (permission: AppPermission) => {
     return permissions?.includes(permission) ?? false;
+  };
+
+  const hasRole = (role: AppRole) => {
+    return roles?.includes(role) ?? false;
   };
 
   const isAdmin = roles?.includes('admin') ?? false;
@@ -157,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loading = authLoading || (!!user && (rolesLoading || permissionsLoading));
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut, hasPermission, isAdmin, roles: roles || [] }}>
+    <AuthContext.Provider value={{ user, session, loading, signOut, hasPermission, hasRole, isAdmin, roles: roles || [] }}>
       {children}
     </AuthContext.Provider>
   );

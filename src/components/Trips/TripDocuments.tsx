@@ -400,38 +400,39 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
 
       {/* Все документы */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+        <CardHeader className="pb-2 sm:pb-4">
+          <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <span className="flex items-center gap-2 text-sm sm:text-base">
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5" />
               Документы рейса ({documents.length})
             </span>
             <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
               <DialogTrigger asChild>
-                <Button size="sm">
+                <Button size="sm" className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Добавить документ
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md mx-4 sm:mx-auto">
                 <DialogHeader>
-                  <DialogTitle>Добавить документ</DialogTitle>
+                  <DialogTitle className="text-base sm:text-lg">Добавить документ</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
                   <div>
-                    <Label htmlFor="document-name">Название документа</Label>
+                    <Label htmlFor="document-name" className="text-sm">Название документа</Label>
                     <Input
                       id="document-name"
                       value={documentName}
                       onChange={(e) => setDocumentName(e.target.value)}
                       placeholder="Введите название документа"
+                      className="mt-1"
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="document-type">Тип документа</Label>
+                    <Label htmlFor="document-type" className="text-sm">Тип документа</Label>
                     <Select value={documentType} onValueChange={(value) => setDocumentType(value as DocumentType)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="mt-1">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -445,15 +446,16 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
                   </div>
 
                   <div>
-                    <Label htmlFor="file-upload">Файл</Label>
+                    <Label htmlFor="file-upload" className="text-sm">Файл</Label>
                     <Input
                       id="file-upload"
                       type="file"
                       onChange={handleFileSelect}
                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.xls,.xlsx"
+                      className="mt-1"
                     />
                     {selectedFile && (
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                         {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                       </p>
                     )}
@@ -461,7 +463,7 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
 
                   {isUploading && (
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between text-sm">
+                      <div className="flex items-center justify-between text-xs sm:text-sm">
                         <span className="text-muted-foreground">Загрузка файла...</span>
                         <span className="font-medium">{uploadProgress}%</span>
                       </div>
@@ -469,7 +471,7 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
                     </div>
                   )}
 
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <Button 
                       onClick={handleUpload} 
                       disabled={isUploading || !selectedFile}
@@ -491,6 +493,7 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
                       variant="outline" 
                       onClick={() => setIsUploadDialogOpen(false)}
                       disabled={isUploading}
+                      className="w-full sm:w-auto"
                     >
                       Отмена
                     </Button>
@@ -500,35 +503,35 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
             </Dialog>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {documents.length === 0 ? (
             <div 
-              className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg hover:border-primary/50 transition-colors cursor-pointer"
+              className="text-center py-8 sm:py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg hover:border-primary/50 transition-colors cursor-pointer"
               onClick={() => setIsUploadDialogOpen(true)}
             >
-              <CloudUpload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground font-medium">Документы пока не добавлены</p>
-              <p className="text-sm text-muted-foreground mt-1">
+              <CloudUpload className="h-8 w-8 sm:h-12 sm:w-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
+              <p className="text-muted-foreground font-medium text-sm sm:text-base">Документы пока не добавлены</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                 Перетащите файл сюда или нажмите для загрузки
               </p>
-              <p className="text-xs text-muted-foreground/70 mt-2">
+              <p className="text-[10px] sm:text-xs text-muted-foreground/70 mt-2">
                 PDF, DOC, DOCX, JPG, PNG, XLS, XLSX (до 50 МБ)
               </p>
             </div>
           ) : (
-            <ScrollArea className="h-96">
-              <div className="space-y-3">
+            <ScrollArea className="h-64 sm:h-96">
+              <div className="space-y-2 sm:space-y-3">
                 {documents.map((document) => {
                   const isImage = document.file_url && 
                     /\.(jpg|jpeg|png|gif|webp)$/i.test(document.file_url);
                   
                   return (
-                    <div key={document.id} className="border rounded-lg p-4">
-                      <div className="flex items-start gap-4">
+                    <div key={document.id} className="border rounded-lg p-2 sm:p-4">
+                      <div className="flex items-start gap-2 sm:gap-4">
                         {/* Thumbnail */}
                         {isImage && document.file_url ? (
                           <div 
-                            className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                            className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
                             onClick={() => handlePreview(document)}
                           >
                             <img 
@@ -539,63 +542,65 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
                             />
                           </div>
                         ) : (
-                          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                            <FileText className="h-8 w-8 text-muted-foreground" />
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                            <FileText className="h-5 w-5 sm:h-8 sm:w-8 text-muted-foreground" />
                           </div>
                         )}
                         
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between mb-2">
+                          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 sm:gap-2 mb-1 sm:mb-2">
                             <div className="flex-1 min-w-0">
-                              <h4 className="font-medium truncate">{document.file_name}</h4>
+                              <h4 className="font-medium text-xs sm:text-sm truncate">{document.file_name}</h4>
                               <div className="flex items-center gap-2 mt-1">
-                                <Badge variant="outline">
+                                <Badge variant="outline" className="text-[10px] sm:text-xs">
                                   {documentTypeLabels[document.document_type]}
                                 </Badge>
                               </div>
                             </div>
-                            <div className="flex gap-1 flex-shrink-0">
+                            <div className="flex gap-0.5 sm:gap-1 flex-shrink-0">
                               {document.file_url && (
                                 <>
                                   <Button
                                     variant="ghost"
                                     size="sm"
+                                    className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                                     onClick={() => handlePreview(document)}
                                     title="Предварительный просмотр"
                                   >
-                                    <Eye className="h-4 w-4" />
+                                    <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
+                                    className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                                     onClick={() => handleDownload(document)}
                                     title="Скачать"
                                   >
-                                    <Download className="h-4 w-4" />
+                                    <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                                   </Button>
                                 </>
                               )}
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                className="h-7 w-7 sm:h-8 sm:w-8 p-0"
                                 onClick={() => deleteDocumentMutation.mutate(document)}
                                 disabled={deleteDocumentMutation.isPending}
-                                className="text-destructive hover:text-destructive"
                                 title="Удалить"
                               >
-                                <Trash2 className="h-4 w-4" />
+                                <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
                               </Button>
                             </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-[10px] sm:text-sm text-muted-foreground">
                             {document.file_size && (
-                              <span className="mr-4">
-                                Размер: {(document.file_size / 1024 / 1024).toFixed(2)} MB
+                              <span className="mr-2 sm:mr-4">
+                                {(document.file_size / 1024 / 1024).toFixed(2)} MB
                               </span>
                             )}
                             <span>
-                              Загружен: {format(new Date(document.created_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
+                              {format(new Date(document.created_at), 'dd.MM.yyyy', { locale: ru })}
                             </span>
                           </div>
                         </div>

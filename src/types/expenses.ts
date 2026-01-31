@@ -2,17 +2,19 @@
 export interface TripExpense {
   id: string;
   tripId: string;
-  expenseType: ExpenseType;
+  category: ExpenseCategory;
   amount: number;
   description?: string;
-  receiptUrl?: string;
-  expenseDate: Date;
+  date: Date;
   createdAt: Date;
   updatedAt: Date;
-  userId: string;
+  createdBy?: string;
 }
 
-export enum ExpenseType {
+// Alias for backward compatibility
+export type ExpenseType = ExpenseCategory;
+
+export enum ExpenseCategory {
   FUEL = 'fuel',
   TOLLS = 'tolls', 
   PARKING = 'parking',
@@ -22,12 +24,15 @@ export enum ExpenseType {
   OTHER = 'other'
 }
 
-export const expenseTypeLabels = {
-  [ExpenseType.FUEL]: 'Топливо',
-  [ExpenseType.TOLLS]: 'Дорожные сборы',
-  [ExpenseType.PARKING]: 'Парковка',
-  [ExpenseType.MAINTENANCE]: 'Обслуживание',
-  [ExpenseType.FOOD]: 'Питание',
-  [ExpenseType.ACCOMMODATION]: 'Проживание',
-  [ExpenseType.OTHER]: 'Прочее'
+// Alias for backward compatibility
+export const ExpenseType = ExpenseCategory;
+
+export const expenseTypeLabels: Record<ExpenseCategory, string> = {
+  [ExpenseCategory.FUEL]: 'Топливо',
+  [ExpenseCategory.TOLLS]: 'Дорожные сборы',
+  [ExpenseCategory.PARKING]: 'Парковка',
+  [ExpenseCategory.MAINTENANCE]: 'Обслуживание',
+  [ExpenseCategory.FOOD]: 'Питание',
+  [ExpenseCategory.ACCOMMODATION]: 'Проживание',
+  [ExpenseCategory.OTHER]: 'Прочее'
 };

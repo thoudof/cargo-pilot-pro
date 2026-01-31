@@ -45,14 +45,14 @@ export const TripExpenseList: React.FC<TripExpenseListProps> = ({
             <TableRow key={expense.id}>
               <TableCell>
                 <Badge variant="outline">
-                  {expenseTypeLabels[expense.expenseType]}
+                  {expenseTypeLabels[expense.category]}
                 </Badge>
               </TableCell>
               <TableCell className="font-medium">
                 {expense.amount.toLocaleString('ru-RU')} ₽
               </TableCell>
               <TableCell>
-                {format(expense.expenseDate, 'dd.MM.yyyy', { locale: ru })}
+                {format(expense.date, 'dd.MM.yyyy', { locale: ru })}
               </TableCell>
               <TableCell>
                 {expense.description || '-'}

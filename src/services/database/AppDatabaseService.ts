@@ -156,11 +156,11 @@ class AppDatabaseService implements DatabaseProvider {
     return supabaseService.getTripExpenses(tripId);
   }
 
-  async createTripExpense(expense: Omit<TripExpense, 'id' | 'createdAt' | 'updatedAt' | 'userId'> & { tripId: string }): Promise<TripExpense> {
+  async createTripExpense(expense: Omit<TripExpense, 'id' | 'createdAt' | 'updatedAt' | 'createdBy'> & { tripId: string }): Promise<TripExpense> {
     return supabaseService.createTripExpense(expense as any);
   }
 
-  async updateTripExpense(id: string, expense: Partial<Omit<TripExpense, 'id'|'createdAt'|'updatedAt'|'userId'|'tripId'>>): Promise<TripExpense> {
+  async updateTripExpense(id: string, expense: Partial<Omit<TripExpense, 'id'|'createdAt'|'updatedAt'|'createdBy'|'tripId'>>): Promise<TripExpense> {
     return supabaseService.updateTripExpense(id, expense as any);
   }
 

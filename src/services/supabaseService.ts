@@ -125,7 +125,7 @@ class SupabaseService {
       id: dbExpense.id,
       tripId: dbExpense.trip_id,
       category: dbExpense.category,
-      amount: dbExpense.amount,
+      amount: Number(dbExpense.amount),
       description: dbExpense.description,
       date: new Date(dbExpense.date),
       createdAt: new Date(dbExpense.created_at),

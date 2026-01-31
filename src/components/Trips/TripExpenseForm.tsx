@@ -6,14 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { TripExpense, ExpenseType, expenseTypeLabels } from '@/types/expenses';
+import { TripExpense, ExpenseCategory, expenseTypeLabels } from '@/types/expenses';
 
 interface TripExpenseFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   editingExpense?: TripExpense;
   formData: {
-    expenseType: ExpenseType;
+    expenseType: ExpenseCategory;
     amount: string;
     description: string;
     expenseDate: string;
@@ -45,7 +45,7 @@ export const TripExpenseForm: React.FC<TripExpenseFormProps> = ({
             <Label htmlFor="expenseType">Тип расхода</Label>
             <Select
               value={formData.expenseType}
-              onValueChange={(value) => onFormDataChange({ ...formData, expenseType: value as ExpenseType })}
+              onValueChange={(value) => onFormDataChange({ ...formData, expenseType: value as ExpenseCategory })}
             >
               <SelectTrigger>
                 <SelectValue />

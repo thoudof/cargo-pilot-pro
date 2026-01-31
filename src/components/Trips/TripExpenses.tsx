@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog } from '@/components/ui/dialog';
-import { TripExpense, ExpenseType } from '@/types/expenses';
+import { TripExpense, ExpenseCategory } from '@/types/expenses';
 import { appDbService } from '@/services/database/AppDatabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -19,7 +19,7 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<TripExpense | undefined>();
   const [formData, setFormData] = useState({
-    expenseType: ExpenseType.FUEL,
+    expenseType: ExpenseCategory.FUEL,
     amount: '',
     description: '',
     expenseDate: new Date().toISOString().split('T')[0]
@@ -48,7 +48,7 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
 
   const resetForm = useCallback(() => {
     setFormData({
-      expenseType: ExpenseType.FUEL,
+      expenseType: ExpenseCategory.FUEL,
       amount: '',
       description: '',
       expenseDate: new Date().toISOString().split('T')[0]
@@ -67,10 +67,10 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
     try {
       const expenseData = {
         tripId,
-        expenseType: formData.expenseType,
+        category: formData.expenseType,
         amount: parseFloat(formData.amount),
         description: formData.description || undefined,
-        expenseDate: new Date(formData.expenseDate)
+        date: new Date(formData.expenseDate)
       };
 
       if (editingExpense) {
@@ -103,10 +103,10 @@ export const TripExpenses: React.FC<TripExpensesProps> = ({ tripId }) => {
   const handleEdit = useCallback((expense: TripExpense) => {
     setEditingExpense(expense);
     setFormData({
-      expenseType: expense.expenseType,
+      expenseType: expense.category,
       amount: expense.amount.toString(),
       description: expense.description || '',
-      expenseDate: format(expense.expenseDate, 'yyyy-MM-dd')
+      expenseDate: format(expense.date, 'yyyy-MM-dd')
     });
     setFormOpen(true);
   }, []);

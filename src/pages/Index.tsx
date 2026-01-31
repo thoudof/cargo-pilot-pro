@@ -20,6 +20,7 @@ import { DocumentsPage } from './DocumentsPage';
 import NotificationsPage from './NotificationsPage';
 import FinancialAnalyticsPage from './FinancialAnalyticsPage';
 import DriverDashboardPage from './DriverDashboardPage';
+import InstallPage from './InstallPage';
 import { AdminRoute } from "@/components/Admin/AdminRoute";
 import { AnimatePresence } from "framer-motion";
 
@@ -109,6 +110,11 @@ const Index = () => {
           <Route path="/notifications" element={
             <PageTransition>
               <NotificationsPage />
+            </PageTransition>
+          } />
+          <Route path="/install" element={
+            <PageTransition>
+              <InstallPage />
             </PageTransition>
           } />
           <Route path="/driver" element={

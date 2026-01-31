@@ -5,16 +5,17 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
 import { 
   FileText, 
   Upload, 
   Download, 
   Trash2, 
   Plus, 
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -53,6 +54,8 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [documentType, setDocumentType] = useState<DocumentType>('other');
   const [documentName, setDocumentName] = useState('');
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -71,28 +74,61 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
     }
   });
 
+  // Функция загрузки файла в Storage
+  const uploadFileToStorage = async (file: File): Promise<{ path: string; url: string }> => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${tripId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    
+    const { data, error } = await supabase.storage
+      .from('documents')
+      .upload(fileName, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (error) throw error;
+
+    const { data: urlData } = supabase.storage
+      .from('documents')
+      .getPublicUrl(data.path);
+
+    return {
+      path: data.path,
+      url: urlData.publicUrl
+    };
+  };
+
   // Мутация для загрузки документа
   const uploadDocumentMutation = useMutation({
-    mutationFn: async (documentData: {
+    mutationFn: async (params: {
+      file: File;
       documentType: DocumentType;
       fileName: string;
-      fileUrl?: string;
-      fileSize?: number;
     }) => {
+      setIsUploading(true);
+      setUploadProgress(10);
+
+      // Загружаем файл в Storage
+      const { url } = await uploadFileToStorage(params.file);
+      setUploadProgress(70);
+
+      // Сохраняем метаданные в БД
       const { data: userData } = await supabase.auth.getUser();
       
       const { data, error } = await supabase
         .from('trip_documents')
         .insert({
           trip_id: tripId,
-          document_type: documentData.documentType,
-          file_name: documentData.fileName,
-          file_url: documentData.fileUrl || null,
-          file_size: documentData.fileSize || null,
+          document_type: params.documentType,
+          file_name: params.fileName,
+          file_url: url,
+          file_size: params.file.size,
           uploaded_by: userData.user?.id || null,
         })
         .select()
         .single();
+
+      setUploadProgress(100);
 
       if (error) throw error;
       return data;
@@ -112,16 +148,33 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
         description: error.message,
         variant: "destructive"
       });
+    },
+    onSettled: () => {
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   });
 
   // Мутация для удаления документа
   const deleteDocumentMutation = useMutation({
-    mutationFn: async (documentId: string) => {
+    mutationFn: async (document: TripDocument) => {
+      // Удаляем файл из Storage, если есть URL
+      if (document.file_url) {
+        // Извлекаем путь из URL
+        const urlParts = document.file_url.split('/documents/');
+        if (urlParts.length > 1) {
+          const filePath = decodeURIComponent(urlParts[1]);
+          await supabase.storage
+            .from('documents')
+            .remove([filePath]);
+        }
+      }
+
+      // Удаляем запись из БД
       const { error } = await supabase
         .from('trip_documents')
         .delete()
-        .eq('id', documentId);
+        .eq('id', document.id);
 
       if (error) throw error;
     },
@@ -144,6 +197,15 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Проверка размера файла (50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "Файл слишком большой",
+          description: "Максимальный размер файла: 50 МБ",
+          variant: "destructive"
+        });
+        return;
+      }
       setSelectedFile(file);
       if (!documentName) {
         setDocumentName(file.name);
@@ -152,6 +214,15 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
   };
 
   const handleUpload = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "Ошибка",
+        description: "Выберите файл для загрузки",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (!documentName.trim()) {
       toast({
         title: "Ошибка",
@@ -162,9 +233,9 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
     }
 
     uploadDocumentMutation.mutate({
+      file: selectedFile,
       documentType,
       fileName: documentName,
-      fileSize: selectedFile?.size,
     });
   };
 
@@ -172,6 +243,7 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
     setSelectedFile(null);
     setDocumentName('');
     setDocumentType('other');
+    setUploadProgress(0);
   };
 
   const handleDownload = (document: TripDocument) => {
@@ -309,15 +381,25 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
                     )}
                   </div>
 
+                  {isUploading && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Загрузка файла...</span>
+                        <span className="font-medium">{uploadProgress}%</span>
+                      </div>
+                      <Progress value={uploadProgress} className="h-2" />
+                    </div>
+                  )}
+
                   <div className="flex gap-2">
                     <Button 
                       onClick={handleUpload} 
-                      disabled={uploadDocumentMutation.isPending}
+                      disabled={isUploading || !selectedFile}
                       className="flex-1"
                     >
-                      {uploadDocumentMutation.isPending ? (
+                      {isUploading ? (
                         <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                           Загрузка...
                         </>
                       ) : (
@@ -327,7 +409,11 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
                         </>
                       )}
                     </Button>
-                    <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsUploadDialogOpen(false)}
+                      disabled={isUploading}
+                    >
                       Отмена
                     </Button>
                   </div>
@@ -383,7 +469,7 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => deleteDocumentMutation.mutate(document.id)}
+                          onClick={() => deleteDocumentMutation.mutate(document)}
                           disabled={deleteDocumentMutation.isPending}
                           className="text-destructive hover:text-destructive"
                           title="Удалить"

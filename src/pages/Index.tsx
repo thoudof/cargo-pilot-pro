@@ -25,7 +25,7 @@ import { AdminRoute } from "@/components/Admin/AdminRoute";
 import { AnimatePresence } from "framer-motion";
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, hasRole } = useAuth();
   const location = useLocation();
   
   useActivityLogger();
@@ -45,6 +45,14 @@ const Index = () => {
 
   if (!user) {
     return <AuthPage />;
+  }
+
+  // Redirect drivers to their dashboard from home page
+  const isDriver = hasRole('driver');
+  const isOnHomePage = location.pathname === '/';
+  
+  if (isDriver && isOnHomePage) {
+    return <Navigate to="/driver" replace />;
   }
 
   return (

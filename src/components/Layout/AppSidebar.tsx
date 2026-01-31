@@ -21,17 +21,18 @@ interface MenuItem {
   icon: React.ComponentType<{ className?: string }>;
   permission: AppPermission | null;
   requiresRole?: 'driver' | 'admin' | 'dispatcher';
+  excludeRole?: 'driver' | 'admin' | 'dispatcher';
 }
 
 const allMenuItems: MenuItem[] = [
-  { title: "Главная", url: "/", icon: Home, permission: null },
+  { title: "Главная", url: "/", icon: Home, permission: null, excludeRole: 'driver' },
   { title: "Панель водителя", url: "/driver", icon: Navigation, permission: null, requiresRole: 'driver' },
-  { title: "Рейсы", url: "/trips", icon: Truck, permission: AppPermission.VIEW_TRIPS },
+  { title: "Рейсы", url: "/trips", icon: Truck, permission: AppPermission.VIEW_TRIPS, excludeRole: 'driver' },
   { title: "Отчеты", url: "/reports", icon: BarChart3, permission: AppPermission.VIEW_REPORTS },
   { title: "Контрагенты", url: "/contractors", icon: Building2, permission: AppPermission.VIEW_CONTRACTORS },
   { title: "Водители", url: "/drivers", icon: Users, permission: AppPermission.VIEW_DRIVERS },
   { title: "Транспорт", url: "/vehicles", icon: Car, permission: AppPermission.VIEW_VEHICLES },
-  { title: "Маршруты", url: "/routes", icon: MapPin, permission: AppPermission.VIEW_ROUTES },
+  { title: "Маршруты", url: "/routes", icon: MapPin, permission: AppPermission.VIEW_ROUTES, excludeRole: 'driver' },
   { title: "Типы грузов", url: "/cargo-types", icon: Package, permission: AppPermission.VIEW_CARGO_TYPES },
   { title: "Уведомления", url: "/notifications", icon: Bell, permission: null },
   { title: "Админ панель", url: "/admin", icon: Shield, permission: AppPermission.VIEW_ADMIN_PANEL },
@@ -42,6 +43,10 @@ export function AppSidebar() {
   const { hasPermission, hasRole, loading } = useAuth();
   
   const menuItems = allMenuItems.filter(item => {
+    // Exclude if user has excluded role
+    if (item.excludeRole && hasRole(item.excludeRole)) {
+      return false;
+    }
     // Check role requirement first
     if (item.requiresRole && !hasRole(item.requiresRole)) {
       return false;

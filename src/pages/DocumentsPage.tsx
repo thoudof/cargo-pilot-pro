@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Download, FileText, Search, Filter } from 'lucide-react';
+import { Download, FileText, Search, Filter, Eye } from 'lucide-react';
 import { documentTypeLabels, DocumentType } from '@/types/documents';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { PageHeader } from '@/components/Layout/PageHeader';
+import { DocumentPreviewDialog } from '@/components/Documents/DocumentPreviewDialog';
 
 interface TripDocumentWithTrip {
   id: string;
@@ -32,6 +32,7 @@ interface TripDocumentWithTrip {
 export const DocumentsPage: React.FC = () => {
   const [filterType, setFilterType] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [previewDocument, setPreviewDocument] = useState<TripDocumentWithTrip | null>(null);
 
   const { data: documents, isLoading } = useQuery({
     queryKey: ['trip-documents'],
@@ -65,6 +66,11 @@ export const DocumentsPage: React.FC = () => {
     } else {
       toast.error('Файл недоступен для скачивания');
     }
+  };
+
+  const canPreview = (fileName: string): boolean => {
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'pdf'].includes(ext);
   };
 
   const filteredDocuments = documents?.filter(doc => {
@@ -175,21 +181,38 @@ export const DocumentsPage: React.FC = () => {
                   </div>
                 </div>
                 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDownload(document)}
-                  disabled={!document.file_url}
-                  className="flex-shrink-0"
-                >
-                  <Download className="h-4 w-4 sm:mr-2" />
-                  <span className="hidden sm:inline">Скачать</span>
-                </Button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {canPreview(document.file_name) && document.file_url && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPreviewDocument(document)}
+                    >
+                      <Eye className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Просмотр</span>
+                    </Button>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDownload(document)}
+                    disabled={!document.file_url}
+                  >
+                    <Download className="h-4 w-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Скачать</span>
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <DocumentPreviewDialog
+        open={!!previewDocument}
+        onOpenChange={(open) => !open && setPreviewDocument(null)}
+        document={previewDocument}
+      />
     </div>
   );
 };

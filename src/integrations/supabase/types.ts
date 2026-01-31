@@ -50,6 +50,36 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_telegram_subscriptions: {
+        Row: {
+          created_at: string
+          event_types: Database["public"]["Enums"]["notification_event_type"][]
+          id: string
+          is_active: boolean
+          telegram_chat_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_types?: Database["public"]["Enums"]["notification_event_type"][]
+          id?: string
+          is_active?: boolean
+          telegram_chat_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_types?: Database["public"]["Enums"]["notification_event_type"][]
+          id?: string
+          is_active?: boolean
+          telegram_chat_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cargo_types: {
         Row: {
           created_at: string
@@ -301,6 +331,8 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          telegram_link_code: string | null
+          telegram_link_code_expires_at: string | null
           telegram_notifications_enabled: boolean | null
           updated_at: string
         }
@@ -310,6 +342,8 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
           telegram_notifications_enabled?: boolean | null
           updated_at?: string
         }
@@ -319,6 +353,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
           telegram_notifications_enabled?: boolean | null
           updated_at?: string
         }
@@ -845,6 +881,19 @@ export type Database = {
         | "contract"
         | "power_of_attorney"
         | "other"
+      notification_event_type:
+        | "trip_created"
+        | "trip_updated"
+        | "trip_status_changed"
+        | "trip_deleted"
+        | "driver_created"
+        | "driver_updated"
+        | "driver_deleted"
+        | "vehicle_created"
+        | "vehicle_updated"
+        | "vehicle_deleted"
+        | "expense_created"
+        | "document_uploaded"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1020,6 +1069,20 @@ export const Constants = {
         "contract",
         "power_of_attorney",
         "other",
+      ],
+      notification_event_type: [
+        "trip_created",
+        "trip_updated",
+        "trip_status_changed",
+        "trip_deleted",
+        "driver_created",
+        "driver_updated",
+        "driver_deleted",
+        "vehicle_created",
+        "vehicle_updated",
+        "vehicle_deleted",
+        "expense_created",
+        "document_uploaded",
       ],
     },
   },

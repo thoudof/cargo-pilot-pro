@@ -29,7 +29,6 @@ serve(async (req) => {
 
   try {
     // Check if request has a body
-    const contentType = req.headers.get('content-type') || '';
     const bodyText = await req.text();
     
     if (!bodyText) {
@@ -55,7 +54,6 @@ serve(async (req) => {
     if (body.message) {
       const chatId = body.message.chat.id;
       const text = body.message.text || '';
-      const username = body.message.from?.username || '';
 
       // Handle /start command with link code
       if (text.startsWith('/start')) {
@@ -63,47 +61,11 @@ serve(async (req) => {
         if (parts.length > 1) {
           const linkCode = parts[1];
           
-          // Find driver with this link code
-          const { data: driver, error: findError } = await supabase
-            .from('drivers')
-            .select('id, name, telegram_link_code_expires_at')
-            .eq('telegram_link_code', linkCode)
-            .single();
-
-          if (findError || !driver) {
-            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
-              '❌ Неверный или истёкший код. Попросите администратора сгенерировать новый код.');
-            return new Response(JSON.stringify({ ok: true }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          // Check if code expired
-          if (driver.telegram_link_code_expires_at && new Date(driver.telegram_link_code_expires_at) < new Date()) {
-            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
-              '❌ Код истёк. Попросите администратора сгенерировать новый код.');
-            return new Response(JSON.stringify({ ok: true }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          // Link driver to telegram chat
-          const { error: updateError } = await supabase
-            .from('drivers')
-            .update({ 
-              telegram_chat_id: chatId.toString(),
-              telegram_link_code: null,
-              telegram_link_code_expires_at: null
-            })
-            .eq('id', driver.id);
-
-          if (updateError) {
-            console.error('Error linking driver:', updateError);
-            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
-              '❌ Произошла ошибка. Попробуйте позже.');
+          // Check if it's an admin link code
+          if (linkCode.startsWith('ADMIN_')) {
+            await handleAdminLink(supabase, TELEGRAM_BOT_TOKEN, chatId, linkCode);
           } else {
-            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
-              `✅ Успешно! Вы привязаны как водитель "${driver.name}".\n\nТеперь вы будете получать уведомления о назначенных рейсах.`);
+            await handleDriverLink(supabase, TELEGRAM_BOT_TOKEN, chatId, linkCode);
           }
         } else {
           await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
@@ -116,42 +78,11 @@ serve(async (req) => {
         if (parts.length > 1) {
           const linkCode = parts[1].toUpperCase();
           
-          const { data: driver, error: findError } = await supabase
-            .from('drivers')
-            .select('id, name, telegram_link_code_expires_at')
-            .eq('telegram_link_code', linkCode)
-            .single();
-
-          if (findError || !driver) {
-            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
-              '❌ Неверный или истёкший код.');
-            return new Response(JSON.stringify({ ok: true }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          if (driver.telegram_link_code_expires_at && new Date(driver.telegram_link_code_expires_at) < new Date()) {
-            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
-              '❌ Код истёк.');
-            return new Response(JSON.stringify({ ok: true }), {
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          const { error: updateError } = await supabase
-            .from('drivers')
-            .update({ 
-              telegram_chat_id: chatId.toString(),
-              telegram_link_code: null,
-              telegram_link_code_expires_at: null
-            })
-            .eq('id', driver.id);
-
-          if (updateError) {
-            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, '❌ Ошибка привязки.');
+          // Check if it's an admin link code
+          if (linkCode.startsWith('ADMIN_')) {
+            await handleAdminLink(supabase, TELEGRAM_BOT_TOKEN, chatId, linkCode);
           } else {
-            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
-              `✅ Вы привязаны как "${driver.name}". Теперь вы будете получать уведомления о рейсах.`);
+            await handleDriverLinkCommand(supabase, TELEGRAM_BOT_TOKEN, chatId, linkCode);
           }
         } else {
           await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
@@ -160,32 +91,60 @@ serve(async (req) => {
       }
       // Handle /status command
       else if (text === '/status') {
+        // Check driver
         const { data: driver } = await supabase
           .from('drivers')
           .select('name')
           .eq('telegram_chat_id', chatId.toString())
           .single();
 
-        if (driver) {
+        // Check admin
+        const { data: adminSub } = await supabase
+          .from('admin_telegram_subscriptions')
+          .select('user_id, event_types')
+          .eq('telegram_chat_id', chatId.toString())
+          .single();
+
+        if (driver && adminSub) {
+          const eventCount = (adminSub.event_types as string[])?.length || 0;
+          await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
+            `✅ Вы привязаны как водитель "${driver.name}"\n✅ Вы также получаете уведомления как администратор (${eventCount} типов событий)`);
+        } else if (driver) {
           await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
             `✅ Вы привязаны как водитель "${driver.name}"`);
+        } else if (adminSub) {
+          const eventCount = (adminSub.event_types as string[])?.length || 0;
+          await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
+            `✅ Вы получаете уведомления как администратор (${eventCount} типов событий)`);
         } else {
           await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
-            '❌ Вы не привязаны к аккаунту водителя');
+            '❌ Вы не привязаны к аккаунту');
         }
       }
       // Handle /unlink command
       else if (text === '/unlink') {
-        const { data: driver, error } = await supabase
+        // Unlink driver
+        const { data: driver } = await supabase
           .from('drivers')
           .update({ telegram_chat_id: null })
           .eq('telegram_chat_id', chatId.toString())
           .select('name')
           .single();
 
-        if (driver) {
-          await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
-            `✅ Аккаунт "${driver.name}" отвязан. Вы больше не будете получать уведомления.`);
+        // Unlink admin
+        const { data: adminSub } = await supabase
+          .from('admin_telegram_subscriptions')
+          .delete()
+          .eq('telegram_chat_id', chatId.toString())
+          .select('id')
+          .single();
+
+        if (driver || adminSub) {
+          let message = '✅ Аккаунт отвязан:\n';
+          if (driver) message += `• Водитель "${driver.name}"\n`;
+          if (adminSub) message += `• Администратор\n`;
+          message += '\nВы больше не будете получать уведомления.';
+          await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, message);
         } else {
           await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, 
             '❌ Вы не были привязаны к аккаунту');
@@ -209,6 +168,134 @@ serve(async (req) => {
     });
   }
 });
+
+async function handleDriverLink(supabase: any, token: string, chatId: number, linkCode: string) {
+  const { data: driver, error: findError } = await supabase
+    .from('drivers')
+    .select('id, name, telegram_link_code_expires_at')
+    .eq('telegram_link_code', linkCode)
+    .single();
+
+  if (findError || !driver) {
+    await sendTelegramMessage(token, chatId, 
+      '❌ Неверный или истёкший код. Попросите администратора сгенерировать новый код.');
+    return;
+  }
+
+  if (driver.telegram_link_code_expires_at && new Date(driver.telegram_link_code_expires_at) < new Date()) {
+    await sendTelegramMessage(token, chatId, 
+      '❌ Код истёк. Попросите администратора сгенерировать новый код.');
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from('drivers')
+    .update({ 
+      telegram_chat_id: chatId.toString(),
+      telegram_link_code: null,
+      telegram_link_code_expires_at: null
+    })
+    .eq('id', driver.id);
+
+  if (updateError) {
+    console.error('Error linking driver:', updateError);
+    await sendTelegramMessage(token, chatId, 
+      '❌ Произошла ошибка. Попробуйте позже.');
+  } else {
+    await sendTelegramMessage(token, chatId, 
+      `✅ Успешно! Вы привязаны как водитель "${driver.name}".\n\nТеперь вы будете получать уведомления о назначенных рейсах.`);
+  }
+}
+
+async function handleDriverLinkCommand(supabase: any, token: string, chatId: number, linkCode: string) {
+  const { data: driver, error: findError } = await supabase
+    .from('drivers')
+    .select('id, name, telegram_link_code_expires_at')
+    .eq('telegram_link_code', linkCode)
+    .single();
+
+  if (findError || !driver) {
+    await sendTelegramMessage(token, chatId, '❌ Неверный или истёкший код.');
+    return;
+  }
+
+  if (driver.telegram_link_code_expires_at && new Date(driver.telegram_link_code_expires_at) < new Date()) {
+    await sendTelegramMessage(token, chatId, '❌ Код истёк.');
+    return;
+  }
+
+  const { error: updateError } = await supabase
+    .from('drivers')
+    .update({ 
+      telegram_chat_id: chatId.toString(),
+      telegram_link_code: null,
+      telegram_link_code_expires_at: null
+    })
+    .eq('id', driver.id);
+
+  if (updateError) {
+    await sendTelegramMessage(token, chatId, '❌ Ошибка привязки.');
+  } else {
+    await sendTelegramMessage(token, chatId, 
+      `✅ Вы привязаны как "${driver.name}". Теперь вы будете получать уведомления о рейсах.`);
+  }
+}
+
+async function handleAdminLink(supabase: any, token: string, chatId: number, linkCode: string) {
+  // Find profile with this link code
+  const { data: profile, error: findError } = await supabase
+    .from('profiles')
+    .select('id, full_name, telegram_link_code_expires_at')
+    .eq('telegram_link_code', linkCode)
+    .single();
+
+  if (findError || !profile) {
+    await sendTelegramMessage(token, chatId, 
+      '❌ Неверный или истёкший код администратора.');
+    return;
+  }
+
+  if (profile.telegram_link_code_expires_at && new Date(profile.telegram_link_code_expires_at) < new Date()) {
+    await sendTelegramMessage(token, chatId, '❌ Код истёк.');
+    return;
+  }
+
+  // Clear the link code
+  await supabase
+    .from('profiles')
+    .update({ 
+      telegram_link_code: null,
+      telegram_link_code_expires_at: null
+    })
+    .eq('id', profile.id);
+
+  // Create or update admin subscription with default events
+  const defaultEvents = [
+    'trip_created',
+    'trip_updated',
+    'trip_status_changed',
+    'driver_created',
+    'expense_created',
+    'document_uploaded'
+  ];
+
+  const { error: subError } = await supabase
+    .from('admin_telegram_subscriptions')
+    .upsert({
+      user_id: profile.id,
+      telegram_chat_id: chatId.toString(),
+      event_types: defaultEvents,
+      is_active: true,
+    }, { onConflict: 'user_id' });
+
+  if (subError) {
+    console.error('Error creating admin subscription:', subError);
+    await sendTelegramMessage(token, chatId, '❌ Ошибка привязки администратора.');
+  } else {
+    await sendTelegramMessage(token, chatId, 
+      `✅ Успешно! Вы привязаны как администратор "${profile.full_name || 'Пользователь'}".\n\nТеперь вы будете получать уведомления о событиях системы.\n\nНастройте типы уведомлений в приложении (Настройки → Уведомления в Telegram).`);
+  }
+}
 
 async function sendTelegramMessage(token: string, chatId: number | string, text: string) {
   const response = await fetch(`${TELEGRAM_API}${token}/sendMessage`, {

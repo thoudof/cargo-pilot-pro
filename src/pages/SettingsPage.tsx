@@ -15,6 +15,7 @@ import { ThemeToggle } from '@/components/Theme/ThemeToggle';
 import { useTheme } from '@/components/Theme/ThemeProvider';
 import { PageHeader } from '@/components/Layout/PageHeader';
 import { PushNotificationManager } from '@/components/Notifications/PushNotificationManager';
+import { AdminTelegramSettings } from '@/components/Settings/AdminTelegramSettings';
 
 interface UserProfile {
   full_name: string;
@@ -333,6 +334,9 @@ export const SettingsPage: React.FC = () => {
           </div>
         ))}
       </SettingsSection>
+
+      {/* Telegram для администраторов */}
+      <AdminTelegramSettings />
 
       {/* Настройки приложения */}
       <SettingsSection icon={<Settings className="h-5 w-5 text-primary" />} title="Приложение">

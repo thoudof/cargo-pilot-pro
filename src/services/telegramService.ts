@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
-export interface TelegramNotificationPayload {
+export interface DriverNotificationPayload {
+  target: 'driver';
   type: 'new_trip' | 'trip_updated' | 'trip_reminder';
   driverId: string;
   tripId: string;
@@ -11,6 +12,29 @@ export interface TelegramNotificationPayload {
     cargoDescription?: string;
   };
   changes?: string[];
+}
+
+export type NotificationEventType = 
+  | 'trip_created'
+  | 'trip_updated'
+  | 'trip_status_changed'
+  | 'trip_deleted'
+  | 'driver_created'
+  | 'driver_updated'
+  | 'driver_deleted'
+  | 'vehicle_created'
+  | 'vehicle_updated'
+  | 'vehicle_deleted'
+  | 'expense_created'
+  | 'document_uploaded';
+
+export interface AdminNotificationPayload {
+  target: 'admins';
+  eventType: NotificationEventType;
+  entityId?: string;
+  entityName?: string;
+  details?: Record<string, any>;
+  message?: string;
 }
 
 class TelegramService {
@@ -86,10 +110,10 @@ class TelegramService {
   }
 
   // Send notification to driver via telegram
-  async sendNotification(payload: TelegramNotificationPayload): Promise<boolean> {
+  async sendDriverNotification(payload: Omit<DriverNotificationPayload, 'target'>): Promise<boolean> {
     try {
       const { data, error } = await supabase.functions.invoke('send-telegram-notification', {
-        body: payload,
+        body: { ...payload, target: 'driver' },
       });
 
       if (error) {
@@ -104,6 +128,25 @@ class TelegramService {
     }
   }
 
+  // Send notification to subscribed admins
+  async sendAdminNotification(payload: Omit<AdminNotificationPayload, 'target'>): Promise<boolean> {
+    try {
+      const { data, error } = await supabase.functions.invoke('send-telegram-notification', {
+        body: { ...payload, target: 'admins' },
+      });
+
+      if (error) {
+        console.error('Failed to send admin telegram notification:', error);
+        return false;
+      }
+
+      return data?.ok ?? false;
+    } catch (error) {
+      console.error('Error sending admin telegram notification:', error);
+      return false;
+    }
+  }
+
   // Notify driver about new assigned trip
   async notifyNewTrip(driverId: string, tripId: string, tripDetails: {
     pointA: string;
@@ -111,7 +154,7 @@ class TelegramService {
     departureDate: string;
     cargoDescription?: string;
   }): Promise<boolean> {
-    return this.sendNotification({
+    return this.sendDriverNotification({
       type: 'new_trip',
       driverId,
       tripId,
@@ -125,7 +168,7 @@ class TelegramService {
     pointB: string;
     departureDate: string;
   }, changes: string[]): Promise<boolean> {
-    return this.sendNotification({
+    return this.sendDriverNotification({
       type: 'trip_updated',
       driverId,
       tripId,
@@ -140,7 +183,7 @@ class TelegramService {
     pointB: string;
     departureDate: string;
   }): Promise<boolean> {
-    return this.sendNotification({
+    return this.sendDriverNotification({
       type: 'trip_reminder',
       driverId,
       tripId,
@@ -148,7 +191,73 @@ class TelegramService {
     });
   }
 
-  // Get bot link with code for driver
+  // === Admin notification helpers ===
+
+  async notifyTripCreated(tripDetails: {
+    tripId: string;
+    pointA: string;
+    pointB: string;
+    departureDate: string;
+    driverName?: string;
+  }): Promise<boolean> {
+    return this.sendAdminNotification({
+      eventType: 'trip_created',
+      entityId: tripDetails.tripId,
+      entityName: `${tripDetails.pointA} → ${tripDetails.pointB}`,
+      details: {
+        pointA: tripDetails.pointA,
+        pointB: tripDetails.pointB,
+        departureDate: tripDetails.departureDate,
+      },
+      message: tripDetails.driverName ? `Водитель: ${tripDetails.driverName}` : undefined,
+    });
+  }
+
+  async notifyTripStatusChanged(tripId: string, tripName: string, oldStatus: string, newStatus: string): Promise<boolean> {
+    return this.sendAdminNotification({
+      eventType: 'trip_status_changed',
+      entityId: tripId,
+      entityName: tripName,
+      details: { status: newStatus },
+      message: `${oldStatus} → ${newStatus}`,
+    });
+  }
+
+  async notifyDriverCreated(driverId: string, driverName: string): Promise<boolean> {
+    return this.sendAdminNotification({
+      eventType: 'driver_created',
+      entityId: driverId,
+      entityName: driverName,
+    });
+  }
+
+  async notifyVehicleCreated(vehicleId: string, vehicleName: string): Promise<boolean> {
+    return this.sendAdminNotification({
+      eventType: 'vehicle_created',
+      entityId: vehicleId,
+      entityName: vehicleName,
+    });
+  }
+
+  async notifyExpenseCreated(tripId: string, amount: number, category: string): Promise<boolean> {
+    return this.sendAdminNotification({
+      eventType: 'expense_created',
+      entityId: tripId,
+      details: { amount },
+      message: `${category}: ${amount} ₽`,
+    });
+  }
+
+  async notifyDocumentUploaded(tripId: string, fileName: string, documentType: string): Promise<boolean> {
+    return this.sendAdminNotification({
+      eventType: 'document_uploaded',
+      entityId: tripId,
+      entityName: fileName,
+      message: `Тип: ${documentType}`,
+    });
+  }
+
+  // Get bot link with code
   getBotLink(botUsername: string, code?: string): string {
     if (code) {
       return `https://t.me/${botUsername}?start=${code}`;

@@ -10,6 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { Driver } from '@/types';
+import { notifyDriverCreated } from '@/services/notificationService';
 
 const driverSchema = z.object({
   name: z.string().min(1, 'Имя обязательно'),
@@ -85,6 +86,11 @@ export const DriverForm: React.FC<DriverFormProps> = ({ driver, onSave, onCancel
       }
 
       console.log('Driver saved successfully:', result.data);
+
+      // Send admin notification for new driver
+      if (!driver?.id && result.data?.[0]) {
+        notifyDriverCreated(result.data[0].id, values.name);
+      }
 
       toast({
         title: driver ? 'Водитель обновлен' : 'Водитель создан',

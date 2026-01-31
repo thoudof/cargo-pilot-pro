@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +15,8 @@ import {
   Trash2, 
   Plus, 
   Eye,
-  Loader2
+  Loader2,
+  CloudUpload
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -56,6 +57,7 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
   const [documentName, setDocumentName] = useState('');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -246,6 +248,63 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
     setUploadProgress(0);
   };
 
+  // Drag & Drop handlers
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only set isDragging to false if we're leaving the main container
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragging(false);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      
+      // Проверка размера файла (50MB)
+      if (file.size > 50 * 1024 * 1024) {
+        toast({
+          title: "Файл слишком большой",
+          description: "Максимальный размер файла: 50 МБ",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Проверка типа файла
+      const allowedTypes = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.xls', '.xlsx'];
+      const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+      if (!allowedTypes.includes(fileExtension)) {
+        toast({
+          title: "Неподдерживаемый формат",
+          description: "Разрешены: PDF, DOC, DOCX, JPG, PNG, XLS, XLSX",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      setSelectedFile(file);
+      setDocumentName(file.name);
+      setIsUploadDialogOpen(true);
+    }
+  }, [toast]);
+
   const handleDownload = (document: TripDocument) => {
     if (document.file_url) {
       window.open(document.file_url, '_blank');
@@ -319,7 +378,26 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div 
+      className="space-y-6"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {/* Drop overlay */}
+      {isDragging && (
+        <div className="fixed inset-0 bg-primary/10 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-none">
+          <div className="bg-background border-2 border-dashed border-primary rounded-xl p-12 text-center shadow-2xl">
+            <CloudUpload className="h-16 w-16 mx-auto text-primary mb-4 animate-bounce" />
+            <p className="text-xl font-semibold text-foreground">Отпустите файл для загрузки</p>
+            <p className="text-sm text-muted-foreground mt-2">
+              PDF, DOC, DOCX, JPG, PNG, XLS, XLSX (до 50 МБ)
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Все документы */}
       <Card>
         <CardHeader>
@@ -424,11 +502,17 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
         </CardHeader>
         <CardContent>
           {documents.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Документы пока не добавлены</p>
-              <p className="text-sm text-muted-foreground">
-                Нажмите "Добавить документ" чтобы загрузить файлы
+            <div 
+              className="text-center py-12 border-2 border-dashed border-muted-foreground/25 rounded-lg hover:border-primary/50 transition-colors cursor-pointer"
+              onClick={() => setIsUploadDialogOpen(true)}
+            >
+              <CloudUpload className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground font-medium">Документы пока не добавлены</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Перетащите файл сюда или нажмите для загрузки
+              </p>
+              <p className="text-xs text-muted-foreground/70 mt-2">
+                PDF, DOC, DOCX, JPG, PNG, XLS, XLSX (до 50 МБ)
               </p>
             </div>
           ) : (

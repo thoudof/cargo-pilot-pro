@@ -518,62 +518,91 @@ export const TripDocuments: React.FC<TripDocumentsProps> = ({ tripId }) => {
           ) : (
             <ScrollArea className="h-96">
               <div className="space-y-3">
-                {documents.map((document) => (
-                  <div key={document.id} className="border rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h4 className="font-medium">{document.file_name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline">
-                            {documentTypeLabels[document.document_type]}
-                          </Badge>
+                {documents.map((document) => {
+                  const isImage = document.file_url && 
+                    /\.(jpg|jpeg|png|gif|webp)$/i.test(document.file_url);
+                  
+                  return (
+                    <div key={document.id} className="border rounded-lg p-4">
+                      <div className="flex items-start gap-4">
+                        {/* Thumbnail */}
+                        {isImage && document.file_url ? (
+                          <div 
+                            className="w-16 h-16 rounded-lg overflow-hidden bg-muted flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-primary transition-all"
+                            onClick={() => handlePreview(document)}
+                          >
+                            <img 
+                              src={document.file_url} 
+                              alt={document.file_name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                            <FileText className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                        )}
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium truncate">{document.file_name}</h4>
+                              <div className="flex items-center gap-2 mt-1">
+                                <Badge variant="outline">
+                                  {documentTypeLabels[document.document_type]}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 flex-shrink-0">
+                              {document.file_url && (
+                                <>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handlePreview(document)}
+                                    title="Предварительный просмотр"
+                                  >
+                                    <Eye className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleDownload(document)}
+                                    title="Скачать"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </>
+                              )}
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => deleteDocumentMutation.mutate(document)}
+                                disabled={deleteDocumentMutation.isPending}
+                                className="text-destructive hover:text-destructive"
+                                title="Удалить"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {document.file_size && (
+                              <span className="mr-4">
+                                Размер: {(document.file_size / 1024 / 1024).toFixed(2)} MB
+                              </span>
+                            )}
+                            <span>
+                              Загружен: {format(new Date(document.created_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex gap-1">
-                        {document.file_url && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handlePreview(document)}
-                              title="Предварительный просмотр"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleDownload(document)}
-                              title="Скачать"
-                            >
-                              <Download className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteDocumentMutation.mutate(document)}
-                          disabled={deleteDocumentMutation.isPending}
-                          className="text-destructive hover:text-destructive"
-                          title="Удалить"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      {document.file_size && (
-                        <span className="mr-4">
-                          Размер: {(document.file_size / 1024 / 1024).toFixed(2)} MB
-                        </span>
-                      )}
-                      <span>
-                        Загружен: {format(new Date(document.created_at), 'dd.MM.yyyy HH:mm', { locale: ru })}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </ScrollArea>
           )}

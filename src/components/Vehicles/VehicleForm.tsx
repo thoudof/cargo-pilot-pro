@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { Vehicle } from '@/types';
+import { notifyVehicleCreated } from '@/services/notificationService';
 
 const vehicleSchema = z.object({
   brand: z.string().min(1, 'Марка обязательна'),
@@ -106,6 +107,11 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
       }
 
       console.log('Vehicle saved successfully:', result.data);
+
+      // Send admin notification for new vehicle
+      if (!vehicle?.id && result.data?.[0]) {
+        notifyVehicleCreated(result.data[0].id, `${values.brand} ${values.model} (${values.licensePlate})`);
+      }
 
       toast({
         title: vehicle ? 'Транспорт обновлен' : 'Транспорт создан',

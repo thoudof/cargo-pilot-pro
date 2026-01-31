@@ -136,7 +136,8 @@ export async function notifyTripAssigned(
   pointA: string,
   pointB: string,
   departureDate?: string,
-  cargoDescription?: string
+  cargoDescription?: string,
+  driverName?: string
 ): Promise<void> {
   const driverUserId = await getDriverUserId(driverId);
   
@@ -151,7 +152,7 @@ export async function notifyTripAssigned(
     });
   }
 
-  // Always try to send Telegram notification
+  // Send Telegram notification to driver
   try {
     await telegramService.notifyNewTrip(driverId, tripId, {
       pointA,
@@ -160,7 +161,20 @@ export async function notifyTripAssigned(
       cargoDescription
     });
   } catch (error) {
-    console.error('Failed to send Telegram notification:', error);
+    console.error('Failed to send Telegram notification to driver:', error);
+  }
+
+  // Send Telegram notification to subscribed admins
+  try {
+    await telegramService.notifyTripCreated({
+      tripId,
+      pointA,
+      pointB,
+      departureDate: departureDate || new Date().toISOString(),
+      driverName
+    });
+  } catch (error) {
+    console.error('Failed to send admin Telegram notification:', error);
   }
 }
 
@@ -207,6 +221,24 @@ export async function notifyTripStatusChanged(
       console.error('Failed to send Telegram notification:', error);
     }
   }
+
+  // Send Telegram notification to subscribed admins about status change
+  try {
+    const statusLabelsRu: Record<string, string> = {
+      planned: 'Запланирован',
+      in_progress: 'В пути',
+      completed: 'Завершён',
+      cancelled: 'Отменён'
+    };
+    await telegramService.notifyTripStatusChanged(
+      tripId,
+      `${pointA} → ${pointB}`,
+      statusLabelsRu[oldStatus] || oldStatus,
+      statusLabelsRu[newStatus] || newStatus
+    );
+  } catch (error) {
+    console.error('Failed to send admin Telegram notification:', error);
+  }
 }
 
 export async function notifyExpenseAdded(
@@ -215,11 +247,50 @@ export async function notifyExpenseAdded(
   amount: number
 ): Promise<void> {
   await sendNotification('expense_added', { tripId, category, amount });
+  
+  // Send Telegram notification to subscribed admins
+  try {
+    await telegramService.notifyExpenseCreated(tripId, amount, category);
+  } catch (error) {
+    console.error('Failed to send admin Telegram notification:', error);
+  }
 }
 
 export async function notifyDocumentUploaded(
   tripId: string,
-  fileName: string
+  fileName: string,
+  documentType?: string
 ): Promise<void> {
   await sendNotification('document_uploaded', { tripId, fileName });
+  
+  // Send Telegram notification to subscribed admins
+  try {
+    await telegramService.notifyDocumentUploaded(tripId, fileName, documentType || 'Документ');
+  } catch (error) {
+    console.error('Failed to send admin Telegram notification:', error);
+  }
+}
+
+// Notify admins about new driver created
+export async function notifyDriverCreated(
+  driverId: string,
+  driverName: string
+): Promise<void> {
+  try {
+    await telegramService.notifyDriverCreated(driverId, driverName);
+  } catch (error) {
+    console.error('Failed to send admin Telegram notification:', error);
+  }
+}
+
+// Notify admins about new vehicle created
+export async function notifyVehicleCreated(
+  vehicleId: string,
+  vehicleName: string
+): Promise<void> {
+  try {
+    await telegramService.notifyVehicleCreated(vehicleId, vehicleName);
+  } catch (error) {
+    console.error('Failed to send admin Telegram notification:', error);
+  }
 }

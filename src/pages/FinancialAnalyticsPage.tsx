@@ -44,7 +44,7 @@ export const FinancialAnalyticsPage: React.FC = () => {
       }
 
       const response = await fetch(
-        `https://erwlnexwbrvvnvxtkeqg.supabase.co/functions/v1/financial-analytics`,
+        `https://xibihgkkubkcjdibysni.supabase.co/functions/v1/financial-analytics`,
         {
           method: 'POST',
           headers: {
@@ -92,7 +92,7 @@ export const FinancialAnalyticsPage: React.FC = () => {
       }
 
       const response = await fetch(
-        `https://erwlnexwbrvvnvxtkeqg.supabase.co/functions/v1/financial-analytics`,
+        `https://xibihgkkubkcjdibysni.supabase.co/functions/v1/financial-analytics`,
         {
           method: 'POST',
           headers: {

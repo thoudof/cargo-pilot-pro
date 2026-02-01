@@ -41,7 +41,8 @@ serve(async (req) => {
       });
     }
 
-    const { action, dateRange } = await req.json();
+    const body = await req.json();
+    const { action, dateRange, historicalData } = body;
 
     // Fetch financial data with related entities
     let tripsQuery = supabase
@@ -239,8 +240,6 @@ serve(async (req) => {
 
     // Forecasting action
     if (action === "forecast") {
-      const { historicalData } = await req.json();
-      
       const forecastPrompt = `Ты — эксперт по прогнозированию в логистике. Проанализируй исторические данные и дай прогноз.
 
 ИСТОРИЧЕСКИЕ ДАННЫЕ ПО МЕСЯЦАМ:

@@ -945,9 +945,45 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      activity_logs_safe: {
+        Row: {
+          action: string | null
+          created_at: string | null
+          details: Json | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string | null
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action?: string | null
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string | null
+          ip_address?: never
+          user_agent?: never
+          user_id?: string | null
+        }
+        Update: {
+          action?: string | null
+          created_at?: string | null
+          details?: Json | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string | null
+          ip_address?: never
+          user_agent?: never
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      cleanup_old_activity_logs: { Args: never; Returns: undefined }
       get_driver_trips: { Args: { _user_id: string }; Returns: string[] }
       get_user_roles: {
         Args: { _user_id: string }

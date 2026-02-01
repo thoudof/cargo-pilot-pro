@@ -589,6 +589,111 @@ export type Database = {
           },
         ]
       }
+      trip_templates: {
+        Row: {
+          cargo_description: string | null
+          cargo_type_id: string | null
+          cargo_value: number | null
+          cargo_volume: number | null
+          cargo_weight: number | null
+          contractor_id: string | null
+          created_at: string
+          created_by: string | null
+          default_expenses: Json | null
+          description: string | null
+          driver_id: string | null
+          id: string
+          is_favorite: boolean | null
+          name: string
+          point_a: string | null
+          point_b: string | null
+          route_id: string | null
+          updated_at: string
+          usage_count: number | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          cargo_description?: string | null
+          cargo_type_id?: string | null
+          cargo_value?: number | null
+          cargo_volume?: number | null
+          cargo_weight?: number | null
+          contractor_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_expenses?: Json | null
+          description?: string | null
+          driver_id?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          name: string
+          point_a?: string | null
+          point_b?: string | null
+          route_id?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          cargo_description?: string | null
+          cargo_type_id?: string | null
+          cargo_value?: number | null
+          cargo_volume?: number | null
+          cargo_weight?: number | null
+          contractor_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          default_expenses?: Json | null
+          description?: string | null
+          driver_id?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          name?: string
+          point_a?: string | null
+          point_b?: string | null
+          route_id?: string | null
+          updated_at?: string
+          usage_count?: number | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_templates_cargo_type_id_fkey"
+            columns: ["cargo_type_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trips: {
         Row: {
           arrival_date: string | null
@@ -714,6 +819,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_dashboard_settings: {
+        Row: {
+          created_at: string
+          hidden_widgets: string[] | null
+          id: string
+          theme_settings: Json | null
+          updated_at: string
+          user_id: string
+          widget_layout: Json | null
+        }
+        Insert: {
+          created_at?: string
+          hidden_widgets?: string[] | null
+          id?: string
+          theme_settings?: Json | null
+          updated_at?: string
+          user_id: string
+          widget_layout?: Json | null
+        }
+        Update: {
+          created_at?: string
+          hidden_widgets?: string[] | null
+          id?: string
+          theme_settings?: Json | null
+          updated_at?: string
+          user_id?: string
+          widget_layout?: Json | null
+        }
+        Relationships: []
       }
       user_permissions: {
         Row: {

@@ -14,6 +14,8 @@ import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { DateRange } from 'react-day-picker';
+import { PeriodComparison } from '@/components/Analytics/PeriodComparison';
+import { LoadForecasting } from '@/components/Analytics/LoadForecasting';
 
 interface FinancialSummary {
   totalTrips: number;
@@ -357,6 +359,12 @@ export const FinancialAnalyticsPage: React.FC = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Period Comparison */}
+      <PeriodComparison />
+
+      {/* Load Forecasting */}
+      <LoadForecasting />
 
       {/* AI Analysis */}
       {(isAnalyzing || aiAnalysis) && (

@@ -237,6 +237,52 @@ serve(async (req) => {
       });
     }
 
+    // Forecasting action
+    if (action === "forecast") {
+      const { historicalData } = await req.json();
+      
+      const forecastPrompt = `Ты — эксперт по прогнозированию в логистике. Проанализируй исторические данные и дай прогноз.
+
+ИСТОРИЧЕСКИЕ ДАННЫЕ ПО МЕСЯЦАМ:
+${historicalData.map((d: any) => `- ${d.month}: ${d.trips} рейсов`).join('\n')}
+
+На основе этих данных:
+1. **Тренд**: Определи общий тренд (рост/падение/стабильность) и его силу
+2. **Сезонность**: Выяви сезонные паттерны если есть
+3. **Прогноз на 3 месяца**: Дай конкретные числа с диапазоном ±20%
+4. **Факторы риска**: Что может повлиять на прогноз
+5. **Рекомендации**: Как подготовиться к прогнозируемой нагрузке
+
+Формат ответа — структурированный Markdown на русском языке.`;
+
+      const forecastResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-3-flash-preview",
+          messages: [
+            { role: "system", content: "Ты эксперт по прогнозированию нагрузки в логистике." },
+            { role: "user", content: forecastPrompt },
+          ],
+          stream: true,
+        }),
+      });
+
+      if (!forecastResponse.ok) {
+        return new Response(JSON.stringify({ error: "AI error" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      return new Response(forecastResponse.body, {
+        headers: { ...corsHeaders, "Content-Type": "text/event-stream" },
+      });
+    }
+
     // AI Analysis
     const systemPrompt = `Ты — эксперт по финансовой аналитике для транспортной логистической компании. 
 Анализируй предоставленные финансовые данные и давай конкретные рекомендации на русском языке.

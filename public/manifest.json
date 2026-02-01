@@ -1,0 +1,29 @@
+{
+  "name": "Грузоперевозки",
+  "short_name": "Грузоперевозки",
+  "description": "Профессиональное приложение для управления грузоперевозками",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e40af",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/lovable-uploads/1a2ab69e-d088-4847-b64c-026efae5c05f.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/lovable-uploads/1a2ab69e-d088-4847-b64c-026efae5c05f.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "ru",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}

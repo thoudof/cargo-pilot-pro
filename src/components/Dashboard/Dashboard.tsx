@@ -1,18 +1,22 @@
 
 import React, { memo } from 'react';
-import { DashboardStats } from './DashboardStats';
+import { DashboardWidgets } from './DashboardWidgets';
 import { FinancialMetrics } from './FinancialMetrics';
 import { DashboardCharts } from './DashboardCharts';
 import { RecentTripsSection } from './RecentTripsSection';
+import { LiveGPSMap } from './LiveGPSMap';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useErrorBoundary } from '@/hooks/useErrorBoundary';
 import { PageHeader } from '@/components/Layout/PageHeader';
 import { Button } from '@/components/ui/button';
 import { RefreshCw } from 'lucide-react';
+import { QuickTripCreator } from '@/components/Trips/QuickTripCreator';
+import { useQueryClient } from '@tanstack/react-query';
 
 const Dashboard: React.FC = memo(() => {
   const { data: stats, loading, error } = useDashboardData();
   const { error: runtimeError, resetError } = useErrorBoundary();
+  const queryClient = useQueryClient();
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('ru-RU', {
@@ -39,6 +43,11 @@ const Dashboard: React.FC = memo(() => {
       label: "Вес (т)",
       color: "hsl(var(--chart-3))"
     }
+  };
+
+  const handleTripCreated = () => {
+    queryClient.invalidateQueries({ queryKey: ['trips'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
   };
 
   if (runtimeError) {
@@ -94,25 +103,30 @@ const Dashboard: React.FC = memo(() => {
         title="Панель управления" 
         description="Обзор ключевых показателей"
         actions={
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => window.location.reload()}
-            className="gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span className="hidden sm:inline">Обновить</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <QuickTripCreator onTripCreated={handleTripCreated} />
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => window.location.reload()}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span className="hidden sm:inline">Обновить</span>
+            </Button>
+          </div>
         }
       />
       
-      <DashboardStats stats={stats} />
+      <DashboardWidgets stats={stats} />
       
       <FinancialMetrics 
         stats={stats} 
         formatCurrency={formatCurrency} 
         formatWeight={formatWeight} 
       />
+
+      <LiveGPSMap />
       
       <DashboardCharts 
         stats={stats} 

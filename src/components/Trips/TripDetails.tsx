@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { TripDocuments } from './TripDocuments';
 import { TripLocationMap } from './TripLocationMap';
+import { SaveAsTemplateDialog } from './SaveAsTemplateDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Calendar, User, Truck, Package, MapPin, FileText, DollarSign, Navigation } from 'lucide-react';
+import { Calendar, User, Truck, Package, MapPin, FileText, DollarSign, Navigation, Save } from 'lucide-react';
 import { Trip, TripStatus, AppPermission } from '@/types';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -40,10 +41,12 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
   onOpenChange
 }) => {
   const [showMap, setShowMap] = useState(false);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const { hasPermission, hasRole } = useAuth();
   
   // Show map for dispatchers and admins
   const canViewMap = hasPermission(AppPermission.VIEW_TRIPS) || hasRole('admin') || hasRole('dispatcher');
+  const canEditTrips = hasPermission(AppPermission.EDIT_TRIPS);
 
   if (!trip) return null;
 
@@ -51,12 +54,23 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 text-base sm:text-lg">
+          <DialogTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 text-base sm:text-lg">
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full ${statusColors[trip.status]}`}></div>
               <span className="truncate">{trip.pointA} → {trip.pointB}</span>
+              <Badge variant="outline" className="w-fit">{statusLabels[trip.status]}</Badge>
             </div>
-            <Badge variant="outline" className="w-fit">{statusLabels[trip.status]}</Badge>
+            {canEditTrips && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="gap-2"
+                onClick={() => setShowSaveTemplate(true)}
+              >
+                <Save className="h-4 w-4" />
+                <span className="hidden sm:inline">Сохранить как шаблон</span>
+              </Button>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -225,6 +239,12 @@ export const TripDetails: React.FC<TripDetailsProps> = ({
             <TripDocuments tripId={trip.id} />
           </div>
         </div>
+
+        <SaveAsTemplateDialog 
+          trip={trip} 
+          open={showSaveTemplate} 
+          onOpenChange={setShowSaveTemplate} 
+        />
       </DialogContent>
     </Dialog>
   );

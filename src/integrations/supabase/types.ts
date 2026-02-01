@@ -964,8 +964,8 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           id?: string | null
-          ip_address?: never
-          user_agent?: never
+          ip_address?: string | null
+          user_agent?: string | null
           user_id?: string | null
         }
         Update: {
@@ -975,8 +975,8 @@ export type Database = {
           entity_id?: string | null
           entity_type?: string | null
           id?: string | null
-          ip_address?: never
-          user_agent?: never
+          ip_address?: string | null
+          user_agent?: string | null
           user_id?: string | null
         }
         Relationships: []

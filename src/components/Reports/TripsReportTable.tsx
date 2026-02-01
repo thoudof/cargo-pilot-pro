@@ -2,14 +2,11 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { useDataCache } from '@/hooks/useDataCache';
 import { optimizedSupabaseService } from '@/services/optimizedSupabaseService';
 import { Trip, TripStatus } from '@/types';
-import { TripWithExpenses, statusLabels } from '@/types/reports';
-import { format } from 'date-fns';
-import { ru } from 'date-fns/locale';
-import { useToast } from '@/hooks/use-toast';
-import { escapeCsvCell } from '@/utils/reportsUtils';
+import { TripWithExpenses } from '@/types/reports';
 import { TripsReportSummaryStats } from './TripsReportSummaryStats';
 import { TripsReportFilters } from './TripsReportFilters';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export const TripsReportTable: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -227,67 +224,6 @@ export const TripsReportTable: React.FC = () => {
     }
   };
 
-  const handleExport = () => {
-    if (filteredAndSortedTrips.length === 0) {
-      toast({
-        title: "Нет данных для экспорта",
-        description: "Пожалуйста, измените фильтры или дождитесь появления данных.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const headers = [
-      "№", "Маршрут", "Описание груза", "Дата отправления", "Водитель Имя", 
-      "Водитель Телефон", "ТС Марка", "ТС Модель", "ТС Госномер", "Контрагент", 
-      "Вес (кг)", "Объем (м³)", "Доход (₽)", "Расходы (₽)", 
-      "Факт. прибыль (₽)", "Потенц. прибыль (₽)", "Статус"
-    ];
-
-    const csvRows = [
-      headers.map(escapeCsvCell).join(','),
-      ...filteredAndSortedTrips.map((trip, index) => {
-        const row = [
-          index + 1,
-          `${trip.pointA} → ${trip.pointB}`,
-          trip.cargo?.description || '',
-          format(new Date(trip.departureDate), 'dd.MM.yyyy', { locale: ru }),
-          trip.driver.name,
-          trip.driver.phone,
-          trip.vehicle.brand,
-          trip.vehicle.model,
-          trip.vehicle.licensePlate,
-          contractors[trip.contractorId] || 'Неизвестный',
-          trip.cargo?.weight || 0,
-          trip.cargo?.volume || 0,
-          trip.cargo?.value || 0,
-          trip.totalExpenses,
-          trip.isProfitActual ? trip.actualProfit : '',
-          !trip.isProfitActual ? trip.potentialProfit : '',
-          statusLabels[trip.status]
-        ];
-        return row.map(escapeCsvCell).join(',');
-      })
-    ];
-
-    const csvString = csvRows.join('\n');
-    const blob = new Blob([`\uFEFF${csvString}`], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `trips_report_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: "Экспорт успешно завершен",
-      description: "Данные по рейсам выгружены в CSV файл.",
-    });
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -304,10 +240,10 @@ export const TripsReportTable: React.FC = () => {
         onSearchTermChange={setSearchTerm}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
-        onExport={handleExport}
         trips={filteredAndSortedTrips}
         contractors={contractors}
         onSort={handleSort}
+        summaryStats={summaryStats}
       />
     </div>
   );

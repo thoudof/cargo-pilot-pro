@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,13 +7,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Search, FileText, Filter, X, CalendarIcon } from 'lucide-react';
+import { Search, Filter, X, CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { format, parse, isValid } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { TripStatus } from '@/types';
 import { TripWithExpenses } from '@/types/reports';
 import { TripsReportDetailedTable } from './TripsReportDetailedTable';
+import { ExportDropdown } from './ExportDropdown';
 
 interface AdvancedFilters {
   dateFrom: Date | undefined;
@@ -32,10 +32,20 @@ interface TripsReportFiltersProps {
   onSearchTermChange: (term: string) => void;
   statusFilter: string;
   onStatusFilterChange: (status: string) => void;
-  onExport: () => void;
   trips: TripWithExpenses[];
   contractors: Record<string, string>;
   onSort: (field: string) => void;
+  summaryStats?: {
+    totalTrips: number;
+    completedTrips: number;
+    activeTrips: number;
+    cancelledTrips: number;
+    actualRevenue: number;
+    actualExpenses: number;
+    actualProfit: number;
+    potentialRevenue: number;
+    potentialProfit: number;
+  };
 }
 
 export const TripsReportFilters: React.FC<TripsReportFiltersProps> = ({
@@ -43,10 +53,10 @@ export const TripsReportFilters: React.FC<TripsReportFiltersProps> = ({
   onSearchTermChange,
   statusFilter,
   onStatusFilterChange,
-  onExport,
   trips,
   contractors,
   onSort,
+  summaryStats,
 }) => {
   const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilters>({
     dateFrom: undefined,
@@ -159,10 +169,11 @@ export const TripsReportFilters: React.FC<TripsReportFiltersProps> = ({
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Детальная таблица рейсов</span>
-          <Button variant="outline" size="sm" onClick={onExport}>
-            <FileText className="h-4 w-4 mr-2" />
-            Экспорт
-          </Button>
+          <ExportDropdown
+            trips={finalFilteredTrips}
+            contractors={contractors}
+            summaryStats={summaryStats}
+          />
         </CardTitle>
       </CardHeader>
       <CardContent>

@@ -8,7 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { activityLogger } from '@/services/activityLogger';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/Layout/PageHeader';
-import { Camera, Mail, Phone, Calendar, Shield, Briefcase, Loader2, Upload } from 'lucide-react';
+import { AvatarCropDialog } from '@/components/Profile/AvatarCropDialog';
+import { Camera, Mail, Phone, Calendar, Shield, Briefcase, Loader2, Upload, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -23,6 +24,9 @@ export const ProfilePage: React.FC = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [deletingAvatar, setDeletingAvatar] = useState(false);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<Profile>({
     full_name: '',
@@ -128,7 +132,7 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
@@ -142,28 +146,43 @@ export const ProfilePage: React.FC = () => {
       return;
     }
 
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
+    // Validate file size (max 10MB for original)
+    if (file.size > 10 * 1024 * 1024) {
       toast({
         title: 'Ошибка',
-        description: 'Размер файла не должен превышать 5MB',
+        description: 'Размер файла не должен превышать 10MB',
         variant: 'destructive'
       });
       return;
     }
 
+    // Create object URL and open crop dialog
+    const imageUrl = URL.createObjectURL(file);
+    setSelectedImage(imageUrl);
+    setCropDialogOpen(true);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    if (!user) return;
+
     setUploadingAvatar(true);
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${user.id}/avatar.${fileExt}`;
+      const fileName = `${user.id}/avatar.jpg`;
 
       // Delete old avatar if exists
       await supabase.storage.from('avatars').remove([fileName]);
 
-      // Upload new avatar
+      // Upload cropped avatar
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, croppedBlob, { 
+          upsert: true,
+          contentType: 'image/jpeg'
+        });
 
       if (uploadError) throw uploadError;
 
@@ -191,7 +210,7 @@ export const ProfilePage: React.FC = () => {
       await activityLogger.log({
         action: 'upload_avatar',
         entityType: 'user_profile',
-        details: { file_name: file.name }
+        details: { cropped: true }
       });
 
       toast({
@@ -207,9 +226,56 @@ export const ProfilePage: React.FC = () => {
       });
     } finally {
       setUploadingAvatar(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+      // Clean up object URL
+      if (selectedImage) {
+        URL.revokeObjectURL(selectedImage);
+        setSelectedImage('');
       }
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!user) return;
+
+    setDeletingAvatar(true);
+    try {
+      const fileName = `${user.id}/avatar.jpg`;
+
+      // Delete avatar from storage
+      await supabase.storage.from('avatars').remove([fileName]);
+
+      // Update profile to remove avatar URL
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          avatar_url: null,
+          updated_at: new Date().toISOString()
+        });
+
+      if (profileError) throw profileError;
+
+      setProfile(prev => ({ ...prev, avatar_url: '' }));
+
+      await activityLogger.log({
+        action: 'delete_avatar',
+        entityType: 'user_profile',
+        details: {}
+      });
+
+      toast({
+        title: 'Аватар удален',
+        description: 'Фото профиля сброшено'
+      });
+    } catch (error) {
+      console.error('Avatar delete error:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить аватар',
+        variant: 'destructive'
+      });
+    } finally {
+      setDeletingAvatar(false);
     }
   };
 
@@ -243,13 +309,13 @@ export const ProfilePage: React.FC = () => {
               ref={fileInputRef}
               type="file"
               accept="image/*"
-              onChange={handleAvatarUpload}
+              onChange={handleFileSelect}
               className="hidden"
             />
             <button 
               className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 shadow-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingAvatar}
+              disabled={uploadingAvatar || deletingAvatar}
             >
               {uploadingAvatar ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -269,13 +335,39 @@ export const ProfilePage: React.FC = () => {
           <div className="flex-1 text-center sm:text-left">
             <h2 className="text-2xl font-bold">{profile.full_name || 'Пользователь'}</h2>
             <p className="text-muted-foreground">{user?.email}</p>
-            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
-              <Shield className="h-3.5 w-3.5" />
-              {getRoleLabel()}
+            <div className="mt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                <Shield className="h-3.5 w-3.5" />
+                {getRoleLabel()}
+              </div>
+              {profile.avatar_url && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDeleteAvatar}
+                  disabled={deletingAvatar || uploadingAvatar}
+                  className="text-destructive hover:text-destructive"
+                >
+                  {deletingAvatar ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-1" />
+                  ) : (
+                    <Trash2 className="h-4 w-4 mr-1" />
+                  )}
+                  Удалить фото
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Crop dialog */}
+      <AvatarCropDialog
+        open={cropDialogOpen}
+        onOpenChange={setCropDialogOpen}
+        imageSrc={selectedImage}
+        onCropComplete={handleCropComplete}
+      />
 
       {/* Account info */}
       <div className="card-elevated p-6 space-y-4">

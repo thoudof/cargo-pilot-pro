@@ -14,6 +14,7 @@ import { VehiclesPage } from "./VehiclesPage";
 import { RoutesPage } from "./RoutesPage";
 import { CargoTypesPage } from "./CargoTypesPage";
 import { SettingsPage } from "./SettingsPage";
+import { ProfilePage } from "./ProfilePage";
 import AdminPage from "./AdminPage";
 import { ReportsPage } from './ReportsPage';
 import { DocumentsPage } from './DocumentsPage';
@@ -113,6 +114,11 @@ const Index = () => {
           <Route path="/settings" element={
             <PageTransition>
               <SettingsPage />
+            </PageTransition>
+          } />
+          <Route path="/profile" element={
+            <PageTransition>
+              <ProfilePage />
             </PageTransition>
           } />
           <Route path="/notifications" element={

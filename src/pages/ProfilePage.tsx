@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { activityLogger } from '@/services/activityLogger';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/Layout/PageHeader';
-import { Camera, Mail, Phone, Calendar, Shield, Briefcase } from 'lucide-react';
+import { Camera, Mail, Phone, Calendar, Shield, Briefcase, Loader2, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -22,6 +22,8 @@ export const ProfilePage: React.FC = () => {
   const { user, hasRole } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [profile, setProfile] = useState<Profile>({
     full_name: '',
     phone: '',
@@ -126,6 +128,91 @@ export const ProfilePage: React.FC = () => {
     }
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Ошибка',
+        description: 'Пожалуйста, выберите изображение',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Ошибка',
+        description: 'Размер файла не должен превышать 5MB',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      // Delete old avatar if exists
+      await supabase.storage.from('avatars').remove([fileName]);
+
+      // Upload new avatar
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Add cache buster to URL
+      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+
+      // Update profile with new avatar URL
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          avatar_url: avatarUrl,
+          updated_at: new Date().toISOString()
+        });
+
+      if (profileError) throw profileError;
+
+      setProfile(prev => ({ ...prev, avatar_url: avatarUrl }));
+
+      await activityLogger.log({
+        action: 'upload_avatar',
+        entityType: 'user_profile',
+        details: { file_name: file.name }
+      });
+
+      toast({
+        title: 'Аватар обновлен',
+        description: 'Новое фото профиля загружено'
+      });
+    } catch (error) {
+      console.error('Avatar upload error:', error);
+      toast({
+        title: 'Ошибка загрузки',
+        description: 'Не удалось загрузить аватар',
+        variant: 'destructive'
+      });
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   const formatDate = (dateString: string | undefined) => {
     if (!dateString) return 'Неизвестно';
     try {
@@ -145,19 +232,38 @@ export const ProfilePage: React.FC = () => {
       {/* Avatar and basic info */}
       <div className="card-elevated p-6">
         <div className="flex flex-col sm:flex-row items-center gap-6">
-          <div className="relative">
+          <div className="relative group">
             <Avatar className="h-24 w-24 border-4 border-primary/20">
               <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
               <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
                 {userInitial}
               </AvatarFallback>
             </Avatar>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarUpload}
+              className="hidden"
+            />
             <button 
-              className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 shadow-lg hover:bg-primary/90 transition-colors"
-              onClick={() => toast({ title: 'Скоро', description: 'Загрузка аватара будет доступна в ближайшее время' })}
+              className="absolute bottom-0 right-0 bg-primary text-primary-foreground rounded-full p-2 shadow-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
             >
-              <Camera className="h-4 w-4" />
+              {uploadingAvatar ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Camera className="h-4 w-4" />
+              )}
             </button>
+            {/* Overlay on hover */}
+            <div 
+              className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-6 w-6 text-white" />
+            </div>
           </div>
           
           <div className="flex-1 text-center sm:text-left">

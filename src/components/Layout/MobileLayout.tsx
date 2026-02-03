@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -9,6 +8,8 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/components/Auth/AuthProvider';
 import { AppNavigation } from '@/components/Navigation/AppNavigation';
 import { ThemeToggle } from '@/components/Theme/ThemeToggle';
+import { NotificationBell } from '@/components/Notifications/NotificationBell';
+import { UserProfileDropdown } from './UserProfileDropdown';
 import { activityLogger } from '@/services/activityLogger';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
@@ -160,15 +161,16 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
           
           <div className="flex items-center gap-2">
             <ThemeToggle />
+            <NotificationBell />
             
             {/* Desktop User Menu */}
             <div className="hidden lg:flex items-center gap-3 ml-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt={userName} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                  {userInitial}
-                </AvatarFallback>
-              </Avatar>
+              <UserProfileDropdown />
+            </div>
+            
+            {/* Mobile User Avatar - links to settings */}
+            <div className="lg:hidden">
+              <UserProfileDropdown />
             </div>
           </div>
         </header>

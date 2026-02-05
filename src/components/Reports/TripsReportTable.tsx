@@ -86,17 +86,20 @@ export const TripsReportTable: React.FC = () => {
       let potentialProfit = 0;
       let isProfitActual = false;
 
+      // Прибыль только для завершённых рейсов, для остальных = 0
       switch (trip.status) {
         case TripStatus.COMPLETED:
           actualProfit = revenue - totalExpenses;
           isProfitActual = true;
           break;
         case TripStatus.CANCELLED:
-          actualProfit = -totalExpenses;
+          // Для отменённых рейсов прибыль = 0, расходы показываем отдельно
+          actualProfit = 0;
           isProfitActual = true;
           break;
         case TripStatus.IN_PROGRESS:
         case TripStatus.PLANNED:
+          // Для незавершённых - потенциальная прибыль (справочно)
           potentialProfit = revenue - totalExpenses;
           break;
       }

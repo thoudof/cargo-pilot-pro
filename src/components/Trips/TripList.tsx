@@ -255,6 +255,7 @@ export const TripList: React.FC = () => {
   }
 
   return (
+    <PullToRefresh onRefresh={handlePullToRefresh} className="lg:overflow-visible">
     <div className="space-y-4">
       <TripListFiltersAdvanced
         searchTerm={searchTerm}

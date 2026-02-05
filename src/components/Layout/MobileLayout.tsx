@@ -155,7 +155,7 @@ export const MobileLayout: React.FC<MobileLayoutProps> = ({ children }) => {
             <img 
               src="/lovable-uploads/8085f690-6d29-4dc3-8dfc-890319ea82ed.png" 
               alt="Fix Logistics" 
-              className="h-8 w-auto object-contain lg:hidden"
+              className="h-8 w-auto object-contain lg:hidden dark:brightness-0 dark:invert"
             />
           </div>
           

@@ -127,7 +127,7 @@ export const AuthPage: React.FC = () => {
             <img 
               src="/lovable-uploads/8085f690-6d29-4dc3-8dfc-890319ea82ed.png" 
               alt="Fix Logistics" 
-              className="h-12 w-auto object-contain mx-auto mb-4"
+              className="h-12 w-auto object-contain mx-auto mb-4 dark:brightness-0 dark:invert"
             />
             <h2 className="text-xl font-semibold text-foreground">
               Система управления логистикой

@@ -65,7 +65,7 @@ export function AppSidebar() {
           <img 
             src="/lovable-uploads/8085f690-6d29-4dc3-8dfc-890319ea82ed.png" 
             alt="Fix Logistics" 
-            className="h-8 w-auto object-contain"
+            className="h-8 w-auto object-contain dark:brightness-0 dark:invert"
           />
         </div>
       </SidebarHeader>

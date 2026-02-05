@@ -77,23 +77,41 @@ export const PeriodComparison: React.FC = () => {
 
         if (error) throw error;
 
-        const completedTrips = trips?.filter(t => t.status === 'completed').length || 0;
+        // Только завершённые рейсы учитываются в прибыли
+        const completedTripsData = trips?.filter(t => t.status === 'completed') || [];
+        const completedTrips = completedTripsData.length;
+        
+        // Выручка всех рейсов (для отображения)
         const revenue = trips?.reduce((sum, t) => sum + (Number(t.cargo_value) || 0), 0) || 0;
+        
+        // Расходы только завершённых рейсов для расчёта прибыли
+        const completedExpenses = completedTripsData.reduce((sum, t) => {
+          const tripExp = t.trip_expenses?.reduce((expSum: number, exp: any) => 
+            expSum + (Number(exp.amount) || 0), 0) || 0;
+          return sum + tripExp;
+        }, 0);
+        
+        // Общие расходы для отображения
         const expenses = trips?.reduce((sum, t) => {
           const tripExp = t.trip_expenses?.reduce((expSum: number, exp: any) => 
             expSum + (Number(exp.amount) || 0), 0) || 0;
           return sum + tripExp;
         }, 0) || 0;
+        
         const weight = trips?.reduce((sum, t) => sum + (Number(t.cargo_weight) || 0), 0) || 0;
+        
+        // Прибыль = выручка завершённых - расходы завершённых
+        const completedRevenue = completedTripsData.reduce((sum, t) => sum + (Number(t.cargo_value) || 0), 0);
+        const profit = completedRevenue - completedExpenses;
 
         return {
           trips: trips?.length || 0,
           completedTrips,
           revenue,
           expenses,
-          profit: revenue - expenses,
+          profit,
           weight,
-          avgCargoValue: completedTrips > 0 ? revenue / completedTrips : 0,
+          avgCargoValue: completedTrips > 0 ? completedRevenue / completedTrips : 0,
         };
       };
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit2, Trash2, X, CheckSquare } from 'lucide-react';
+import { Edit2, Trash2, X, CheckSquare, Download } from 'lucide-react';
 import { Trip } from '@/types';
 import {
   AlertDialog,
@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface TripBulkActionsProps {
   selectedTrips: Trip[];
@@ -34,6 +35,65 @@ export const TripBulkActions: React.FC<TripBulkActionsProps> = ({
   totalTrips,
   allSelected
 }) => {
+  const { toast } = useToast();
+
+  const handleExport = () => {
+    try {
+      const headers = [
+        'ID',
+        'Откуда',
+        'Куда',
+        'Статус',
+        'Дата отправления',
+        'Водитель',
+        'Транспорт',
+        'Стоимость груза',
+        'Вес (кг)',
+        'Объём (м³)'
+      ];
+
+      const rows = selectedTrips.map(trip => [
+        trip.id,
+        trip.pointA,
+        trip.pointB,
+        trip.status,
+        new Date(trip.departureDate).toLocaleDateString('ru-RU'),
+        trip.driver?.name || '',
+        trip.vehicle?.licensePlate || '',
+        trip.cargoValue || '',
+        trip.cargoWeight || '',
+        trip.cargoVolume || ''
+      ]);
+
+      const csvContent = [
+        headers.join(';'),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(';'))
+      ].join('\n');
+
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `trips_export_${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Экспорт завершён',
+        description: `Экспортировано ${selectedTrips.length} рейс(ов)`
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: 'Ошибка экспорта',
+        description: 'Не удалось экспортировать данные',
+        variant: 'destructive'
+      });
+    }
+  };
+
   if (selectedTrips.length === 0) return null;
 
   return (
@@ -57,11 +117,21 @@ export const TripBulkActions: React.FC<TripBulkActionsProps> = ({
         <Button
           variant="outline"
           size="sm"
+          onClick={handleExport}
+          className="gap-2"
+        >
+          <Download className="h-4 w-4" />
+          <span className="hidden sm:inline">Экспорт</span>
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
           onClick={onEdit}
           className="gap-2"
         >
           <Edit2 className="h-4 w-4" />
-          Редактировать
+          <span className="hidden sm:inline">Редактировать</span>
         </Button>
 
         <AlertDialog>
@@ -72,7 +142,7 @@ export const TripBulkActions: React.FC<TripBulkActionsProps> = ({
               className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
             >
               <Trash2 className="h-4 w-4" />
-              Удалить
+              <span className="hidden sm:inline">Удалить</span>
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>

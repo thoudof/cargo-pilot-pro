@@ -446,6 +446,17 @@ export const ProfilePage: React.FC = () => {
           {loading ? 'Сохранение...' : 'Сохранить изменения'}
         </Button>
       </div>
+
+      {/* Telegram integration */}
+      <TelegramStatus />
+    </div>
+  );
+};
+
+export default ProfilePage;
+          {loading ? 'Сохранение...' : 'Сохранить изменения'}
+        </Button>
+      </div>
     </div>
   );
 };

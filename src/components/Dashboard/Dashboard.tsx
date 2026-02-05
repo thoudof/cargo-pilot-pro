@@ -108,7 +108,10 @@ const Dashboard: React.FC = memo(() => {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['dashboard-data'] });
+                queryClient.invalidateQueries({ queryKey: ['trips'] });
+              }}
               className="gap-2"
             >
               <RefreshCw className="h-4 w-4" />

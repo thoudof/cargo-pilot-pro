@@ -9,6 +9,7 @@ import { activityLogger } from '@/services/activityLogger';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/Layout/PageHeader';
 import { AvatarCropDialog } from '@/components/Profile/AvatarCropDialog';
+import { TelegramStatus } from '@/components/Profile/TelegramStatus';
 import { Camera, Mail, Phone, Calendar, Shield, Briefcase, Loader2, Upload, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
@@ -445,6 +446,9 @@ export const ProfilePage: React.FC = () => {
           {loading ? 'Сохранение...' : 'Сохранить изменения'}
         </Button>
       </div>
+
+      {/* Telegram integration */}
+      <TelegramStatus />
     </div>
   );
 };

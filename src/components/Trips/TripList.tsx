@@ -10,6 +10,8 @@ import { TripListEmptyState } from './TripListEmptyState';
 import { TripBulkActions } from './TripBulkActions';
 import { TripBulkEditDialog } from './TripBulkEditDialog';
 import { useDataCache } from '@/hooks/useDataCache';
+import { SkeletonList } from '@/components/ui/skeleton-list';
+import { PullToRefresh } from '@/components/ui/pull-to-refresh';
 
 interface SimpleContractor {
   id: string;
@@ -239,15 +241,21 @@ export const TripList: React.FC = () => {
     [filteredTrips, selectedTripIds]
   );
 
+  const handlePullToRefresh = useCallback(async () => {
+    optimizedSupabaseService.invalidateCache('trips');
+    await refetch();
+  }, [refetch]);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="space-y-4">
+        <SkeletonList count={5} variant="trip" />
       </div>
     );
   }
 
   return (
+    <PullToRefresh onRefresh={handlePullToRefresh} className="lg:overflow-visible">
     <div className="space-y-4">
       <TripListFiltersAdvanced
         searchTerm={searchTerm}
@@ -320,5 +328,6 @@ export const TripList: React.FC = () => {
         onSuccess={handleBulkEditSuccess}
       />
     </div>
+    </PullToRefresh>
   );
 };

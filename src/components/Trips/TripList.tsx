@@ -328,5 +328,6 @@ export const TripList: React.FC = () => {
         onSuccess={handleBulkEditSuccess}
       />
     </div>
+    </PullToRefresh>
   );
 };

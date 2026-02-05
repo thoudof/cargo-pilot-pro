@@ -60,9 +60,9 @@ export const TripBulkActions: React.FC<TripBulkActionsProps> = ({
         new Date(trip.departureDate).toLocaleDateString('ru-RU'),
         trip.driver?.name || '',
         trip.vehicle?.licensePlate || '',
-        trip.cargoValue || '',
-        trip.cargoWeight || '',
-        trip.cargoVolume || ''
+        trip.cargo?.value || '',
+        trip.cargo?.weight || '',
+        trip.cargo?.volume || ''
       ]);
 
       const csvContent = [

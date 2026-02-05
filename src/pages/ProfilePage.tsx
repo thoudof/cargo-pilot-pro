@@ -454,11 +454,3 @@ export const ProfilePage: React.FC = () => {
 };
 
 export default ProfilePage;
-          {loading ? 'Сохранение...' : 'Сохранить изменения'}
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-export default ProfilePage;

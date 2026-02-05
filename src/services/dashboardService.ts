@@ -69,8 +69,26 @@ class DashboardService {
       const totalVolume = trips.reduce((sum, t) => sum + (t.cargo_volume || 0), 0);
       const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount || 0), 0);
 
+      // Расходы только завершённых рейсов для расчёта прибыли
+      const completedTripIds = trips
+        .filter(t => t.status === 'completed')
+        .map(t => t.id);
+      
+      // Получаем расходы только для завершённых рейсов
+      const { data: completedExpenses } = await supabase
+        .from('trip_expenses')
+        .select('amount')
+        .in('trip_id', completedTripIds);
+      
+      const completedTripsExpenses = (completedExpenses || []).reduce(
+        (sum, e) => sum + Number(e.amount || 0), 0
+      );
+
       // Простая месячная статистика
       const monthlyStats = this.generateMonthlyStats(trips);
+
+      // Прибыль = выручка завершённых - расходы завершённых
+      const profit = completedCargoValue - completedTripsExpenses;
 
       const result = {
         activeTrips,
@@ -89,8 +107,8 @@ class DashboardService {
         averageCargoValue: completedTrips > 0 ? completedCargoValue / completedTrips : 0,
         completionRate: totalTrips > 0 ? (completedTrips / totalTrips) * 100 : 0,
         totalExpenses,
-        profit: completedCargoValue - totalExpenses,
-        profitMargin: completedCargoValue > 0 ? ((completedCargoValue - totalExpenses) / completedCargoValue) * 100 : 0
+        profit,
+        profitMargin: completedCargoValue > 0 ? (profit / completedCargoValue) * 100 : 0
       };
 
       console.log('Dashboard stats calculated:', result);

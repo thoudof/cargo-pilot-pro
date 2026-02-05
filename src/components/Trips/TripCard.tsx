@@ -81,10 +81,14 @@ export const TripCard: React.FC<TripCardProps> = ({
   );
 
   const profit = useMemo(() => {
+    // Прибыль только для завершённых рейсов
+    if (trip.status !== TripStatus.COMPLETED) {
+      return 0;
+    }
     const value = trip.cargo.value || 0;
     const expenses = tripExpenses[trip.id] || 0;
     return value - expenses;
-  }, [trip.cargo.value, tripExpenses, trip.id]);
+  }, [trip.cargo.value, tripExpenses, trip.id, trip.status]);
 
   const status = statusConfig[trip.status];
 

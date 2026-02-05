@@ -182,9 +182,9 @@ export const TripsReportTable: React.FC = () => {
     );
 
     const actualRevenue = completedTrips.reduce((sum, trip) => sum + (trip.cargo?.value || 0), 0);
-    const actualExpenses = [...completedTrips, ...cancelledTrips].reduce((sum, trip) => sum + trip.totalExpenses, 0);
-    const actualProfit = completedTrips.reduce((sum, trip) => sum + trip.actualProfit, 0) + 
-                        cancelledTrips.reduce((sum, trip) => sum + trip.actualProfit, 0);
+    const actualExpenses = completedTrips.reduce((sum, trip) => sum + trip.totalExpenses, 0);
+    // Прибыль только от завершённых рейсов (отменённые = 0)
+    const actualProfit = completedTrips.reduce((sum, trip) => sum + trip.actualProfit, 0);
 
     const potentialRevenue = activeTrips.reduce((sum, trip) => sum + (trip.cargo?.value || 0), 0);
     const potentialExpenses = activeTrips.reduce((sum, trip) => sum + trip.totalExpenses, 0);

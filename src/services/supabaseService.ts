@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { getCurrentCompanyId } from '@/lib/companyContext';
 
 class SupabaseService {
   // Expose supabase client for direct access
@@ -191,9 +192,10 @@ class SupabaseService {
       if (error) throw error;
       return this.transformContractor(data);
     } else {
+      const companyId = await getCurrentCompanyId();
       const { data, error } = await supabase
         .from('contractors')
-        .insert(dbContractor)
+        .insert({ ...dbContractor, company_id: companyId })
         .select()
         .single();
       if (error) throw error;
@@ -237,9 +239,10 @@ class SupabaseService {
       if (error) throw error;
       return this.transformDriver(data);
     } else {
+      const companyId = await getCurrentCompanyId();
       const { data, error } = await supabase
         .from('drivers')
-        .insert(dbDriver)
+        .insert({ ...dbDriver, company_id: companyId })
         .select()
         .single();
       if (error) throw error;
@@ -288,9 +291,10 @@ class SupabaseService {
       if (error) throw error;
       return this.transformVehicle(data);
     } else {
+      const companyId = await getCurrentCompanyId();
       const { data, error } = await supabase
         .from('vehicles')
-        .insert(dbVehicle)
+        .insert({ ...dbVehicle, company_id: companyId })
         .select()
         .single();
       if (error) throw error;
@@ -334,9 +338,10 @@ class SupabaseService {
       if (error) throw error;
       return this.transformRoute(data);
     } else {
+      const companyId = await getCurrentCompanyId();
       const { data, error } = await supabase
         .from('routes')
-        .insert(dbRoute)
+        .insert({ ...dbRoute, company_id: companyId })
         .select()
         .single();
       if (error) throw error;
@@ -381,9 +386,10 @@ class SupabaseService {
       if (error) throw error;
       return this.transformCargoType(data);
     } else {
+      const companyId = await getCurrentCompanyId();
       const { data, error } = await supabase
         .from('cargo_types')
-        .insert(dbCargoType)
+        .insert({ ...dbCargoType, company_id: companyId })
         .select()
         .single();
       if (error) throw error;
@@ -444,9 +450,10 @@ class SupabaseService {
       if (error) throw error;
       return this.transformTrip(data);
     } else {
+      const companyId = await getCurrentCompanyId();
       const { data, error } = await supabase
         .from('trips')
-        .insert(dbTrip)
+        .insert({ ...dbTrip, company_id: companyId })
         .select()
         .single();
       if (error) throw error;

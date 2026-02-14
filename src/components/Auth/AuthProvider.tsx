@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AppPermission } from '@/types';
 
-type AppRole = "admin" | "dispatcher" | "driver";
+type AppRole = "admin" | "dispatcher" | "driver" | "global_admin";
 
 const fetchUserRoles = async (userId: string | undefined): Promise<AppRole[]> => {
   if (!userId) return [];
@@ -46,6 +46,7 @@ interface AuthContextType {
   hasPermission: (permission: AppPermission) => boolean;
   hasRole: (role: AppRole) => boolean;
   isAdmin: boolean;
+  isGlobalAdmin: boolean;
   roles: AppRole[];
 }
 
@@ -57,6 +58,7 @@ const AuthContext = createContext<AuthContextType>({
   hasPermission: () => false,
   hasRole: () => false,
   isAdmin: false,
+  isGlobalAdmin: false,
   roles: [],
 });
 
@@ -97,6 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isAdmin = roles?.includes('admin') ?? false;
+  const isGlobalAdmin = roles?.includes('global_admin') ?? false;
 
   const signOut = async () => {
     try {
@@ -163,7 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loading = authLoading || (!!user && (rolesLoading || permissionsLoading));
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signOut, hasPermission, hasRole, isAdmin, roles: roles || [] }}>
+    <AuthContext.Provider value={{ user, session, loading, signOut, hasPermission, hasRole, isAdmin, isGlobalAdmin, roles: roles || [] }}>
       {children}
     </AuthContext.Provider>
   );

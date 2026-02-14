@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getCurrentCompanyId } from '@/lib/companyContext';
 import { toast } from 'sonner';
 import { Trip } from '@/types';
 
@@ -32,6 +33,7 @@ export const SaveAsTemplateDialog: React.FC<SaveAsTemplateDialogProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const companyId = await getCurrentCompanyId();
       const templateData = {
         name,
         description: description || null,
@@ -48,6 +50,7 @@ export const SaveAsTemplateDialog: React.FC<SaveAsTemplateDialogProps> = ({
         cargo_value: trip.cargo?.value,
         is_favorite: isFavorite,
         created_by: user.id,
+        company_id: companyId,
       };
 
       const { error } = await supabase

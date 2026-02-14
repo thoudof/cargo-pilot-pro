@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { Route } from '@/types';
+import { getCurrentCompanyId } from '@/lib/companyContext';
 
 const routeSchema = z.object({
   name: z.string().min(1, 'Название обязательно'),
@@ -74,9 +75,10 @@ export const RouteForm: React.FC<RouteFormProps> = ({ route, onSave, onCancel })
           .select();
       } else {
         // Создаем новый маршрут
+        const companyId = await getCurrentCompanyId();
         result = await supabaseService.supabase
           .from('routes')
-          .insert(routeData)
+          .insert({ ...routeData, company_id: companyId })
           .select();
       }
 

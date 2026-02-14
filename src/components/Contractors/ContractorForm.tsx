@@ -13,6 +13,7 @@ import { contractorSchema, ContractorFormData } from '@/lib/validations';
 import { Contractor } from '@/types';
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
+import { getCurrentCompanyId } from '@/lib/companyContext';
 
 interface ContractorFormProps {
   contractor?: Contractor;
@@ -95,9 +96,10 @@ export const ContractorForm: React.FC<ContractorFormProps> = ({
           .eq('id', contractor.id)
           .select();
       } else {
+        const companyId = await getCurrentCompanyId();
         result = await supabaseService.supabase
           .from('contractors')
-          .insert(contractorData)
+          .insert({ ...contractorData, company_id: companyId })
           .select();
       }
 

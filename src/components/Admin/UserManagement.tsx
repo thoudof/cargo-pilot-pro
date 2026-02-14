@@ -23,6 +23,7 @@ interface User {
 }
 
 const roleConfig: Record<UserRole, { label: string; className: string }> = {
+  global_admin: { label: 'Глобальный администратор', className: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20' },
   admin: { label: 'Администратор', className: 'bg-destructive/10 text-destructive border-destructive/20' },
   dispatcher: { label: 'Диспетчер', className: 'bg-primary/10 text-primary border-primary/20' },
   driver: { label: 'Водитель', className: 'bg-success/10 text-success border-success/20' }

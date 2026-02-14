@@ -228,11 +228,14 @@ interface StatWidgetProps {
 }
 
 const StatWidget: React.FC<StatWidgetProps> = ({ value, subtitle, iconBgClass, icon, trend }) => (
-  <div className="flex items-start justify-between h-full">
-    <div className="space-y-2">
-      <p className="text-2xl font-bold">{value}</p>
+  <div className="flex flex-col gap-3 h-full">
+    <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${iconBgClass}`}>
+      {icon}
+    </div>
+    <div className="space-y-1 min-w-0">
+      <p className="text-xl sm:text-2xl font-bold tracking-tight truncate">{value}</p>
       {subtitle && (
-        <p className="text-xs text-muted-foreground">{subtitle}</p>
+        <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
       )}
       {trend && (
         <div className={`flex items-center gap-1 text-xs font-medium ${
@@ -242,9 +245,6 @@ const StatWidget: React.FC<StatWidgetProps> = ({ value, subtitle, iconBgClass, i
           <span>{trend.isPositive ? '+' : ''}{trend.value.toFixed(1)}%</span>
         </div>
       )}
-    </div>
-    <div className={`stat-card-icon ${iconBgClass}`}>
-      {icon}
     </div>
   </div>
 );
@@ -370,29 +370,29 @@ export const DashboardWidgets: React.FC<DashboardWidgetsProps> = ({ stats }) => 
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
         {visibleWidgets.map((widget) => (
-          <Card 
+          <div 
             key={widget.id}
             draggable
             onDragStart={(e) => handleDragStart(e, widget.id)}
             onDragOver={handleDragOver}
             onDrop={(e) => handleDrop(e, widget.id)}
             className={cn(
-              "stat-card group cursor-grab active:cursor-grabbing transition-all",
+              "group cursor-grab active:cursor-grabbing transition-all",
+              "rounded-xl border border-border/60 bg-card p-4",
+              "hover:shadow-md hover:border-primary/20",
               draggedId === widget.id && "opacity-50 scale-95"
             )}
           >
-            <CardHeader className="pb-2 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <GripVertical className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-muted-foreground truncate pr-1">
                 {widget.title}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {widget.render(stats)}
-            </CardContent>
-          </Card>
+              </p>
+              <GripVertical className="h-3 w-3 text-muted-foreground/30 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            </div>
+            {widget.render(stats)}
+          </div>
         ))}
       </div>
 

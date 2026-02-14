@@ -9,7 +9,7 @@ interface AdminRouteProps {
 }
 
 export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isGlobalAdmin } = useAuth();
 
   if (loading) {
     return (
@@ -23,7 +23,7 @@ export const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
     return null;
   }
 
-  if (!isAdmin) {
+  if (!isGlobalAdmin) {
     return (
       <div className="container mx-auto p-6">
         <Card className="max-w-md mx-auto">

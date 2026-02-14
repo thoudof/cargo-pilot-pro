@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { getCurrentCompanyId } from '@/lib/companyContext';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { TripForm } from './TripForm';
@@ -84,6 +85,7 @@ export const QuickTripCreator: React.FC<QuickTripCreatorProps> = ({ onTripCreate
         .eq('id', template.id);
 
       // Create trip from template
+      const companyId = await getCurrentCompanyId();
       const tripData = {
         status: 'planned',
         departure_date: new Date().toISOString(),
@@ -103,6 +105,7 @@ export const QuickTripCreator: React.FC<QuickTripCreatorProps> = ({ onTripCreate
         vehicle_brand: template.vehicles?.brand,
         vehicle_model: template.vehicles?.model,
         vehicle_license_plate: template.vehicles?.license_plate,
+        company_id: companyId,
       };
 
       const { data, error } = await supabase

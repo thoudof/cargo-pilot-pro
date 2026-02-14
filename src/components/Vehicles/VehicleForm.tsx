@@ -10,6 +10,7 @@ import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { Vehicle } from '@/types';
 import { notifyVehicleCreated } from '@/services/notificationService';
+import { getCurrentCompanyId } from '@/lib/companyContext';
 
 const vehicleSchema = z.object({
   brand: z.string().min(1, 'Марка обязательна'),
@@ -95,9 +96,10 @@ export const VehicleForm: React.FC<VehicleFormProps> = ({ vehicle, onSave, onCan
           .select();
       } else {
         // Создаем новый транспорт
+        const companyId = await getCurrentCompanyId();
         result = await supabaseService.supabase
           .from('vehicles')
-          .insert(vehicleData)
+          .insert({ ...vehicleData, company_id: companyId })
           .select();
       }
 

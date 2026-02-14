@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { CargoType } from '@/types';
+import { getCurrentCompanyId } from '@/lib/companyContext';
 
 const cargoTypeSchema = z.object({
   name: z.string().min(1, 'Название обязательно'),
@@ -79,9 +80,10 @@ export const CargoTypeForm: React.FC<CargoTypeFormProps> = ({ cargoType, onSave,
           .select();
       } else {
         // Создаем новый тип груза
+        const companyId = await getCurrentCompanyId();
         result = await supabaseService.supabase
           .from('cargo_types')
-          .insert(cargoTypeData)
+          .insert({ ...cargoTypeData, company_id: companyId })
           .select();
       }
 

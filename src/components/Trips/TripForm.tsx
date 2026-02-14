@@ -9,6 +9,7 @@ import { tripSchema, TripFormData } from '@/lib/validations';
 import { Trip, Contractor, Driver, Vehicle, TripStatus, Route, CargoType } from '@/types';
 import { ExpenseType } from '@/types/expenses';
 import { supabaseService } from '@/services/supabaseService';
+import { getCurrentCompanyId } from '@/lib/companyContext';
 import { useToast } from '@/hooks/use-toast';
 import { TripFormBasicInfo } from './TripFormBasicInfo';
 import { TripFormDriver } from './TripFormDriver';
@@ -212,9 +213,10 @@ export const TripForm: React.FC<TripFormProps> = ({
           .eq('id', trip.id)
           .select();
       } else {
+        const companyId = await getCurrentCompanyId();
         result = await supabaseService.supabase
           .from('trips')
-          .insert(tripData)
+          .insert({ ...tripData, company_id: companyId })
           .select();
       }
 

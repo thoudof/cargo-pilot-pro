@@ -11,6 +11,7 @@ import { supabaseService } from '@/services/supabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { Driver } from '@/types';
 import { notifyDriverCreated } from '@/services/notificationService';
+import { getCurrentCompanyId } from '@/lib/companyContext';
 
 const driverSchema = z.object({
   name: z.string().min(1, 'Имя обязательно'),
@@ -74,9 +75,10 @@ export const DriverForm: React.FC<DriverFormProps> = ({ driver, onSave, onCancel
           .eq('id', driver.id)
           .select();
       } else {
+        const companyId = await getCurrentCompanyId();
         result = await supabaseService.supabase
           .from('drivers')
-          .insert(driverData)
+          .insert({ ...driverData, company_id: companyId })
           .select();
       }
 

@@ -1044,7 +1044,7 @@ export type Database = {
         | "update_trip_location"
         | "view_own_expenses"
         | "add_own_expenses"
-      app_role: "admin" | "dispatcher" | "driver"
+      app_role: "admin" | "dispatcher" | "driver" | "global_admin"
       document_type:
         | "waybill"
         | "invoice"
@@ -1232,7 +1232,7 @@ export const Constants = {
         "view_own_expenses",
         "add_own_expenses",
       ],
-      app_role: ["admin", "dispatcher", "driver"],
+      app_role: ["admin", "dispatcher", "driver", "global_admin"],
       document_type: [
         "waybill",
         "invoice",

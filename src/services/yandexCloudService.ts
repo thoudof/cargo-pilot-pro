@@ -13,7 +13,7 @@ interface YandexCloudConfig {
 
 // TODO: Заполнить конфигурацию после настройки Yandex Cloud
 const yandexConfig: YandexCloudConfig = {
-  apiGatewayBaseUrl: process.env.REACT_APP_YANDEX_API_GATEWAY_URL, // Пример использования переменной окружения
+  apiGatewayBaseUrl: import.meta.env.VITE_YANDEX_API_GATEWAY_URL, // Пример использования переменной окружения
 };
 
 class YandexCloudService {

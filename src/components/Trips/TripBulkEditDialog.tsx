@@ -193,7 +193,7 @@ export const TripBulkEditDialog: React.FC<TripBulkEditDialogProps> = ({
       const tripIds = selectedTrips.map(t => t.id);
       const { error } = await supabase
         .from('trips')
-        .update(updates)
+        .update(updates as never)
         .in('id', tripIds);
 
       if (error) throw error;

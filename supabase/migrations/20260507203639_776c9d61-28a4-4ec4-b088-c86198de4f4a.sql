@@ -1,0 +1,1 @@
+ALTER TABLE public.trip_documents ALTER COLUMN document_name DROP NOT NULL;

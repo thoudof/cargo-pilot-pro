@@ -50,8 +50,48 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_telegram_subscriptions: {
+        Row: {
+          created_at: string
+          event_types: string[]
+          id: string
+          is_active: boolean
+          telegram_chat_id: string | null
+          telegram_username: string | null
+          updated_at: string
+          user_id: string
+          verification_code: string | null
+          verification_expires_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_types?: string[]
+          id?: string
+          is_active?: boolean
+          telegram_chat_id?: string | null
+          telegram_username?: string | null
+          updated_at?: string
+          user_id: string
+          verification_code?: string | null
+          verification_expires_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_types?: string[]
+          id?: string
+          is_active?: boolean
+          telegram_chat_id?: string | null
+          telegram_username?: string | null
+          updated_at?: string
+          user_id?: string
+          verification_code?: string | null
+          verification_expires_at?: string | null
+        }
+        Relationships: []
+      }
       cargo_types: {
         Row: {
+          company_id: string | null
           created_at: string
           default_volume: number | null
           default_weight: number | null
@@ -62,9 +102,10 @@ export type Database = {
           name: string
           temperature_controlled: boolean | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           default_volume?: number | null
           default_weight?: number | null
@@ -75,9 +116,10 @@ export type Database = {
           name: string
           temperature_controlled?: boolean | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           default_volume?: number | null
           default_weight?: number | null
@@ -88,9 +130,83 @@ export type Database = {
           name?: string
           temperature_controlled?: boolean | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
+      }
+      companies: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          inn: string | null
+          is_active: boolean
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          inn?: string | null
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          inn?: string | null
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_members: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_default: boolean
+          role: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          role?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contacts: {
         Row: {
@@ -136,71 +252,108 @@ export type Database = {
       contractors: {
         Row: {
           address: string
+          company_id: string | null
           company_name: string
           created_at: string
           id: string
           inn: string
           notes: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           address: string
+          company_id?: string | null
           company_name: string
           created_at?: string
           id?: string
           inn: string
           notes?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           address?: string
+          company_id?: string | null
           company_name?: string
           created_at?: string
           id?: string
           inn?: string
           notes?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
       document_templates: {
         Row: {
+          company_id: string | null
+          content: string | null
           created_at: string
+          created_by: string | null
           description: string | null
           document_type: Database["public"]["Enums"]["document_type"]
           id: string
+          is_active: boolean
           is_required: boolean | null
           name: string
           updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          company_id?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          document_type: Database["public"]["Enums"]["document_type"]
+          id?: string
+          is_active?: boolean
+          is_required?: boolean | null
+          name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          company_id?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          document_type?: Database["public"]["Enums"]["document_type"]
+          id?: string
+          is_active?: boolean
+          is_required?: boolean | null
+          name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      driver_users: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          description?: string | null
-          document_type: Database["public"]["Enums"]["document_type"]
+          driver_id: string
           id?: string
-          is_required?: boolean | null
-          name: string
-          updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
-          description?: string | null
-          document_type?: Database["public"]["Enums"]["document_type"]
+          driver_id?: string
           id?: string
-          is_required?: boolean | null
-          name?: string
-          updated_at?: string
           user_id?: string
         }
         Relationships: []
       }
       drivers: {
         Row: {
+          company_id: string | null
           created_at: string
           experience_years: number | null
           id: string
@@ -209,10 +362,14 @@ export type Database = {
           notes: string | null
           passport_data: string | null
           phone: string
+          telegram_chat_id: string | null
+          telegram_link_code: string | null
+          telegram_link_code_expires_at: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           experience_years?: number | null
           id?: string
@@ -221,10 +378,14 @@ export type Database = {
           notes?: string | null
           passport_data?: string | null
           phone: string
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           experience_years?: number | null
           id?: string
@@ -233,17 +394,22 @@ export type Database = {
           notes?: string | null
           passport_data?: string | null
           phone?: string
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
       notifications: {
         Row: {
+          company_id: string | null
           created_at: string | null
           id: string
           is_read: boolean | null
           message: string
+          read: boolean
           related_entity_id: string | null
           related_entity_type: string | null
           title: string
@@ -252,10 +418,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean | null
           message: string
+          read?: boolean
           related_entity_id?: string | null
           related_entity_type?: string | null
           title: string
@@ -264,10 +432,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean | null
           message?: string
+          read?: boolean
           related_entity_id?: string | null
           related_entity_type?: string | null
           title?: string
@@ -281,34 +451,57 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          current_company_id: string | null
           full_name: string | null
           id: string
           phone: string | null
           role: string | null
+          telegram_chat_id: string | null
+          telegram_link_code: string | null
+          telegram_link_code_expires_at: string | null
+          telegram_notifications_enabled: boolean
           updated_at: string
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          current_company_id?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
           role?: string | null
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
+          telegram_notifications_enabled?: boolean
           updated_at?: string
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          current_company_id?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
           role?: string | null
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
+          telegram_notifications_enabled?: boolean
           updated_at?: string
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_company_id_fkey"
+            columns: ["current_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       push_tokens: {
         Row: {
@@ -360,6 +553,7 @@ export type Database = {
       }
       routes: {
         Row: {
+          company_id: string | null
           created_at: string
           distance_km: number | null
           estimated_duration_hours: number | null
@@ -369,9 +563,10 @@ export type Database = {
           point_a: string
           point_b: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           distance_km?: number | null
           estimated_duration_hours?: number | null
@@ -381,9 +576,10 @@ export type Database = {
           point_a: string
           point_b: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           distance_km?: number | null
           estimated_duration_hours?: number | null
@@ -393,16 +589,18 @@ export type Database = {
           point_a?: string
           point_b?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
       trip_documents: {
         Row: {
+          company_id: string | null
           created_at: string
           description: string | null
-          document_name: string
+          document_name: string | null
           document_type: Database["public"]["Enums"]["document_type"]
+          file_name: string | null
           file_path: string | null
           file_size: number | null
           file_url: string | null
@@ -413,13 +611,15 @@ export type Database = {
           updated_at: string
           upload_date: string
           uploaded_by: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           description?: string | null
-          document_name: string
+          document_name?: string | null
           document_type: Database["public"]["Enums"]["document_type"]
+          file_name?: string | null
           file_path?: string | null
           file_size?: number | null
           file_url?: string | null
@@ -430,13 +630,15 @@ export type Database = {
           updated_at?: string
           upload_date?: string
           uploaded_by: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           description?: string | null
-          document_name?: string
+          document_name?: string | null
           document_type?: Database["public"]["Enums"]["document_type"]
+          file_name?: string | null
           file_path?: string | null
           file_size?: number | null
           file_url?: string | null
@@ -447,7 +649,7 @@ export type Database = {
           updated_at?: string
           upload_date?: string
           uploaded_by?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -462,39 +664,51 @@ export type Database = {
       trip_expenses: {
         Row: {
           amount: number
+          category: string | null
+          company_id: string | null
           created_at: string
+          created_by: string | null
+          date: string | null
           description: string | null
-          expense_date: string
-          expense_type: string
+          expense_date: string | null
+          expense_type: string | null
           id: string
           receipt_url: string | null
           trip_id: string
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           amount: number
+          category?: string | null
+          company_id?: string | null
           created_at?: string
+          created_by?: string | null
+          date?: string | null
           description?: string | null
-          expense_date?: string
-          expense_type: string
+          expense_date?: string | null
+          expense_type?: string | null
           id?: string
           receipt_url?: string | null
           trip_id: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           amount?: number
+          category?: string | null
+          company_id?: string | null
           created_at?: string
+          created_by?: string | null
+          date?: string | null
           description?: string | null
-          expense_date?: string
-          expense_type?: string
+          expense_date?: string | null
+          expense_type?: string | null
           id?: string
           receipt_url?: string | null
           trip_id?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -502,6 +716,150 @@ export type Database = {
             columns: ["trip_id"]
             isOneToOne: false
             referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trip_locations: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          driver_id: string | null
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          recorded_at: string
+          speed: number | null
+          trip_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          driver_id?: string | null
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          recorded_at?: string
+          speed?: number | null
+          trip_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          driver_id?: string | null
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          recorded_at?: string
+          speed?: number | null
+          trip_id?: string
+        }
+        Relationships: []
+      }
+      trip_templates: {
+        Row: {
+          cargo_description: string | null
+          cargo_type_id: string | null
+          cargo_value: number | null
+          cargo_volume: number | null
+          cargo_weight: number | null
+          company_id: string | null
+          contractor_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          driver_id: string | null
+          id: string
+          is_favorite: boolean
+          name: string
+          point_a: string | null
+          point_b: string | null
+          route_id: string | null
+          updated_at: string
+          usage_count: number
+          vehicle_id: string | null
+        }
+        Insert: {
+          cargo_description?: string | null
+          cargo_type_id?: string | null
+          cargo_value?: number | null
+          cargo_volume?: number | null
+          cargo_weight?: number | null
+          company_id?: string | null
+          contractor_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          driver_id?: string | null
+          id?: string
+          is_favorite?: boolean
+          name: string
+          point_a?: string | null
+          point_b?: string | null
+          route_id?: string | null
+          updated_at?: string
+          usage_count?: number
+          vehicle_id?: string | null
+        }
+        Update: {
+          cargo_description?: string | null
+          cargo_type_id?: string | null
+          cargo_value?: number | null
+          cargo_volume?: number | null
+          cargo_weight?: number | null
+          company_id?: string | null
+          contractor_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          driver_id?: string | null
+          id?: string
+          is_favorite?: boolean
+          name?: string
+          point_a?: string | null
+          point_b?: string | null
+          route_id?: string | null
+          updated_at?: string
+          usage_count?: number
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trip_templates_cargo_type_id_fkey"
+            columns: ["cargo_type_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
             referencedColumns: ["id"]
           },
         ]
@@ -515,6 +873,7 @@ export type Database = {
           cargo_volume: number
           cargo_weight: number
           comments: string | null
+          company_id: string | null
           contractor_id: string
           created_at: string
           departure_date: string
@@ -529,7 +888,7 @@ export type Database = {
           route_id: string | null
           status: string
           updated_at: string
-          user_id: string
+          user_id: string | null
           vehicle_brand: string
           vehicle_capacity: number | null
           vehicle_id: string | null
@@ -544,6 +903,7 @@ export type Database = {
           cargo_volume: number
           cargo_weight: number
           comments?: string | null
+          company_id?: string | null
           contractor_id: string
           created_at?: string
           departure_date: string
@@ -558,7 +918,7 @@ export type Database = {
           route_id?: string | null
           status: string
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           vehicle_brand: string
           vehicle_capacity?: number | null
           vehicle_id?: string | null
@@ -573,6 +933,7 @@ export type Database = {
           cargo_volume?: number
           cargo_weight?: number
           comments?: string | null
+          company_id?: string | null
           contractor_id?: string
           created_at?: string
           departure_date?: string
@@ -587,7 +948,7 @@ export type Database = {
           route_id?: string | null
           status?: string
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           vehicle_brand?: string
           vehicle_capacity?: number | null
           vehicle_id?: string | null
@@ -631,6 +992,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_dashboard_settings: {
+        Row: {
+          created_at: string
+          hidden_widgets: string[]
+          id: string
+          updated_at: string
+          user_id: string
+          widget_layout: Json
+        }
+        Insert: {
+          created_at?: string
+          hidden_widgets?: string[]
+          id?: string
+          updated_at?: string
+          user_id: string
+          widget_layout?: Json
+        }
+        Update: {
+          created_at?: string
+          hidden_widgets?: string[]
+          id?: string
+          updated_at?: string
+          user_id?: string
+          widget_layout?: Json
+        }
+        Relationships: []
       }
       user_permissions: {
         Row: {
@@ -690,6 +1078,7 @@ export type Database = {
         Row: {
           brand: string
           capacity: number | null
+          company_id: string | null
           created_at: string
           id: string
           insurance_expiry: string | null
@@ -700,13 +1089,14 @@ export type Database = {
           registration_certificate: string | null
           technical_inspection_expiry: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
           vin: string | null
           year: number | null
         }
         Insert: {
           brand: string
           capacity?: number | null
+          company_id?: string | null
           created_at?: string
           id?: string
           insurance_expiry?: string | null
@@ -717,13 +1107,14 @@ export type Database = {
           registration_certificate?: string | null
           technical_inspection_expiry?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           vin?: string | null
           year?: number | null
         }
         Update: {
           brand?: string
           capacity?: number | null
+          company_id?: string | null
           created_at?: string
           id?: string
           insurance_expiry?: string | null
@@ -734,7 +1125,7 @@ export type Database = {
           registration_certificate?: string | null
           technical_inspection_expiry?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           vin?: string | null
           year?: number | null
         }
@@ -745,7 +1136,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_company_id: { Args: never; Returns: string }
+      has_permission: {
+        Args: {
+          _permission: Database["public"]["Enums"]["app_permission"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_company_member: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_global_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_permission:
@@ -794,6 +1204,8 @@ export type Database = {
         | "certificate"
         | "permit"
         | "other"
+        | "power_of_attorney"
+        | "waybill"
       notification_event_type:
         | "trip_created"
         | "trip_updated"
@@ -981,6 +1393,8 @@ export const Constants = {
         "certificate",
         "permit",
         "other",
+        "power_of_attorney",
+        "waybill",
       ],
       notification_event_type: [
         "trip_created",

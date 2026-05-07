@@ -7,7 +7,7 @@ export const useConnectionQuality = () => {
 
   useEffect(() => {
     let mounted = true;
-    let intervalId: NodeJS.Timeout | null = null;
+    let intervalId: ReturnType<typeof setTimeout> | null = null;
     
     const check = async () => {
       try {

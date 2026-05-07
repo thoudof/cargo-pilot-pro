@@ -598,7 +598,7 @@ export type Database = {
           company_id: string | null
           created_at: string
           description: string | null
-          document_name: string
+          document_name: string | null
           document_type: Database["public"]["Enums"]["document_type"]
           file_name: string | null
           file_path: string | null
@@ -617,7 +617,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           description?: string | null
-          document_name: string
+          document_name?: string | null
           document_type: Database["public"]["Enums"]["document_type"]
           file_name?: string | null
           file_path?: string | null
@@ -636,7 +636,7 @@ export type Database = {
           company_id?: string | null
           created_at?: string
           description?: string | null
-          document_name?: string
+          document_name?: string | null
           document_type?: Database["public"]["Enums"]["document_type"]
           file_name?: string | null
           file_path?: string | null

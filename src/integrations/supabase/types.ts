@@ -52,6 +52,7 @@ export type Database = {
       }
       cargo_types: {
         Row: {
+          company_id: string | null
           created_at: string
           default_volume: number | null
           default_weight: number | null
@@ -65,6 +66,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           default_volume?: number | null
           default_weight?: number | null
@@ -78,6 +80,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           default_volume?: number | null
           default_weight?: number | null
@@ -91,6 +94,80 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      companies: {
+        Row: {
+          address: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          id: string
+          inn: string | null
+          is_active: boolean
+          name: string
+          phone: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          inn?: string | null
+          is_active?: boolean
+          name: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          id?: string
+          inn?: string | null
+          is_active?: boolean
+          name?: string
+          phone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_members: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          is_default: boolean
+          role: string
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          role?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contacts: {
         Row: {
@@ -136,6 +213,7 @@ export type Database = {
       contractors: {
         Row: {
           address: string
+          company_id: string | null
           company_name: string
           created_at: string
           id: string
@@ -146,6 +224,7 @@ export type Database = {
         }
         Insert: {
           address: string
+          company_id?: string | null
           company_name: string
           created_at?: string
           id?: string
@@ -156,6 +235,7 @@ export type Database = {
         }
         Update: {
           address?: string
+          company_id?: string | null
           company_name?: string
           created_at?: string
           id?: string
@@ -168,6 +248,7 @@ export type Database = {
       }
       document_templates: {
         Row: {
+          company_id: string | null
           created_at: string
           description: string | null
           document_type: Database["public"]["Enums"]["document_type"]
@@ -178,6 +259,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           description?: string | null
           document_type: Database["public"]["Enums"]["document_type"]
@@ -188,6 +270,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           description?: string | null
           document_type?: Database["public"]["Enums"]["document_type"]
@@ -201,6 +284,7 @@ export type Database = {
       }
       drivers: {
         Row: {
+          company_id: string | null
           created_at: string
           experience_years: number | null
           id: string
@@ -213,6 +297,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           experience_years?: number | null
           id?: string
@@ -225,6 +310,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           experience_years?: number | null
           id?: string
@@ -240,6 +326,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          company_id: string | null
           created_at: string | null
           id: string
           is_read: boolean | null
@@ -252,6 +339,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean | null
@@ -264,6 +352,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string | null
           id?: string
           is_read?: boolean | null
@@ -360,6 +449,7 @@ export type Database = {
       }
       routes: {
         Row: {
+          company_id: string | null
           created_at: string
           distance_km: number | null
           estimated_duration_hours: number | null
@@ -372,6 +462,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           distance_km?: number | null
           estimated_duration_hours?: number | null
@@ -384,6 +475,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           distance_km?: number | null
           estimated_duration_hours?: number | null
@@ -399,6 +491,7 @@ export type Database = {
       }
       trip_documents: {
         Row: {
+          company_id: string | null
           created_at: string
           description: string | null
           document_name: string
@@ -416,6 +509,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
           description?: string | null
           document_name: string
@@ -433,6 +527,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
           description?: string | null
           document_name?: string
@@ -462,6 +557,7 @@ export type Database = {
       trip_expenses: {
         Row: {
           amount: number
+          company_id: string | null
           created_at: string
           description: string | null
           expense_date: string
@@ -474,6 +570,7 @@ export type Database = {
         }
         Insert: {
           amount: number
+          company_id?: string | null
           created_at?: string
           description?: string | null
           expense_date?: string
@@ -486,6 +583,7 @@ export type Database = {
         }
         Update: {
           amount?: number
+          company_id?: string | null
           created_at?: string
           description?: string | null
           expense_date?: string
@@ -515,6 +613,7 @@ export type Database = {
           cargo_volume: number
           cargo_weight: number
           comments: string | null
+          company_id: string | null
           contractor_id: string
           created_at: string
           departure_date: string
@@ -544,6 +643,7 @@ export type Database = {
           cargo_volume: number
           cargo_weight: number
           comments?: string | null
+          company_id?: string | null
           contractor_id: string
           created_at?: string
           departure_date: string
@@ -573,6 +673,7 @@ export type Database = {
           cargo_volume?: number
           cargo_weight?: number
           comments?: string | null
+          company_id?: string | null
           contractor_id?: string
           created_at?: string
           departure_date?: string
@@ -690,6 +791,7 @@ export type Database = {
         Row: {
           brand: string
           capacity: number | null
+          company_id: string | null
           created_at: string
           id: string
           insurance_expiry: string | null
@@ -707,6 +809,7 @@ export type Database = {
         Insert: {
           brand: string
           capacity?: number | null
+          company_id?: string | null
           created_at?: string
           id?: string
           insurance_expiry?: string | null
@@ -724,6 +827,7 @@ export type Database = {
         Update: {
           brand?: string
           capacity?: number | null
+          company_id?: string | null
           created_at?: string
           id?: string
           insurance_expiry?: string | null
@@ -745,7 +849,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_company_id: { Args: never; Returns: string }
+      has_permission: {
+        Args: {
+          _permission: Database["public"]["Enums"]["app_permission"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_company_member: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_global_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_permission:

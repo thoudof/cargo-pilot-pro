@@ -449,6 +449,9 @@ export type Database = {
           id: string
           phone: string | null
           role: string | null
+          telegram_chat_id: string | null
+          telegram_link_code: string | null
+          telegram_link_code_expires_at: string | null
           updated_at: string
           username: string | null
         }
@@ -459,6 +462,9 @@ export type Database = {
           id: string
           phone?: string | null
           role?: string | null
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
           updated_at?: string
           username?: string | null
         }
@@ -469,6 +475,9 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: string | null
+          telegram_chat_id?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
           updated_at?: string
           username?: string | null
         }
@@ -571,6 +580,7 @@ export type Database = {
           description: string | null
           document_name: string
           document_type: Database["public"]["Enums"]["document_type"]
+          file_name: string | null
           file_path: string | null
           file_size: number | null
           file_url: string | null
@@ -589,6 +599,7 @@ export type Database = {
           description?: string | null
           document_name: string
           document_type: Database["public"]["Enums"]["document_type"]
+          file_name?: string | null
           file_path?: string | null
           file_size?: number | null
           file_url?: string | null
@@ -607,6 +618,7 @@ export type Database = {
           description?: string | null
           document_name?: string
           document_type?: Database["public"]["Enums"]["document_type"]
+          file_name?: string | null
           file_path?: string | null
           file_size?: number | null
           file_url?: string | null
@@ -632,11 +644,14 @@ export type Database = {
       trip_expenses: {
         Row: {
           amount: number
+          category: string | null
           company_id: string | null
           created_at: string
+          created_by: string | null
+          date: string | null
           description: string | null
-          expense_date: string
-          expense_type: string
+          expense_date: string | null
+          expense_type: string | null
           id: string
           receipt_url: string | null
           trip_id: string
@@ -645,11 +660,14 @@ export type Database = {
         }
         Insert: {
           amount: number
+          category?: string | null
           company_id?: string | null
           created_at?: string
+          created_by?: string | null
+          date?: string | null
           description?: string | null
-          expense_date?: string
-          expense_type: string
+          expense_date?: string | null
+          expense_type?: string | null
           id?: string
           receipt_url?: string | null
           trip_id: string
@@ -658,11 +676,14 @@ export type Database = {
         }
         Update: {
           amount?: number
+          category?: string | null
           company_id?: string | null
           created_at?: string
+          created_by?: string | null
+          date?: string | null
           description?: string | null
-          expense_date?: string
-          expense_type?: string
+          expense_date?: string | null
+          expense_type?: string | null
           id?: string
           receipt_url?: string | null
           trip_id?: string
@@ -785,7 +806,43 @@ export type Database = {
           usage_count?: number
           vehicle_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "trip_templates_cargo_type_id_fkey"
+            columns: ["cargo_type_id"]
+            isOneToOne: false
+            referencedRelation: "cargo_types"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "contractors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_route_id_fkey"
+            columns: ["route_id"]
+            isOneToOne: false
+            referencedRelation: "routes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trip_templates_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trips: {
         Row: {
@@ -1127,6 +1184,7 @@ export type Database = {
         | "certificate"
         | "permit"
         | "other"
+        | "power_of_attorney"
       notification_event_type:
         | "trip_created"
         | "trip_updated"
@@ -1314,6 +1372,7 @@ export const Constants = {
         "certificate",
         "permit",
         "other",
+        "power_of_attorney",
       ],
       notification_event_type: [
         "trip_created",

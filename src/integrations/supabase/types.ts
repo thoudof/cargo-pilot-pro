@@ -50,6 +50,45 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_telegram_subscriptions: {
+        Row: {
+          created_at: string
+          event_types: string[]
+          id: string
+          is_active: boolean
+          telegram_chat_id: string | null
+          telegram_username: string | null
+          updated_at: string
+          user_id: string
+          verification_code: string | null
+          verification_expires_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_types?: string[]
+          id?: string
+          is_active?: boolean
+          telegram_chat_id?: string | null
+          telegram_username?: string | null
+          updated_at?: string
+          user_id: string
+          verification_code?: string | null
+          verification_expires_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_types?: string[]
+          id?: string
+          is_active?: boolean
+          telegram_chat_id?: string | null
+          telegram_username?: string | null
+          updated_at?: string
+          user_id?: string
+          verification_code?: string | null
+          verification_expires_at?: string | null
+        }
+        Relationships: []
+      }
       cargo_types: {
         Row: {
           company_id: string | null
@@ -249,10 +288,12 @@ export type Database = {
       document_templates: {
         Row: {
           company_id: string | null
+          content: string | null
           created_at: string
           description: string | null
           document_type: Database["public"]["Enums"]["document_type"]
           id: string
+          is_active: boolean
           is_required: boolean | null
           name: string
           updated_at: string
@@ -260,10 +301,12 @@ export type Database = {
         }
         Insert: {
           company_id?: string | null
+          content?: string | null
           created_at?: string
           description?: string | null
           document_type: Database["public"]["Enums"]["document_type"]
           id?: string
+          is_active?: boolean
           is_required?: boolean | null
           name: string
           updated_at?: string
@@ -271,13 +314,36 @@ export type Database = {
         }
         Update: {
           company_id?: string | null
+          content?: string | null
           created_at?: string
           description?: string | null
           document_type?: Database["public"]["Enums"]["document_type"]
           id?: string
+          is_active?: boolean
           is_required?: boolean | null
           name?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      driver_users: {
+        Row: {
+          created_at: string
+          driver_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          driver_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          driver_id?: string
+          id?: string
           user_id?: string
         }
         Relationships: []
@@ -604,6 +670,114 @@ export type Database = {
           },
         ]
       }
+      trip_locations: {
+        Row: {
+          accuracy: number | null
+          created_at: string
+          driver_id: string | null
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          recorded_at: string
+          speed: number | null
+          trip_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          created_at?: string
+          driver_id?: string | null
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          recorded_at?: string
+          speed?: number | null
+          trip_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          created_at?: string
+          driver_id?: string | null
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          recorded_at?: string
+          speed?: number | null
+          trip_id?: string
+        }
+        Relationships: []
+      }
+      trip_templates: {
+        Row: {
+          cargo_description: string | null
+          cargo_type_id: string | null
+          cargo_value: number | null
+          cargo_volume: number | null
+          cargo_weight: number | null
+          company_id: string | null
+          contractor_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          driver_id: string | null
+          id: string
+          is_favorite: boolean
+          name: string
+          point_a: string | null
+          point_b: string | null
+          route_id: string | null
+          updated_at: string
+          usage_count: number
+          vehicle_id: string | null
+        }
+        Insert: {
+          cargo_description?: string | null
+          cargo_type_id?: string | null
+          cargo_value?: number | null
+          cargo_volume?: number | null
+          cargo_weight?: number | null
+          company_id?: string | null
+          contractor_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          driver_id?: string | null
+          id?: string
+          is_favorite?: boolean
+          name: string
+          point_a?: string | null
+          point_b?: string | null
+          route_id?: string | null
+          updated_at?: string
+          usage_count?: number
+          vehicle_id?: string | null
+        }
+        Update: {
+          cargo_description?: string | null
+          cargo_type_id?: string | null
+          cargo_value?: number | null
+          cargo_volume?: number | null
+          cargo_weight?: number | null
+          company_id?: string | null
+          contractor_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          driver_id?: string | null
+          id?: string
+          is_favorite?: boolean
+          name?: string
+          point_a?: string | null
+          point_b?: string | null
+          route_id?: string | null
+          updated_at?: string
+          usage_count?: number
+          vehicle_id?: string | null
+        }
+        Relationships: []
+      }
       trips: {
         Row: {
           arrival_date: string | null
@@ -732,6 +906,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_dashboard_settings: {
+        Row: {
+          created_at: string
+          hidden_widgets: string[]
+          id: string
+          updated_at: string
+          user_id: string
+          widget_layout: Json
+        }
+        Insert: {
+          created_at?: string
+          hidden_widgets?: string[]
+          id?: string
+          updated_at?: string
+          user_id: string
+          widget_layout?: Json
+        }
+        Update: {
+          created_at?: string
+          hidden_widgets?: string[]
+          id?: string
+          updated_at?: string
+          user_id?: string
+          widget_layout?: Json
+        }
+        Relationships: []
       }
       user_permissions: {
         Row: {

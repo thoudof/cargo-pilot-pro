@@ -363,6 +363,8 @@ export type Database = {
           passport_data: string | null
           phone: string
           telegram_chat_id: string | null
+          telegram_link_code: string | null
+          telegram_link_code_expires_at: string | null
           updated_at: string
           user_id: string | null
         }
@@ -377,6 +379,8 @@ export type Database = {
           passport_data?: string | null
           phone: string
           telegram_chat_id?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -391,6 +395,8 @@ export type Database = {
           passport_data?: string | null
           phone?: string
           telegram_chat_id?: string | null
+          telegram_link_code?: string | null
+          telegram_link_code_expires_at?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -445,6 +451,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          current_company_id: string | null
           full_name: string | null
           id: string
           phone: string | null
@@ -452,12 +459,14 @@ export type Database = {
           telegram_chat_id: string | null
           telegram_link_code: string | null
           telegram_link_code_expires_at: string | null
+          telegram_notifications_enabled: boolean
           updated_at: string
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          current_company_id?: string | null
           full_name?: string | null
           id: string
           phone?: string | null
@@ -465,12 +474,14 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
           telegram_link_code_expires_at?: string | null
+          telegram_notifications_enabled?: boolean
           updated_at?: string
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          current_company_id?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -478,10 +489,19 @@ export type Database = {
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
           telegram_link_code_expires_at?: string | null
+          telegram_notifications_enabled?: boolean
           updated_at?: string
           username?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_current_company_id_fkey"
+            columns: ["current_company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       push_tokens: {
         Row: {
@@ -1185,6 +1205,7 @@ export type Database = {
         | "permit"
         | "other"
         | "power_of_attorney"
+        | "waybill"
       notification_event_type:
         | "trip_created"
         | "trip_updated"
@@ -1373,6 +1394,7 @@ export const Constants = {
         "permit",
         "other",
         "power_of_attorney",
+        "waybill",
       ],
       notification_event_type: [
         "trip_created",

@@ -1,0 +1,7 @@
+# Игнорируем секреты и дампы
+.env
+.env.secrets
+dumps/
+supabase/volumes/db/data/
+supabase/volumes/storage/
+*.log
